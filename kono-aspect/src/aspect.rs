@@ -28,15 +28,15 @@ pub trait Aspect:
 
 pub struct AspectResolver<A>(<A as Aspect>::Environment)
 where
-    A: Aspect + ?Sized;
+    A: Aspect;
 
 impl<A> Resolver for AspectResolver<A>
 where
-    A: Aspect + ?Sized,
+    A: Aspect + 'static,
 {
     type Context = <A as ResolveField>::Context;
     type Error = <A as ResolveField>::Error;
-    type Value = ObjectValue<Self::Context, Self::Error>;
+    type Value = ObjectValue;
 
     fn can_resolve<'a>(
         &self,
@@ -45,13 +45,12 @@ where
         field_name: &str,
         context: &Self::Context,
     ) -> bool {
-        if field_name == "__typename" {
-            return true;
-        }
-
         match object_value {
             ObjectValue::Unit => A::can_query(&self.0, field_name, context),
-            ObjectValue::Aspect(aspect) => aspect.can_resolve_field(field_name),
+            ObjectValue::Aspect(aspect) => aspect
+                .downcast_ref::<A>()
+                .map(|aspect| aspect.can_resolve_field(field_name))
+                .unwrap_or_default(),
             _ => false,
         }
     }
@@ -64,33 +63,19 @@ where
         argument_values: &'a HashMap<String, Value>,
         context: &'a Self::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<Self::Value>, Self::Error>> + 'a>> {
-        if field_name == "__typename"
-            && match object_value {
-                ObjectValue::Unit => A::can_query(&self.0, field_name, context),
-                ObjectValue::Aspect(aspect) => aspect.can_resolve_field(field_name),
-                _ => false,
-            } == false
-        {
-            return Box::pin(ready(Ok(Intermediate::Value(Value::from(
-                match object_value {
-                    ObjectValue::Unit => "Query",
-                    ObjectValue::Aspect(aspect) => aspect.typename(),
-                    _ => todo!(),
-                },
-            )))));
-        }
-
         match object_value {
             ObjectValue::Unit => A::query(&self.0, field_name, argument_values.to_owned(), context),
-            ObjectValue::Aspect(aspect) => {
-                aspect.resolve_field(field_name, argument_values, context)
-            }
+            ObjectValue::Aspect(aspect) => aspect.downcast_ref::<A>().unwrap().resolve_field(
+                field_name,
+                argument_values,
+                context,
+            ),
             _ => unreachable!(),
         }
     }
 }
 
-pub trait AspectExt: Aspect {
+pub trait AspectExt: Aspect + Sized {
     fn resolver() -> AspectResolver<Self>
     where
         <Self as Aspect>::Environment: Default;

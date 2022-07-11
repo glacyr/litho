@@ -7,8 +7,8 @@ use kono_executor::{Intermediate, Value};
 
 use super::{Aspect, ObjectValue, ResolveField};
 
-pub trait IntoIntermediate<C, E> {
-    fn into_intermediate(self) -> Result<Intermediate<ObjectValue<C, E>>, E>;
+pub trait IntoIntermediate<E> {
+    fn into_intermediate(self) -> Result<Intermediate<ObjectValue>, E>;
 }
 
 // impl<C, E, T> IntoIntermediate<C, E> for &T
@@ -21,11 +21,11 @@ pub trait IntoIntermediate<C, E> {
 //     }
 // }
 
-impl<C, E, T> IntoIntermediate<C, E> for Result<T, E>
+impl<T, E> IntoIntermediate<E> for Result<T, E>
 where
-    T: IntoIntermediate<C, E> + 'static,
+    T: IntoIntermediate<E> + 'static,
 {
-    fn into_intermediate(self) -> Result<Intermediate<ObjectValue<C, E>>, E> {
+    fn into_intermediate(self) -> Result<Intermediate<ObjectValue>, E> {
         self.and_then(|value| value.into_intermediate())
     }
 }
@@ -53,8 +53,8 @@ where
 
 macro_rules! ty {
     ($($ident:tt)*) => {
-        impl<C, E> IntoIntermediate<C, E> for $($ident)* {
-            fn into_intermediate(self) -> Result<Intermediate<ObjectValue<C, E>>, E> {
+        impl<E> IntoIntermediate<E> for $($ident)* {
+            fn into_intermediate(self) -> Result<Intermediate<ObjectValue>, E> {
                 Ok(Intermediate::Value(self.into()))
             }
         }
@@ -78,29 +78,29 @@ ty!(String);
 
 ty!(&str);
 
-impl<C, E, T> IntoIntermediate<C, E> for Option<T>
+impl<E, T> IntoIntermediate<E> for Option<T>
 where
     T: Into<Value>,
 {
-    fn into_intermediate(self) -> Result<Intermediate<ObjectValue<C, E>>, E> {
+    fn into_intermediate(self) -> Result<Intermediate<ObjectValue>, E> {
         Ok(Intermediate::Value(self.into()))
     }
 }
 
-impl<C, E, T> IntoIntermediate<C, E> for Vec<T>
+impl<E, T> IntoIntermediate<E> for Vec<T>
 where
     T: Into<Value>,
 {
-    fn into_intermediate(self) -> Result<Intermediate<ObjectValue<C, E>>, E> {
+    fn into_intermediate(self) -> Result<Intermediate<ObjectValue>, E> {
         Ok(Intermediate::Value(self.into()))
     }
 }
 
-impl<C, E, T> IntoIntermediate<C, E> for HashMap<String, T>
+impl<E, T> IntoIntermediate<E> for HashMap<String, T>
 where
     T: Into<Value>,
 {
-    fn into_intermediate(self) -> Result<Intermediate<ObjectValue<C, E>>, E> {
+    fn into_intermediate(self) -> Result<Intermediate<ObjectValue>, E> {
         Ok(Intermediate::Value(self.into_iter().collect()))
     }
 }

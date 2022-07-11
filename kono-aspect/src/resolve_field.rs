@@ -22,16 +22,7 @@ pub trait ResolveField {
         _field: &'a str,
         _args: &'a HashMap<String, Value>,
         _context: &'a Self::Context,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                    Output = Result<
-                        Intermediate<ObjectValue<Self::Context, Self::Error>>,
-                        Self::Error,
-                    >,
-                > + 'a,
-        >,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
         todo!()
     }
 }

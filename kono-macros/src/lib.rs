@@ -174,9 +174,7 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
                 Box<
                     dyn std::future::Future<
                         Output = Result<
-                            kono_executor::Intermediate<
-                                kono_aspect::ObjectValue<Self::Context, Self::Error>,
-                            >,
+                            kono_executor::Intermediate<kono_aspect::ObjectValue>,
                             Self::Error,
                         >,
                     > + 'a,
@@ -211,9 +209,7 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
                 Box<
                     dyn std::future::Future<
                         Output = Result<
-                            kono_executor::Intermediate<
-                                kono_aspect::ObjectValue<Self::Context, Self::Error>,
-                            >,
+                            kono_executor::Intermediate<kono_aspect::ObjectValue>,
                             Self::Error,
                         >,
                     > + 'a,
@@ -263,16 +259,10 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
         }
 
         impl #generics kono_aspect::IntoIntermediate<
-            <Self as kono_aspect::ResolveField>::Context,
             <Self as kono_aspect::ResolveField>::Error,
         > for #self_ty #where_clause {
             fn into_intermediate(self) -> Result<
-                kono_executor::Intermediate<
-                    kono_aspect::ObjectValue<
-                        <Self as kono_aspect::ResolveField>::Context,
-                        <Self as kono_aspect::ResolveField>::Error,
-                    >,
-                >,
+                kono_executor::Intermediate<kono_aspect::ObjectValue>,
                 <Self as kono_aspect::ResolveField>::Error,
             > {
                 Ok(kono_executor::Intermediate::Object(kono_aspect::ObjectValue::Aspect(Box::new(self))))

@@ -18,13 +18,7 @@ pub trait Mutation {
         field: &'a str,
         args: HashMap<String, Value>,
         context: &'a Self::Context,
-    ) -> Pin<
-        Box<
-            dyn Future<
-                Output = Result<Intermediate<ObjectValue<Self::Context, Self::Error>>, Self::Error>,
-            >,
-        >,
-    > {
+    ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>>>> {
         todo!()
     }
 }

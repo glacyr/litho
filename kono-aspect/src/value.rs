@@ -1,14 +1,15 @@
+use std::any::Any;
 use std::fmt::{Debug, Formatter, Result};
 
-use super::{Reference, ResolveField};
+use super::Reference;
 
-pub enum ObjectValue<C, E> {
+pub enum ObjectValue {
     Unit,
-    Aspect(Box<dyn ResolveField<Context = C, Error = E>>),
+    Aspect(Box<dyn Any>),
     Reference(Reference),
 }
 
-impl<C, E> Debug for ObjectValue<C, E> {
+impl Debug for ObjectValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         let mut tuple = f.debug_tuple("ObjectValue");
 
