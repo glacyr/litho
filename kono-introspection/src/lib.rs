@@ -2,6 +2,8 @@ use std::marker::PhantomData;
 
 use graphql_parser::schema::{Definition, Document, TypeDefinition};
 
+use kono_aspect::{AspectExt, Error, ObjectValue};
+use kono_executor::{join, Resolver};
 use kono_macros::kono;
 
 mod ext;
@@ -20,7 +22,7 @@ where
     type Context = C;
     type Environment = Document<'static, String>;
 
-    #[kono::query(rename = "__schema")]
+    #[kono::query]
     fn schema(environment: &Document<'static, String>) -> Schema<C> {
         Schema {
             _context: PhantomData,
@@ -54,7 +56,7 @@ where
 {
     type Context = C;
 
-    #[kono::field(rename = "queryType")]
+    #[kono::field]
     fn query_type(&self) -> Type<C> {
         let definition = self.find_type_definition("Query").cloned().unwrap();
 
@@ -88,7 +90,14 @@ where
     }
 }
 
-// fn introspection<C>(schema: Document<'static, String>) -> impl Resolver<Context = C> {}
-
-#[derive(Kono)]
-pub enum TypeKind {}
+pub fn introspection<C>(
+    schema: Document<'static, String>,
+) -> impl Resolver<Context = C, Error = Error, Value = ObjectValue>
+where
+    C: 'static,
+{
+    join(
+        join(Introspection::with_env(schema), Schema::resolver()),
+        Type::resolver(),
+    )
+}

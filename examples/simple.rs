@@ -1,6 +1,6 @@
 use graphql_parser::parse_schema;
 use kono::{AspectExt, Executor, ObjectValue};
-use kono_introspection::Introspection;
+use kono_introspection::introspection;
 
 #[tokio::main]
 pub async fn main() {
@@ -16,7 +16,7 @@ type Query {
     .into_static();
 
     let (accept, process) = kono::server(
-        Executor::new(Introspection::<()>::with_env(schema), ObjectValue::Unit),
+        Executor::new(introspection(schema), ObjectValue::Unit),
         || (),
     );
 
