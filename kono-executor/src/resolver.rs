@@ -7,7 +7,7 @@ use super::{Error, Intermediate, Value};
 pub trait Resolver {
     type Context;
     type Error: Error;
-    type Value;
+    type Value: std::fmt::Debug;
 
     fn can_resolve<'a>(
         &self,

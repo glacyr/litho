@@ -1,3 +1,4 @@
+use inflections::Inflect;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
@@ -11,6 +12,7 @@ enum FieldTy {
 }
 
 struct Field {
+    ident: Ident,
     name: String,
     has_receiver: bool,
     has_environment: bool,
@@ -43,7 +45,13 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
     let mut method = method;
     method.attrs = vec![];
 
-    let name = method.sig.ident.to_string();
+    let ident = method.sig.ident.to_owned();
+    let name = method
+        .sig
+        .ident
+        .to_string()
+        .trim_start_matches("r#")
+        .to_owned();
 
     let has_receiver = method
         .sig
@@ -66,6 +74,7 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
         .is_some();
 
     Field {
+        ident,
         name,
         has_receiver,
         has_environment,
@@ -109,15 +118,15 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
     let query_names = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Query)
-        .map(|field| field.name.to_owned())
+        .map(|field| field.name.to_camel_case())
         .collect::<Vec<_>>();
 
     let query_handlers = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Query)
         .map(|field| {
-            let name = field.name.to_owned();
-            let ident = Ident::new(&name, field.name.span());
+            let name = field.name.to_camel_case();
+            let ident = field.ident.to_owned();
 
             let mut args = vec![];
 
@@ -134,15 +143,15 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
     let field_names = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Object)
-        .map(|field| field.name.to_owned())
+        .map(|field| field.name.to_camel_case())
         .collect::<Vec<_>>();
 
     let field_handlers = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Object)
         .map(|field| {
-            let name = field.name.to_owned();
-            let ident = Ident::new(&name, field.name.span());
+            let name = field.name.to_camel_case();
+            let ident = field.ident.to_owned();
 
             quote! {
                 #name => self.#ident().into_intermediate(),
@@ -195,6 +204,7 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
         false => quote! {
             fn can_resolve_field(&self, field: &str) -> bool {
                 match field {
+                    "__typename" => true,
                     #(#field_names)|* => true,
                     _ => false,
                 }
@@ -218,6 +228,7 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
                 use kono_aspect::IntoIntermediate;
 
                 Box::pin(async move { match field {
+                    "__typename" => Ok(kono_executor::Intermediate::Value(#name.into())),
                     #(#field_handlers)*
                     _ => unreachable!(),
                 } })

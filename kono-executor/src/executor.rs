@@ -153,10 +153,14 @@ where
                     )
                     .await
             }
-            false => Err(Error::custom("blabla")),
+            false => Err(Error::custom(format!(
+                "Couldn't retrieve field: {} from {:?}",
+                field_name, object_value
+            ))),
         }
     }
 
+    #[async_recursion(?Send)]
     async fn complete_value<'a>(
         &self,
         field_type: (),
@@ -164,17 +168,39 @@ where
         result: Intermediate<R::Value>,
         variable_values: &HashMap<String, Value>,
         context: &R::Context,
-    ) -> Result<Value, R::Error> {
+    ) -> Result<Value, R::Error>
+    where
+        'a: 'async_recursion,
+    {
+        let orig_fields = fields.clone();
         let field = fields.into_iter().next().unwrap();
 
         if field.selection_set.items.is_empty() {
             return match result {
-                Intermediate::Object(_) => todo!(),
+                Intermediate::Collection(_) | Intermediate::Object(_) => todo!(),
                 Intermediate::Value(value) => Ok(value),
             };
         }
 
         let result = match result {
+            Intermediate::Collection(collection) => {
+                let mut results = vec![];
+
+                for value in collection {
+                    results.push(
+                        self.complete_value(
+                            field_type,
+                            orig_fields.clone(),
+                            value,
+                            variable_values,
+                            context,
+                        )
+                        .await?,
+                    );
+                }
+
+                return Ok(results.into());
+            }
             Intermediate::Object(object) => object,
             Intermediate::Value(_) => {
                 todo!("Didn't expect resolved value for field: {}", field.name)
