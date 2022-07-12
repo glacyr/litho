@@ -1,24 +1,17 @@
-use std::marker::PhantomData;
+use graphql_parser::schema::Document;
+use kono_aspect::{AspectExt, Error, ObjectValue};
+use kono_executor::{join, Resolver};
 
-use graphql_parser::schema;
-use kono_macros::kono;
+use super::{Field, Schema, Type};
 
-use super::Schema;
-
-pub struct Introspection<C = ()> {
-    _context: PhantomData<C>,
-}
-
-#[kono]
-impl<C> Aspect for Introspection<C>
+pub fn introspection<C>(
+    schema: Document<'static, String>,
+) -> impl Resolver<Context = C, Error = Error, Value = ObjectValue>
 where
     C: 'static,
 {
-    type Context = C;
-    type Environment = schema::Document<'static, String>;
-
-    #[kono(query, rename = "__schema")]
-    fn schema(environment: &schema::Document<'static, String>) -> Schema<C> {
-        Schema::new(environment.to_owned())
-    }
+    join(
+        join(Schema::with_env(schema), Type::resolver()),
+        Field::resolver(),
+    )
 }

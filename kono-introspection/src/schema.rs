@@ -26,6 +26,12 @@ where
     C: 'static,
 {
     type Context = C;
+    type Environment = schema::Document<'static, String>;
+
+    #[kono(query, rename = "__schema")]
+    fn schema(environment: &schema::Document<'static, String>) -> Schema<C> {
+        Schema::new(environment.to_owned())
+    }
 
     fn query_type(&self) -> Type<C> {
         let definition = self.schema.type_definition_or_default("Query");
