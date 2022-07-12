@@ -33,11 +33,12 @@ where
         variable_values: &HashMap<String, Value>,
         context: &R::Context,
     ) -> Result<IndexMap<String, Value>, R::Error> {
-        let operation = self.get_operation(document, operation_name)?;
+        let operation = self.get_operation(&document, operation_name)?;
 
         match operation {
             OperationDefinition::Query(query) => {
-                self.execute_query(query, variable_values, context).await
+                self.execute_query(&document, query, variable_values, context)
+                    .await
             }
             // OperationDefinition::Mutation(mutation) => {
             //     self.execute_mutation(mutation, variable_values, context)
@@ -49,13 +50,15 @@ where
 
     async fn execute_query<'a>(
         &self,
-        query: Query<'a, String>,
+        document: &Document<'a, String>,
+        query: &Query<'a, String>,
         variable_values: &HashMap<String, Value>,
         context: &R::Context,
     ) -> Result<IndexMap<String, Value>, R::Error> {
         let result = self
             .execute_selection_set(
-                query.selection_set,
+                document,
+                &query.selection_set,
                 (),
                 &self.root,
                 variable_values,
@@ -71,7 +74,8 @@ where
     #[async_recursion(?Send)]
     async fn execute_selection_set<'a>(
         &self,
-        selection_set: SelectionSet<'a, String>,
+        document: &Document<'a, String>,
+        selection_set: &SelectionSet<'a, String>,
         ty: (),
         value: &R::Value,
         variable_values: &HashMap<String, Value>,
@@ -80,8 +84,9 @@ where
     where
         'a: 'async_recursion,
     {
+        let mut fields = HashSet::new();
         let grouped_field_set =
-            self.collect_fields(selection_set, &variable_values, Default::default());
+            self.collect_fields(document, selection_set, &variable_values, &mut fields);
 
         let mut result_map = IndexMap::<String, Value>::new();
 
@@ -90,8 +95,16 @@ where
 
             result_map.insert(
                 response_key,
-                self.execute_field(ty, value, fields, field_type, variable_values, context)
-                    .await?,
+                self.execute_field(
+                    document,
+                    ty,
+                    value,
+                    fields,
+                    field_type,
+                    variable_values,
+                    context,
+                )
+                .await?,
             );
         }
 
@@ -104,6 +117,7 @@ where
 
     async fn execute_field<'a>(
         &self,
+        document: &Document<'a, String>,
         object_ty: (),
         object_value: &R::Value,
         fields: Vec<Field<'a, String>>,
@@ -119,6 +133,7 @@ where
         // let argument_values = ();
         let resolved_value = self
             .resolve_field_value(
+                document,
                 object_ty,
                 object_value,
                 field_name,
@@ -126,12 +141,20 @@ where
                 context,
             )
             .await?;
-        self.complete_value(field_ty, fields, resolved_value, variable_values, context)
-            .await
+        self.complete_value(
+            document,
+            field_ty,
+            fields,
+            resolved_value,
+            variable_values,
+            context,
+        )
+        .await
     }
 
-    async fn resolve_field_value(
+    async fn resolve_field_value<'a>(
         &self,
+        document: &Document<'a, String>,
         object_ty: (),
         object_value: &R::Value,
         field_name: &str,
@@ -163,6 +186,7 @@ where
     #[async_recursion(?Send)]
     async fn complete_value<'a>(
         &self,
+        document: &Document<'a, String>,
         field_type: (),
         fields: Vec<Field<'a, String>>,
         result: Intermediate<R::Value>,
@@ -189,6 +213,7 @@ where
                 for value in collection {
                     results.push(
                         self.complete_value(
+                            document,
                             field_type,
                             orig_fields.clone(),
                             value,
@@ -207,34 +232,66 @@ where
             }
         };
 
-        self.execute_selection_set(field.selection_set, (), &result, variable_values, context)
-            .await
-            .map(|result| result.into_iter().collect())
+        self.execute_selection_set(
+            document,
+            &field.selection_set,
+            (),
+            &result,
+            variable_values,
+            context,
+        )
+        .await
+        .map(|result| result.into_iter().collect())
     }
 
     fn collect_fields<'a>(
         &self,
-        selection_set: SelectionSet<'a, String>,
+        document: &Document<'a, String>,
+        selection_set: &SelectionSet<'a, String>,
         variable_values: &HashMap<String, Value>,
-        visited_fragments: HashSet<String>,
+        visited_fragments: &mut HashSet<String>,
     ) -> IndexMap<String, Vec<Field<'a, String>>> {
-        let mut grouped_fields = IndexMap::new();
+        let mut grouped_fields = IndexMap::<String, Vec<Field<'a, String>>>::new();
 
-        for selection in selection_set.items.into_iter() {
+        for selection in selection_set.items.iter() {
             match selection {
                 Selection::Field(field) => {
                     let response_key = field.alias.as_ref().unwrap_or(&field.name).to_owned();
                     grouped_fields
                         .entry(response_key)
-                        .or_insert(vec![])
-                        .push(field);
+                        .or_default()
+                        .push(field.to_owned());
                 }
                 Selection::FragmentSpread(spread) => {
                     if visited_fragments.contains(&spread.fragment_name) {
                         continue;
                     }
 
-                    // visited_fragments.insert(spread.fragment_name.to_owned());
+                    visited_fragments.insert(spread.fragment_name.to_owned());
+
+                    let fragment = document
+                        .definitions
+                        .iter()
+                        .find_map(|definition| match definition {
+                            Definition::Fragment(fragment)
+                                if fragment.name == spread.fragment_name =>
+                            {
+                                Some(fragment)
+                            }
+                            _ => None,
+                        })
+                        .unwrap();
+
+                    let fragment_grouped_field_set = self.collect_fields(
+                        document,
+                        &fragment.selection_set,
+                        variable_values,
+                        visited_fragments,
+                    );
+
+                    for (key, group) in fragment_grouped_field_set {
+                        grouped_fields.entry(key).or_default().extend(group);
+                    }
                 }
                 Selection::InlineFragment(fragment) => {}
             }
@@ -243,12 +300,12 @@ where
         grouped_fields
     }
 
-    fn get_operation<'a>(
+    fn get_operation<'a, 'b>(
         &self,
-        document: Document<'a, String>,
+        document: &'b Document<'a, String>,
         operation_name: Option<&str>,
-    ) -> Result<OperationDefinition<'a, String>, R::Error> {
-        let mut operations = document.definitions.into_iter().flat_map(|def| match def {
+    ) -> Result<&'b OperationDefinition<'a, String>, R::Error> {
+        let mut operations = document.definitions.iter().flat_map(|def| match def {
             Definition::Operation(op) => match op {
                 OperationDefinition::Query(_) | OperationDefinition::Mutation(_) => Some(op),
                 _ => None,
@@ -259,11 +316,11 @@ where
         let names = operations
             .clone()
             .flat_map(|op| match op {
-                OperationDefinition::Query(query) => query.name,
-                OperationDefinition::Mutation(mutation) => mutation.name,
+                OperationDefinition::Query(query) => query.name.as_deref(),
+                OperationDefinition::Mutation(mutation) => mutation.name.as_deref(),
                 _ => None,
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<&str>>();
 
         let operation = match operation_name {
             Some(name) => operations.find(|operation| match operation {
