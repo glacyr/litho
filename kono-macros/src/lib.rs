@@ -4,7 +4,9 @@ use inflections::Inflect;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, FnArg, Ident, ImplItem, ImplItemMethod, Item, LitStr, Pat, Type};
+use syn::{
+    parse_macro_input, FnArg, Ident, ImplItem, ImplItemMethod, Item, ItemEnum, LitStr, Pat, Type,
+};
 
 #[derive(Debug, FromAttributes)]
 #[darling(attributes(kono))]
@@ -310,6 +312,39 @@ pub fn kono(
     let input = parse_macro_input!(item as Item);
 
     match kono_impl(input) {
+        Ok(result) => quote! { #result }.into(),
+        Err(error) => quote! { compile_error!(#error) }.into(),
+    }
+}
+
+fn kono_derive_impl(item: ItemEnum) -> Result<proc_macro2::TokenStream, String> {
+    let self_ty = item.ident;
+
+    let mut variants = vec![];
+
+    for variant in item.variants.iter() {
+        let name = &variant.ident;
+        let value = name.to_string().to_constant_case();
+
+        variants.push(quote! { Self::#name => #value, });
+    }
+
+    Ok(quote! {
+        impl<E> kono_aspect::IntoIntermediate<E> for #self_ty {
+            fn into_intermediate(self) -> Result<kono_executor::Intermediate<kono_aspect::ObjectValue>, E> {
+                match self {
+                    #(#variants)*
+                }.into_intermediate()
+            }
+        }
+    })
+}
+
+#[proc_macro_derive(Kono)]
+pub fn kono_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(item as ItemEnum);
+
+    match kono_derive_impl(input) {
         Ok(result) => quote! { #result }.into(),
         Err(error) => quote! { compile_error!(#error) }.into(),
     }
