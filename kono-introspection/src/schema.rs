@@ -28,21 +28,21 @@ where
     type Context = C;
 
     fn query_type(&self) -> Type<C> {
-        let definition = self.schema.type_definition("Query").unwrap();
+        let definition = self.schema.type_definition_or_default("Query");
 
-        Type::new(&self.schema, definition)
+        Type::new(&self.schema, &definition)
     }
 
     fn mutation_type(&self) -> Type<C> {
-        let definition = self.schema.type_definition("Mutation").unwrap();
+        let definition = self.schema.type_definition_or_default("Mutation");
 
-        Type::new(&self.schema, definition)
+        Type::new(&self.schema, &definition)
     }
 
     fn subscription_type(&self) -> Type<C> {
-        let definition = self.schema.type_definition("Subscription").unwrap();
+        let definition = self.schema.type_definition_or_default("Subscription");
 
-        Type::new(&self.schema, definition)
+        Type::new(&self.schema, &definition)
     }
 }
 
@@ -52,12 +52,13 @@ where
     T::Value: PartialEq<str>,
 {
     fn type_definition(&self, name: &str) -> Option<&schema::TypeDefinition<'a, T>>;
+    fn type_definition_or_default(&self, name: &str) -> schema::TypeDefinition<'a, T>;
 }
 
 impl<'a, T> SchemaExt<'a, T> for schema::Document<'a, T>
 where
-    T: schema::Text<'a>,
-    T::Value: PartialEq<str>,
+    T: schema::Text<'a> + Clone,
+    T::Value: PartialEq<str> + for<'b> From<&'b str>,
 {
     fn type_definition(&self, name: &str) -> Option<&schema::TypeDefinition<'a, T>> {
         self.definitions
@@ -67,5 +68,13 @@ where
                 _ => None,
             })
             .next()
+    }
+
+    fn type_definition_or_default(&self, name: &str) -> schema::TypeDefinition<'a, T> {
+        self.type_definition(name)
+            .cloned()
+            .unwrap_or(schema::TypeDefinition::Object(schema::ObjectType::new(
+                name.into(),
+            )))
     }
 }
