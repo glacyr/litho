@@ -1,19 +1,30 @@
+use darling::util::Flag;
+use darling::{FromAttributes, FromMeta};
 use inflections::Inflect;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, FnArg, Ident, ImplItem, ImplItemMethod, Item, Pat, Type};
+use syn::{parse_macro_input, FnArg, Ident, ImplItem, ImplItemMethod, Item, LitStr, Pat, Type};
+
+#[derive(Debug, FromAttributes)]
+#[darling(attributes(kono))]
+struct Kono {
+    field: Flag,
+    query: Flag,
+    mutation: Flag,
+    rename: Option<LitStr>,
+}
 
 #[derive(PartialEq, Eq)]
 enum FieldTy {
     Mutation,
-    Object,
+    Field,
     Query,
 }
 
 struct Field {
     ident: Ident,
-    name: String,
+    name: LitStr,
     has_receiver: bool,
     has_environment: bool,
     method: ImplItemMethod,
@@ -33,25 +44,34 @@ fn assoc_type(item: &syn::ItemImpl, name: &str, default: fn() -> TokenStream) ->
 }
 
 fn kono_impl_method(method: ImplItemMethod) -> Field {
-    let ty = match method.attrs[0].to_token_stream().to_string().as_ref() {
-        "#[kono :: query]" => FieldTy::Query,
-        "#[kono :: field]" => FieldTy::Object,
-        _ => todo!(
-            "Unknown attr: {:?}",
-            method.attrs[0].to_token_stream().to_string()
-        ),
+    let kono = Kono::from_attributes(&method.attrs).unwrap();
+
+    let ty = if kono.field.is_present() {
+        FieldTy::Field
+    } else if kono.query.is_present() {
+        FieldTy::Query
+    } else if kono.mutation.is_present() {
+        FieldTy::Mutation
+    } else {
+        FieldTy::Field
     };
 
     let mut method = method;
     method.attrs = vec![];
 
     let ident = method.sig.ident.to_owned();
-    let name = method
-        .sig
-        .ident
-        .to_string()
-        .trim_start_matches("r#")
-        .to_owned();
+    let name = match kono.rename {
+        Some(rename) => LitStr::new(rename.value().trim_start_matches("r#"), rename.span()),
+        None => LitStr::new(
+            &method
+                .sig
+                .ident
+                .to_string()
+                .trim_start_matches("r#")
+                .to_camel_case(),
+            method.sig.ident.span(),
+        ),
+    };
 
     let has_receiver = method
         .sig
@@ -118,14 +138,14 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
     let query_names = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Query)
-        .map(|field| field.name.to_camel_case())
+        .map(|field| field.name.to_owned())
         .collect::<Vec<_>>();
 
     let query_handlers = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Query)
         .map(|field| {
-            let name = field.name.to_camel_case();
+            let name = &field.name;
             let ident = field.ident.to_owned();
 
             let mut args = vec![];
@@ -142,15 +162,15 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
 
     let field_names = fields
         .iter()
-        .filter(|field| field.ty == FieldTy::Object)
-        .map(|field| field.name.to_camel_case())
+        .filter(|field| field.ty == FieldTy::Field)
+        .map(|field| field.name.to_owned())
         .collect::<Vec<_>>();
 
     let field_handlers = fields
         .iter()
-        .filter(|field| field.ty == FieldTy::Object)
+        .filter(|field| field.ty == FieldTy::Field)
         .map(|field| {
-            let name = field.name.to_camel_case();
+            let name = &field.name;
             let ident = field.ident.to_owned();
 
             quote! {

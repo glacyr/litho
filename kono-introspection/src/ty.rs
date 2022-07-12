@@ -65,7 +65,6 @@ where
 {
     type Context = C;
 
-    #[kono::field]
     fn name(&self) -> Option<&str> {
         match &self.inner {
             InnerType::Definition(definition) => Some(definition.name()),
@@ -74,7 +73,6 @@ where
         }
     }
 
-    #[kono::field]
     fn description(&self) -> Option<&str> {
         match &self.inner {
             InnerType::Definition(definition) => definition.description(),
@@ -82,7 +80,6 @@ where
         }
     }
 
-    #[kono::field]
     fn fields(&self) -> Vec<Field<C>> {
         let fields = match &self.inner {
             InnerType::Definition(schema::TypeDefinition::Object(object)) => &object.fields,
@@ -95,7 +92,6 @@ where
             .collect()
     }
 
-    #[kono::field]
     fn of_type(&self) -> Option<Type<C>> {
         match &self.inner {
             InnerType::List(inner) | InnerType::NonNull(inner) => Some(Type {

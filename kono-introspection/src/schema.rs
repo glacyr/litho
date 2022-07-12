@@ -27,21 +27,18 @@ where
 {
     type Context = C;
 
-    #[kono::field]
     fn query_type(&self) -> Type<C> {
         let definition = self.schema.type_definition("Query").unwrap();
 
         Type::new(&self.schema, definition)
     }
 
-    #[kono::field]
     fn mutation_type(&self) -> Type<C> {
         let definition = self.schema.type_definition("Mutation").unwrap();
 
         Type::new(&self.schema, definition)
     }
 
-    #[kono::field]
     fn subscription_type(&self) -> Type<C> {
         let definition = self.schema.type_definition("Subscription").unwrap();
 

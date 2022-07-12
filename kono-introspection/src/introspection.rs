@@ -17,7 +17,7 @@ where
     type Context = C;
     type Environment = schema::Document<'static, String>;
 
-    #[kono::query]
+    #[kono(query, rename = "__schema")]
     fn schema(environment: &schema::Document<'static, String>) -> Schema<C> {
         Schema::new(environment.to_owned())
     }

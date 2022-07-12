@@ -32,27 +32,22 @@ where
 {
     type Context = C;
 
-    #[kono::field]
     fn name(&self) -> &str {
         &self.field.name
     }
 
-    #[kono::field]
     fn description(&self) -> Option<&str> {
         self.field.description.as_deref()
     }
 
-    #[kono::field]
     fn r#type(&self) -> Type<C> {
         Type::ty(&self.schema, &self.field.field_type)
     }
 
-    #[kono::field]
     fn is_deprecated(&self) -> bool {
         false
     }
 
-    #[kono::field]
     fn deprecation_reason(&self) -> Option<&str> {
         None
     }
