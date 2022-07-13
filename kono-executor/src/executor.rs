@@ -227,6 +227,7 @@ where
                 return Ok(results.into());
             }
             Intermediate::Object(object) => object,
+            Intermediate::Value(Value::Null) => return Ok(Value::Null),
             Intermediate::Value(_) => {
                 todo!("Didn't expect resolved value for field: {}", field.name)
             }

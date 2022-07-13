@@ -4,7 +4,7 @@ use std::rc::Rc;
 use graphql_parser::schema;
 use kono_macros::kono;
 
-use super::Type;
+use super::{InputValue, Type};
 
 pub struct Field<C = ()> {
     _context: PhantomData<C>,
@@ -38,6 +38,14 @@ where
 
     fn description(&self) -> Option<&str> {
         self.field.description.as_deref()
+    }
+
+    fn args(&self) -> Vec<InputValue<C>> {
+        self.field
+            .arguments
+            .iter()
+            .map(|arg| InputValue::new(&self.schema, arg))
+            .collect()
     }
 
     fn r#type(&self) -> Type<C> {

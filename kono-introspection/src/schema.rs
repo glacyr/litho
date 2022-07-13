@@ -33,22 +33,45 @@ where
         Schema::new(environment.to_owned())
     }
 
+    fn types(&self) -> Vec<Type<C>> {
+        self.schema
+            .definitions
+            .iter()
+            .filter_map(|definition| match definition {
+                schema::Definition::TypeDefinition(ty) => Some(Type::new(&self.schema, &ty)),
+                _ => None,
+            })
+            .collect()
+    }
+
     fn query_type(&self) -> Type<C> {
         let definition = self.schema.type_definition_or_default("Query");
 
         Type::new(&self.schema, &definition)
     }
 
-    fn mutation_type(&self) -> Type<C> {
-        let definition = self.schema.type_definition_or_default("Mutation");
+    fn mutation_type(&self) -> Option<Type<C>> {
+        let definition = self.schema.type_definition("Mutation")?;
 
-        Type::new(&self.schema, &definition)
+        Some(Type::new(&self.schema, &definition))
     }
 
-    fn subscription_type(&self) -> Type<C> {
-        let definition = self.schema.type_definition_or_default("Subscription");
+    fn subscription_type(&self) -> Option<Type<C>> {
+        let definition = self.schema.type_definition("Subscription")?;
 
-        Type::new(&self.schema, &definition)
+        Some(Type::new(&self.schema, &definition))
+    }
+
+    fn directives(&self) -> Vec<()> {
+        vec![]
+        // self.schema
+        //     .definitions
+        //     .iter()
+        //     .filter_map(|definition| match definition {
+        //         schema::Definition::TypeDefinition(ty) => Some(Type::new(&self.schema, &ty)),
+        //         _ => None,
+        //     })
+        //     .collect()
     }
 }
 
