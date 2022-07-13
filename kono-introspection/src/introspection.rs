@@ -1,6 +1,7 @@
 use graphql_parser::schema::Document;
+
 use kono_aspect::{AspectExt, Error, ObjectValue};
-use kono_executor::{join, Resolver};
+use kono_executor::Resolver;
 
 use super::{Field, Schema, Type};
 
@@ -10,8 +11,9 @@ pub fn introspection<C>(
 where
     C: 'static,
 {
-    join(
-        join(Schema::with_env(schema), Type::resolver()),
+    (
+        Schema::with_env(schema),
+        Type::resolver(),
         Field::resolver(),
     )
 }

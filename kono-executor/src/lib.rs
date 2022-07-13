@@ -9,7 +9,6 @@ mod resolver;
 pub use error::Error;
 pub use executor::Executor;
 pub use intermediate::Intermediate;
-pub use join::{join, Join};
 pub use resolver::Resolver;
 
 pub use serde_json::Value;
