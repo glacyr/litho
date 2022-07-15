@@ -12,7 +12,7 @@ pub trait Query {
     type Environment;
 
     fn can_query(_environment: &Self::Environment, _field: &str, _context: &Self::Context) -> bool {
-        true
+        false
     }
 
     fn query<'a>(
@@ -21,6 +21,6 @@ pub trait Query {
         _args: HashMap<String, Value>,
         _context: &'a Self::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
-        todo!()
+        unreachable!()
     }
 }

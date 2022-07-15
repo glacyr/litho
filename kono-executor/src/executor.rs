@@ -176,10 +176,13 @@ where
                     )
                     .await
             }
-            false => Err(Error::custom(format!(
-                "Couldn't retrieve field: {} from {:?}",
-                field_name, object_value
-            ))),
+            false => Err(Error::unknown_field(
+                self.resolver
+                    .typename(object_value, context)
+                    .as_deref()
+                    .unwrap_or("?"),
+                field_name,
+            )),
         }
     }
 

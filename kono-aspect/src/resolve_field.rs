@@ -11,8 +11,6 @@ pub trait ResolveField {
     type Context: 'static;
     type Error: Error;
 
-    fn typename(&self) -> &str;
-
     fn can_resolve_field(&self, _field: &str) -> bool {
         false
     }
@@ -23,6 +21,6 @@ pub trait ResolveField {
         _args: &'a HashMap<String, Value>,
         _context: &'a Self::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
-        todo!()
+        unreachable!()
     }
 }

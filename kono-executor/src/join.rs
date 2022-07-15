@@ -16,6 +16,22 @@ macro_rules! impl_tuple {
             type Error = $first::Error;
             type Value = $first::Value;
 
+            fn typename(&self, object_value: &Self::Value, context: &Self::Context) -> Option<String> {
+                let (ref $first, $(ref $name),+) = self;
+
+                match $first.typename(object_value, context) {
+                    Some(name) => return Some(name),
+                    None => {}
+                }
+
+                $(match $name.typename(object_value, context) {
+                    Some(name) => return Some(name),
+                    None => {}
+                })+
+
+                todo!()
+            }
+
             fn can_resolve(
                 &self,
                 object_ty: (),

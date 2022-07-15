@@ -16,7 +16,7 @@ pub trait Aspect:
 {
     type Environment;
 
-    // fn schema(environment: &Self::Environment) -> Schema;
+    fn typename(&self, context: &<Self as ResolveField>::Context) -> String;
 
     fn fetch<'a>(
         reference: Reference,
@@ -37,6 +37,16 @@ where
     type Context = <A as ResolveField>::Context;
     type Error = <A as ResolveField>::Error;
     type Value = ObjectValue;
+
+    fn typename(&self, object_value: &Self::Value, context: &Self::Context) -> Option<String> {
+        match object_value {
+            ObjectValue::Aspect(aspect) => aspect
+                .downcast_ref::<A>()
+                .map(|aspect| aspect.typename(context)),
+            ObjectValue::Reference(reference) => Some(reference.ty.to_owned()),
+            ObjectValue::Unit => Some("Query".to_owned()),
+        }
+    }
 
     fn can_resolve<'a>(
         &self,

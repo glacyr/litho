@@ -19,6 +19,6 @@ pub trait Mutation {
         args: HashMap<String, Value>,
         context: &'a Self::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>>>> {
-        todo!()
+        unreachable!()
     }
 }

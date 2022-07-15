@@ -5,6 +5,10 @@ pub trait Error: Sized {
     where
         T: Display;
 
+    fn unknown_field(ty: &str, name: &str) -> Self {
+        Self::custom(format_args!("unknown field `{}` for type `{}`", name, ty))
+    }
+
     fn unknown_operation(name: &str, expected: &[&str]) -> Self {
         Self::custom(format_args!(
             "unknown operation `{}`, expected {:?}",

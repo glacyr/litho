@@ -265,15 +265,15 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
 
         impl #generics kono_aspect::Aspect for #self_ty #where_clause {
             #environment
+
+            fn typename(&self, context: &<Self as kono_aspect::ResolveField>::Context) -> String {
+                #name.to_owned()
+            }
         }
 
         impl #generics kono_aspect::ResolveField for #self_ty #where_clause {
             #context
             #error
-
-            fn typename(&self) -> &str {
-                #name
-            }
 
             #field_impl
         }
