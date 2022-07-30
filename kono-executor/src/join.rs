@@ -16,36 +16,19 @@ macro_rules! impl_tuple {
             type Error = $first::Error;
             type Value = $first::Value;
 
-            fn typename(&self, object_value: &Self::Value, context: &Self::Context) -> Option<String> {
-                let (ref $first, $(ref $name),+) = self;
-
-                match $first.typename(object_value, context) {
-                    Some(name) => return Some(name),
-                    None => {}
-                }
-
-                $(match $name.typename(object_value, context) {
-                    Some(name) => return Some(name),
-                    None => {}
-                })+
-
-                todo!()
-            }
-
             fn can_resolve(
                 &self,
-                object_ty: (),
                 object_value: &Self::Value,
                 field_name: &str,
                 context: &Self::Context,
             ) -> bool {
                 let (ref $first, $(ref $name),+) = self;
 
-                if $first.can_resolve(object_ty, object_value, field_name, context) {
+                if $first.can_resolve(object_value, field_name, context) {
                     return true
                 }
 
-                $(if $name.can_resolve(object_ty, object_value, field_name, context) {
+                $(if $name.can_resolve(object_value, field_name, context) {
                     return true
                 })+
 
@@ -54,7 +37,6 @@ macro_rules! impl_tuple {
 
             fn resolve<'a>(
                 &'a self,
-                object_ty: (),
                 object_value: &'a Self::Value,
                 field_name: &'a str,
                 argument_values: &'a HashMap<String, Value>,
@@ -63,9 +45,8 @@ macro_rules! impl_tuple {
                 Box::pin(async move {
                     let (ref $first, $(ref $name),+) = self;
 
-                    if $first.can_resolve(object_ty, object_value, field_name, context) {
+                    if $first.can_resolve(object_value, field_name, context) {
                         return $first.resolve(
-                            object_ty,
                             object_value,
                             field_name,
                             argument_values,
@@ -73,9 +54,8 @@ macro_rules! impl_tuple {
                         ).await
                     }
 
-                    $(if $name.can_resolve(object_ty, object_value, field_name, context) {
+                    $(if $name.can_resolve(object_value, field_name, context) {
                         return $name.resolve(
-                            object_ty,
                             object_value,
                             field_name,
                             argument_values,

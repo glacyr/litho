@@ -15,10 +15,7 @@ type Query {
     .unwrap()
     .into_static();
 
-    let (accept, process) = kono::server(
-        Executor::new(introspection(schema), ObjectValue::Unit),
-        || (),
-    );
+    let (accept, process) = kono::server(Executor::new(introspection(schema)), || ());
 
     futures::future::join(
         warp::serve(kono::server::warp::filter(accept)).run(([127, 0, 0, 1], 3030)),

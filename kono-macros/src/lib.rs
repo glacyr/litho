@@ -226,7 +226,6 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
         false => quote! {
             fn can_resolve_field(&self, field: &str) -> bool {
                 match field {
-                    "__typename" => true,
                     #(#field_names)|* => true,
                     _ => false,
                 }
@@ -250,7 +249,6 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
                 use kono_aspect::IntoIntermediate;
 
                 Box::pin(async move { match field {
-                    "__typename" => Ok(kono_executor::Intermediate::Value(#name.into())),
                     #(#field_handlers)*
                     _ => unreachable!(),
                 } })
@@ -263,12 +261,14 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
             #(#methods)*
         }
 
+        impl #generics kono_executor::Typename for #self_ty #where_clause {
+            fn typename(&self) -> std::borrow::Cow<str> {
+                #name.into()
+            }
+        }
+
         impl #generics kono_aspect::Aspect for #self_ty #where_clause {
             #environment
-
-            fn typename(&self, context: &<Self as kono_aspect::ResolveField>::Context) -> String {
-                #name.to_owned()
-            }
         }
 
         impl #generics kono_aspect::ResolveField for #self_ty #where_clause {

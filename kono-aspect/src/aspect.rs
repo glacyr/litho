@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use std::future::{ready, Future};
 use std::pin::Pin;
 
-use kono_executor::{Intermediate, Resolver, Value};
+use kono_executor::{Intermediate, Resolver, Typename, Value};
 
 use super::{Mutation, ObjectValue, Query, Reference, ResolveField};
 
 pub trait Aspect:
-    ResolveField
+    Typename
+    + ResolveField
     + Query<
         Context = <Self as ResolveField>::Context,
         Error = <Self as ResolveField>::Error,
@@ -15,8 +16,6 @@ pub trait Aspect:
     > + Mutation<Context = <Self as ResolveField>::Context, Error = <Self as ResolveField>::Error>
 {
     type Environment;
-
-    fn typename(&self, context: &<Self as ResolveField>::Context) -> String;
 
     fn fetch<'a>(
         reference: Reference,
@@ -38,26 +37,16 @@ where
     type Error = <A as ResolveField>::Error;
     type Value = ObjectValue;
 
-    fn typename(&self, object_value: &Self::Value, context: &Self::Context) -> Option<String> {
-        match object_value {
-            ObjectValue::Aspect(aspect) => aspect
-                .downcast_ref::<A>()
-                .map(|aspect| aspect.typename(context)),
-            ObjectValue::Reference(reference) => Some(reference.ty.to_owned()),
-            ObjectValue::Unit => Some("Query".to_owned()),
-        }
-    }
-
     fn can_resolve<'a>(
         &self,
-        object_ty: (),
         object_value: &Self::Value,
         field_name: &str,
         context: &Self::Context,
     ) -> bool {
         match object_value {
-            ObjectValue::Unit => A::can_query(&self.0, field_name, context),
+            ObjectValue::Query => A::can_query(&self.0, field_name, context),
             ObjectValue::Aspect(aspect) => aspect
+                .as_any()
                 .downcast_ref::<A>()
                 .map(|aspect| aspect.can_resolve_field(field_name))
                 .unwrap_or_default(),
@@ -67,19 +56,20 @@ where
 
     fn resolve<'a>(
         &'a self,
-        object_ty: (),
         object_value: &'a Self::Value,
         field_name: &'a str,
         argument_values: &'a HashMap<String, Value>,
         context: &'a Self::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<Self::Value>, Self::Error>> + 'a>> {
         match object_value {
-            ObjectValue::Unit => A::query(&self.0, field_name, argument_values.to_owned(), context),
-            ObjectValue::Aspect(aspect) => aspect.downcast_ref::<A>().unwrap().resolve_field(
-                field_name,
-                argument_values,
-                context,
-            ),
+            ObjectValue::Query => {
+                A::query(&self.0, field_name, argument_values.to_owned(), context)
+            }
+            ObjectValue::Aspect(aspect) => aspect
+                .as_any()
+                .downcast_ref::<A>()
+                .unwrap()
+                .resolve_field(field_name, argument_values, context),
             _ => unreachable!(),
         }
     }
