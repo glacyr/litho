@@ -255,14 +255,17 @@ where
         .map(|result| result.into_iter().collect())
     }
 
-    fn collect_fields<'a>(
+    fn collect_fields<'a, T>(
         &self,
         document: &Document<'a, String>,
-        value: &R::Value,
+        value: &T,
         selection_set: &SelectionSet<'a, String>,
         variable_values: &HashMap<String, Value>,
         visited_fragments: &mut HashSet<String>,
-    ) -> IndexMap<String, Vec<Field<'a, String>>> {
+    ) -> IndexMap<String, Vec<Field<'a, String>>>
+    where
+        T: Typename,
+    {
         let mut grouped_fields = IndexMap::<String, Vec<Field<'a, String>>>::new();
 
         for selection in selection_set.items.iter() {
@@ -319,7 +322,7 @@ where
                     // `false`, continue with the next `selection` in
                     // `selectionSet`.
                     match fragment_type {
-                        Some(fragment_type) if self.does_fragment_apply(value, fragment_type) => {
+                        Some(fragment_type) if !self.does_fragment_apply(value, fragment_type) => {
                             continue
                         }
                         _ => {}
@@ -361,7 +364,10 @@ where
         grouped_fields
     }
 
-    fn does_fragment_apply(&self, value: &R::Value, fragment_type: &TypeCondition<String>) -> bool {
+    fn does_fragment_apply<T>(&self, value: &T, fragment_type: &TypeCondition<String>) -> bool
+    where
+        T: Typename,
+    {
         match fragment_type {
             TypeCondition::On(name) => name == &value.typename(),
         }

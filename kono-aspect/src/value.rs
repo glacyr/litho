@@ -4,13 +4,14 @@ use std::fmt::{Debug, Formatter, Result};
 
 use kono_executor::{Root, Typename};
 
-use super::{Aspect, Reference};
+use super::{Aspect, Record, Reference};
 
 pub enum ObjectValue {
     Query,
     Mutation,
     Subscription,
     Aspect(Box<dyn AnyAspect>),
+    Record(Record),
     Reference(Reference),
 }
 
@@ -50,6 +51,7 @@ impl Debug for ObjectValue {
             ObjectValue::Query => tuple.field(&"Query"),
             ObjectValue::Subscription => tuple.field(&"Subscription"),
             ObjectValue::Aspect(aspect) => tuple.field(&aspect.typename()),
+            ObjectValue::Record(record) => tuple.field(record),
             ObjectValue::Reference(reference) => tuple.field(reference),
         }
         .finish()
@@ -63,6 +65,7 @@ impl Typename for ObjectValue {
             ObjectValue::Query => "Query".into(),
             ObjectValue::Subscription => "Subscription".into(),
             ObjectValue::Aspect(aspect) => aspect.typename(),
+            ObjectValue::Record(record) => record.typename(),
             ObjectValue::Reference(reference) => reference.ty.to_owned().into(),
         }
     }

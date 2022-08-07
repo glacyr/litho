@@ -9,7 +9,7 @@ use graphql_parser::parse_query;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
-use kono_aspect::{Error, ObjectValue};
+use kono_aspect::{Error, ObjectValue, RecordResolver};
 use kono_executor::{Executor, Resolver};
 use kono_introspection::introspection;
 use kono_schema::{Emit, Schema};
@@ -69,7 +69,11 @@ where
     F: Fn() -> R::Context,
 {
     let schema = resolver.schema();
-    let executor = Executor::new((resolver, introspection(schema.emit())));
+    let executor = Executor::new((
+        RecordResolver::default(),
+        resolver,
+        introspection(schema.emit()),
+    ));
     let (sender, mut receiver) = mpsc::channel(1024);
 
     (sender, async move {

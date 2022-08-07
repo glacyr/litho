@@ -159,6 +159,20 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
         .map(kono_impl_method)
         .collect::<Vec<_>>();
 
+    let inline_schemas = fields
+        .iter()
+        .map(|field| {
+            let ty = match &field.output {
+                ReturnType::Default => quote! { () },
+                ReturnType::Type(_, ty) => quote! { #ty },
+            };
+
+            quote! {
+                .chain(<#ty as kono::aspect::OutputType<_>>::inline_schema(_environment).into_iter())
+            }
+        })
+        .collect::<Vec<_>>();
+
     let query_names = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Query)
@@ -340,8 +354,11 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
                         .into(),
                     kono::schema::ItemType::new("Query")
                         .fields(kono::schema::Fields::Named(vec![#(#query_schema)*]))
-                        .into(),
+                        .into()
                 ]
+                .into_iter()
+                #(#inline_schemas)*
+                .collect()
             }
         }
     })

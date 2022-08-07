@@ -1,6 +1,7 @@
 mod aspect;
 mod mutation;
 mod query;
+mod record;
 mod reference;
 mod resolve_field;
 mod traits;
@@ -10,6 +11,7 @@ mod value;
 pub use aspect::{Aspect, AspectExt};
 pub use mutation::Mutation;
 pub use query::Query;
+pub use record::{Record, RecordResolver};
 pub use reference::Reference;
 pub use resolve_field::ResolveField;
 pub use traits::IntoIntermediate;

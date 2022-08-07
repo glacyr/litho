@@ -1,8 +1,8 @@
 use inflections::Inflect;
 use quote::quote;
-use syn::{parse_macro_input, ItemEnum};
+use syn::ItemEnum;
 
-fn kono_derive_impl(item: ItemEnum) -> Result<proc_macro2::TokenStream, String> {
+pub fn kono_derive_enum(item: ItemEnum) -> Result<proc_macro2::TokenStream, String> {
     let self_ty = item.ident;
     let name = self_ty.to_string();
 
@@ -29,18 +29,13 @@ fn kono_derive_impl(item: ItemEnum) -> Result<proc_macro2::TokenStream, String> 
                 kono::schema::Type::Named(#name.into())
             }
 
+            fn inline(_environment: &E) -> bool {
+                true
+            }
+
             fn schema(_environment: &E) -> Vec<kono::schema::Item> {
                 vec![kono::schema::ItemEnum::new(#name).into()]
             }
         }
     })
-}
-
-pub fn kono_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(item as ItemEnum);
-
-    match kono_derive_impl(input) {
-        Ok(result) => quote! { #result }.into(),
-        Err(error) => quote! { compile_error!(#error) }.into(),
-    }
 }

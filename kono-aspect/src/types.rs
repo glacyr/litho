@@ -1,4 +1,4 @@
-use kono_schema::{Item, Type};
+use kono_schema::{Item, ItemScalar, Type};
 
 pub trait InputType<E> {
     fn ty(environment: &E) -> Type;
@@ -10,6 +10,19 @@ pub trait OutputType<E> {
     fn ty(environment: &E) -> Type;
 
     fn schema(environment: &E) -> Vec<Item>;
+
+    fn inline(environment: &E) -> bool {
+        let _ = environment;
+
+        false
+    }
+
+    fn inline_schema(environment: &E) -> Vec<Item> {
+        match Self::inline(environment) {
+            true => Self::schema(environment),
+            false => vec![],
+        }
+    }
 }
 
 impl<E, T> OutputType<E> for Option<T>
@@ -39,12 +52,12 @@ where
 }
 
 impl<E> OutputType<E> for () {
-    fn ty(_environment: &E) -> Type {
-        Option::<bool>::ty(_environment)
+    fn ty(environment: &E) -> Type {
+        Option::<bool>::ty(environment)
     }
 
-    fn schema(_environment: &E) -> Vec<Item> {
-        vec![]
+    fn schema(environment: &E) -> Vec<Item> {
+        Option::<bool>::schema(environment)
     }
 }
 
@@ -56,7 +69,7 @@ macro_rules! builtin {
             }
 
             fn schema(_environment: &E) -> Vec<Item> {
-                vec![]
+                vec![Item::Scalar(ItemScalar::new($name))]
             }
         }
 
@@ -66,7 +79,7 @@ macro_rules! builtin {
             }
 
             fn schema(_environment: &E) -> Vec<Item> {
-                vec![]
+                vec![Item::Scalar(ItemScalar::new($name))]
             }
         }
     };
