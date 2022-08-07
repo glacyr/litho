@@ -4,7 +4,7 @@ use std::rc::Rc;
 use graphql_parser::schema;
 use kono_macros::kono;
 
-use super::{Type, TypeDefinitionExt};
+use super::{kono, Type, TypeDefinitionExt};
 
 pub struct Schema<C = ()> {
     _context: PhantomData<C>,

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::future::Future;
+use std::net::SocketAddr;
 
 use futures::channel::{mpsc, oneshot};
 use futures::StreamExt;
@@ -78,6 +79,17 @@ where
                 .unwrap();
         }
     })
+}
+
+pub async fn serve<R, F>(resolver: R, context_fn: F, address: impl Into<SocketAddr>)
+where
+    R: Resolver<Error = Error, Value = ObjectValue> + Schema,
+    R::Context: 'static,
+    F: Fn() -> R::Context,
+{
+    let (accept, process) = server(resolver, context_fn);
+
+    futures::future::join(::warp::serve(warp::filter(accept)).run(address), process).await;
 }
 
 #[cfg(feature = "warp")]

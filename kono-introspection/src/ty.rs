@@ -4,13 +4,7 @@ use std::rc::Rc;
 use graphql_parser::schema;
 use kono_macros::{kono, Kono};
 
-use super::{Field, InputValue, SchemaExt};
-
-mod kono {
-    pub use kono_aspect::*;
-    pub use kono_executor::*;
-    pub use kono_schema::*;
-}
+use super::{kono, Field, InputValue, SchemaExt};
 
 #[derive(Kono)]
 pub enum TypeKind {

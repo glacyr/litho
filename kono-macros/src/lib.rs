@@ -118,7 +118,7 @@ fn schema<'a>(fields: impl Iterator<Item = &'a Field>) -> Vec<proc_macro2::Token
             };
 
             quote! {
-                kono_schema::Field::new(Some(#name), <#ty as kono_aspect::OutputType<_>>::ty(_environment)),
+                kono::schema::Field::new(Some(#name), <#ty as kono::aspect::OutputType<_>>::ty(_environment)),
             }
         })
         .collect::<Vec<_>>()
@@ -146,7 +146,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
     let error = assoc_type(
         &item,
         "Error",
-        || quote! { type Error = kono_aspect::Error; },
+        || quote! { type Error = kono::aspect::Error; },
     );
 
     let fields = item
@@ -225,19 +225,19 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             fn query<'a>(
                 environment: &'a Self::Environment,
                 field: &'a str,
-                args: std::collections::HashMap<String, kono_executor::Value>,
+                args: std::collections::HashMap<String, kono::executor::Value>,
                 context: &'a Self::Context
             ) -> std::pin::Pin<
                 Box<
                     dyn std::future::Future<
                         Output = Result<
-                            kono_executor::Intermediate<kono_aspect::ObjectValue>,
+                            kono::executor::Intermediate<kono::aspect::ObjectValue>,
                             Self::Error,
                         >,
                     > + 'a,
                 >,
             > {
-                use kono_aspect::IntoIntermediate;
+                use kono::aspect::IntoIntermediate;
 
                 Box::pin(async move { match field {
                     #(#query_handlers)*
@@ -260,19 +260,19 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             fn resolve_field<'a>(
                 &'a self,
                 field: &'a str,
-                args: &'a std::collections::HashMap<String, kono_executor::Value>,
+                args: &'a std::collections::HashMap<String, kono::executor::Value>,
                 context: &'a Self::Context
             ) -> std::pin::Pin<
                 Box<
                     dyn std::future::Future<
                         Output = Result<
-                            kono_executor::Intermediate<kono_aspect::ObjectValue>,
+                            kono::executor::Intermediate<kono::aspect::ObjectValue>,
                             Self::Error,
                         >,
                     > + 'a,
                 >,
             > {
-                use kono_aspect::IntoIntermediate;
+                use kono::aspect::IntoIntermediate;
 
                 Box::pin(async move { match field {
                     #(#field_handlers)*
@@ -287,24 +287,24 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             #(#methods)*
         }
 
-        impl #generics kono_executor::Typename for #self_ty #where_clause {
+        impl #generics kono::executor::Typename for #self_ty #where_clause {
             fn typename(&self) -> std::borrow::Cow<str> {
                 #name.into()
             }
         }
 
-        impl #generics kono_aspect::Aspect for #self_ty #where_clause {
+        impl #generics kono::aspect::Aspect for #self_ty #where_clause {
             #environment
         }
 
-        impl #generics kono_aspect::ResolveField for #self_ty #where_clause {
+        impl #generics kono::aspect::ResolveField for #self_ty #where_clause {
             #context
             #error
 
             #field_impl
         }
 
-        impl #generics kono_aspect::Query for #self_ty #where_clause {
+        impl #generics kono::aspect::Query for #self_ty #where_clause {
             #context
             #environment
             #error
@@ -312,34 +312,34 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             #query_impl
         }
 
-        impl #generics kono_aspect::Mutation for #self_ty #where_clause {
+        impl #generics kono::aspect::Mutation for #self_ty #where_clause {
             #context
             #error
         }
 
-        impl #generics kono_aspect::IntoIntermediate<
-            <Self as kono_aspect::ResolveField>::Error,
+        impl #generics kono::aspect::IntoIntermediate<
+            <Self as kono::aspect::ResolveField>::Error,
         > for #self_ty #where_clause {
             fn into_intermediate(self) -> Result<
-                kono_executor::Intermediate<kono_aspect::ObjectValue>,
-                <Self as kono_aspect::ResolveField>::Error,
+                kono::executor::Intermediate<kono::aspect::ObjectValue>,
+                <Self as kono::aspect::ResolveField>::Error,
             > {
-                Ok(kono_executor::Intermediate::Object(kono_aspect::ObjectValue::Aspect(Box::new(self))))
+                Ok(kono::executor::Intermediate::Object(kono::aspect::ObjectValue::Aspect(Box::new(self))))
             }
         }
 
-        impl #generics kono_aspect::OutputType<<#self_ty as kono_aspect::Aspect>::Environment> for #self_ty #where_clause {
-            fn ty(_environment: &<#self_ty as kono_aspect::Aspect>::Environment) -> kono_schema::Type {
-                kono_schema::Type::Named(#name.into())
+        impl #generics kono::aspect::OutputType<<#self_ty as kono::aspect::Aspect>::Environment> for #self_ty #where_clause {
+            fn ty(_environment: &<#self_ty as kono::aspect::Aspect>::Environment) -> kono::schema::Type {
+                kono::schema::Type::Named(#name.into())
             }
 
-            fn schema(_environment: &<#self_ty as kono_aspect::Aspect>::Environment) -> Vec<kono_schema::Item> {
+            fn schema(_environment: &<#self_ty as kono::aspect::Aspect>::Environment) -> Vec<kono::schema::Item> {
                 vec![
-                    kono_schema::ItemType::new(#name)
-                        .fields(kono_schema::Fields::Named(vec![#(#field_schema)*]))
+                    kono::schema::ItemType::new(#name)
+                        .fields(kono::schema::Fields::Named(vec![#(#field_schema)*]))
                         .into(),
-                    kono_schema::ItemType::new("Query")
-                        .fields(kono_schema::Fields::Named(vec![#(#query_schema)*]))
+                    kono::schema::ItemType::new("Query")
+                        .fields(kono::schema::Fields::Named(vec![#(#query_schema)*]))
                         .into(),
                 ]
             }

@@ -1,12 +1,12 @@
 use super::{Item, Schema};
 
 macro_rules! impl_tuple {
-    ( $first:ident $($name:ident)+) => {
+    ( $first:ident $($name:ident)*) => {
         #[allow(non_snake_case)]
-        impl<$first, $($name),+> Schema for ($first, $($name),+)
+        impl<$first, $($name),*> Schema for ($first, $($name),*)
         where
             $first: Schema,
-            $($name: Schema,)+
+            $($name: Schema,)*
         {
 			fn schema(&self) -> Vec<Item> {
 				let (ref $first, $(ref $name),*) = self;
@@ -17,6 +17,7 @@ macro_rules! impl_tuple {
 	}
 }
 
+impl_tuple!(A);
 impl_tuple!(A B);
 impl_tuple!(A B C);
 impl_tuple!(A B C D);

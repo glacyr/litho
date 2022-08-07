@@ -5,7 +5,7 @@ use graphql_parser::schema;
 
 use kono_macros::kono;
 
-use super::Type;
+use super::{kono, Type};
 
 pub struct InputValue<C> {
     _context: PhantomData<C>,

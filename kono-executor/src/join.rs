@@ -5,12 +5,12 @@ use std::pin::Pin;
 use super::{Intermediate, Resolver, Value};
 
 macro_rules! impl_tuple {
-    ( $first:ident $($name:ident)+) => {
+    ( $first:ident $($name:ident)*) => {
         #[allow(non_snake_case)]
-        impl<$first, $($name),+> Resolver for ($first, $($name),+)
+        impl<$first, $($name),*> Resolver for ($first, $($name),*)
         where
             $first: Resolver,
-            $($name: Resolver<Context = $first::Context, Error = $first::Error, Value = $first::Value>,)+
+            $($name: Resolver<Context = $first::Context, Error = $first::Error, Value = $first::Value>,)*
         {
             type Context = $first::Context;
             type Error = $first::Error;
@@ -22,7 +22,7 @@ macro_rules! impl_tuple {
                 field_name: &str,
                 context: &Self::Context,
             ) -> bool {
-                let (ref $first, $(ref $name),+) = self;
+                let (ref $first, $(ref $name),*) = self;
 
                 if $first.can_resolve(object_value, field_name, context) {
                     return true
@@ -30,7 +30,7 @@ macro_rules! impl_tuple {
 
                 $(if $name.can_resolve(object_value, field_name, context) {
                     return true
-                })+
+                })*
 
                 false
             }
@@ -43,7 +43,7 @@ macro_rules! impl_tuple {
                 context: &'a Self::Context,
             ) -> Pin<Box<dyn Future<Output = Result<Intermediate<Self::Value>, Self::Error>> + 'a>> {
                 Box::pin(async move {
-                    let (ref $first, $(ref $name),+) = self;
+                    let (ref $first, $(ref $name),*) = self;
 
                     if $first.can_resolve(object_value, field_name, context) {
                         return $first.resolve(
@@ -61,7 +61,7 @@ macro_rules! impl_tuple {
                             argument_values,
                             context,
                         ).await
-                    })+
+                    })*
 
                     todo!()
                 })
@@ -70,6 +70,7 @@ macro_rules! impl_tuple {
     }
 }
 
+impl_tuple!(A);
 impl_tuple!(A B);
 impl_tuple!(A B C);
 impl_tuple!(A B C D);

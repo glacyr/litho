@@ -4,7 +4,7 @@ use std::rc::Rc;
 use graphql_parser::schema;
 use kono_macros::kono;
 
-use super::{InputValue, Type};
+use super::{kono, InputValue, Type};
 
 pub struct Field<C = ()> {
     _context: PhantomData<C>,

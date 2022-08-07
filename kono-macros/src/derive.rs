@@ -16,21 +16,21 @@ fn kono_derive_impl(item: ItemEnum) -> Result<proc_macro2::TokenStream, String> 
     }
 
     Ok(quote! {
-        impl<E> kono::IntoIntermediate<E> for #self_ty {
-            fn into_intermediate(self) -> Result<kono::Intermediate<kono::ObjectValue>, E> {
+        impl<E> kono::aspect::IntoIntermediate<E> for #self_ty {
+            fn into_intermediate(self) -> Result<kono::executor::Intermediate<kono::aspect::ObjectValue>, E> {
                 match self {
                     #(#variants)*
                 }.into_intermediate()
             }
         }
 
-        impl<E> kono::OutputType<E> for #self_ty {
-            fn ty(_environment: &E) -> kono::Type {
-                kono::Type::Named(#name.into())
+        impl<E> kono::aspect::OutputType<E> for #self_ty {
+            fn ty(_environment: &E) -> kono::schema::Type {
+                kono::schema::Type::Named(#name.into())
             }
 
-            fn schema(_environment: &E) -> Vec<kono::Item> {
-                vec![kono::ItemEnum::new(#name).into()]
+            fn schema(_environment: &E) -> Vec<kono::schema::Item> {
+                vec![kono::schema::ItemEnum::new(#name).into()]
             }
         }
     })
