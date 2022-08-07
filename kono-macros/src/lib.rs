@@ -149,6 +149,23 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
         || quote! { type Error = kono::aspect::Error; },
     );
 
+    let (schema_generics, schema_env) = match item.items.iter().find_map(|item| match item {
+        ImplItem::Type(ty) if ty.ident == "Environment" => Some(ty),
+        _ => None,
+    }) {
+        Some(item) => (quote! { #generics }, {
+            let ty = &item.ty;
+            quote! { #ty }
+        }),
+        None => (
+            {
+                let params = &generics.params;
+                quote! { <_E, #params> }
+            },
+            quote! { _E },
+        ),
+    };
+
     let fields = item
         .items
         .into_iter()
@@ -342,12 +359,12 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             }
         }
 
-        impl #generics kono::aspect::OutputType<<#self_ty as kono::aspect::Aspect>::Environment> for #self_ty #where_clause {
-            fn ty(_environment: &<#self_ty as kono::aspect::Aspect>::Environment) -> kono::schema::Type {
+        impl #schema_generics kono::aspect::OutputType<#schema_env> for #self_ty #where_clause {
+            fn ty(_environment: &#schema_env) -> kono::schema::Type {
                 kono::schema::Type::Named(#name.into())
             }
 
-            fn schema(_environment: &<#self_ty as kono::aspect::Aspect>::Environment) -> Vec<kono::schema::Item> {
+            fn schema(_environment: &#schema_env) -> Vec<kono::schema::Item> {
                 vec![
                     kono::schema::ItemType::new(#name)
                         .fields(kono::schema::Fields::Named(vec![#(#field_schema)*]))
