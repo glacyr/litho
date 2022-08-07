@@ -166,6 +166,23 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
         ),
     };
 
+    let (error_generics, error_env) = match item.items.iter().find_map(|item| match item {
+        ImplItem::Type(ty) if ty.ident == "Error" => Some(ty),
+        _ => None,
+    }) {
+        Some(item) => (quote! { #generics }, {
+            let ty = &item.ty;
+            quote! { #ty }
+        }),
+        None => (
+            {
+                let params = &generics.params;
+                quote! { <_E, #params> }
+            },
+            quote! { _E },
+        ),
+    };
+
     let fields = item
         .items
         .into_iter()
@@ -325,35 +342,19 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
         }
 
         impl #generics kono::aspect::Aspect for #self_ty #where_clause {
-            #environment
-        }
-
-        impl #generics kono::aspect::ResolveField for #self_ty #where_clause {
             #context
+            #environment
             #error
 
             #field_impl
-        }
-
-        impl #generics kono::aspect::Query for #self_ty #where_clause {
-            #context
-            #environment
-            #error
 
             #query_impl
         }
 
-        impl #generics kono::aspect::Mutation for #self_ty #where_clause {
-            #context
-            #error
-        }
-
-        impl #generics kono::aspect::IntoIntermediate<
-            <Self as kono::aspect::ResolveField>::Error,
-        > for #self_ty #where_clause {
+        impl #error_generics kono::aspect::IntoIntermediate<#error_env> for #self_ty #where_clause {
             fn into_intermediate(self) -> Result<
                 kono::executor::Intermediate<kono::aspect::ObjectValue>,
-                <Self as kono::aspect::ResolveField>::Error,
+                #error_env,
             > {
                 Ok(kono::executor::Intermediate::Object(kono::aspect::ObjectValue::Aspect(Box::new(self))))
             }
