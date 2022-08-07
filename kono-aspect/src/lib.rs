@@ -4,6 +4,7 @@ mod query;
 mod reference;
 mod resolve_field;
 mod traits;
+mod types;
 mod value;
 
 pub use aspect::{Aspect, AspectExt};
@@ -12,6 +13,7 @@ pub use query::Query;
 pub use reference::Reference;
 pub use resolve_field::ResolveField;
 pub use traits::IntoIntermediate;
+pub use types::{InputType, OutputType};
 pub use value::ObjectValue;
 
 use serde::Serialize;

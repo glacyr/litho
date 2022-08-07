@@ -3,16 +3,21 @@ use darling::{FromAttributes, FromMeta};
 use inflections::Inflect;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use syn::spanned::Spanned;
 use syn::{
-    parse_macro_input, FnArg, Ident, ImplItem, ImplItemMethod, Item, ItemEnum, LitStr, Pat, Type,
+    parse_macro_input, AttributeArgs, FnArg, Ident, ImplItem, ImplItemMethod, Item, LitStr, Pat,
+    ReturnType, Type,
 };
+
+mod derive;
+
+#[derive(Debug, FromMeta)]
+struct KonoImpl {
+    rename: Option<LitStr>,
+}
 
 #[derive(Debug, FromAttributes)]
 #[darling(attributes(kono))]
 struct Kono {
-    field: Flag,
-    query: Flag,
     mutation: Flag,
     rename: Option<LitStr>,
 }
@@ -27,10 +32,10 @@ enum FieldTy {
 struct Field {
     ident: Ident,
     name: LitStr,
-    has_receiver: bool,
     has_environment: bool,
     method: ImplItemMethod,
     ty: FieldTy,
+    output: ReturnType,
 }
 
 fn assoc_type(item: &syn::ItemImpl, name: &str, default: fn() -> TokenStream) -> TokenStream {
@@ -47,16 +52,6 @@ fn assoc_type(item: &syn::ItemImpl, name: &str, default: fn() -> TokenStream) ->
 
 fn kono_impl_method(method: ImplItemMethod) -> Field {
     let kono = Kono::from_attributes(&method.attrs).unwrap();
-
-    let ty = if kono.field.is_present() {
-        FieldTy::Field
-    } else if kono.query.is_present() {
-        FieldTy::Query
-    } else if kono.mutation.is_present() {
-        FieldTy::Mutation
-    } else {
-        FieldTy::Field
-    };
 
     let mut method = method;
     method.attrs = vec![];
@@ -95,17 +90,41 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
         })
         .is_some();
 
+    let ty = if has_receiver {
+        FieldTy::Field
+    } else if kono.mutation.is_present() {
+        FieldTy::Mutation
+    } else {
+        FieldTy::Query
+    };
+
     Field {
         ident,
         name,
-        has_receiver,
         has_environment,
+        output: method.sig.output.to_owned(),
         method,
         ty,
     }
 }
 
-fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
+fn schema<'a>(fields: impl Iterator<Item = &'a Field>) -> Vec<proc_macro2::TokenStream> {
+    fields
+        .map(|field| {
+            let name = &field.name;
+            let ty = match &field.output {
+                ReturnType::Default => quote! { () },
+                ReturnType::Type(_, ty) => quote! { #ty },
+            };
+
+            quote! {
+                kono_schema::Field::new(Some(#name), <#ty as kono_aspect::OutputType<_>>::ty(_environment)),
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
     let item = match item {
         Item::Impl(item) => item,
         _ => return Err("`kono` only supports implementations.".to_owned()),
@@ -113,10 +132,13 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
 
     let generics = item.generics.clone();
     let self_ty = item.self_ty.clone();
-    let name = match &*self_ty {
-        Type::Path(ty) => ty.path.segments.last().unwrap().ident.to_string(),
+    let name = kono.rename.unwrap_or(match &*self_ty {
+        Type::Path(ty) => {
+            let ident = &ty.path.segments.last().unwrap().ident;
+            LitStr::new(&ident.to_string(), ident.span())
+        }
         _ => todo!(),
-    };
+    });
     let where_clause = item.generics.where_clause.clone();
 
     let context = assoc_type(&item, "Context", || quote! { type Context = (); });
@@ -143,6 +165,8 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
         .map(|field| field.name.to_owned())
         .collect::<Vec<_>>();
 
+    let query_schema = schema(fields.iter().filter(|field| field.ty == FieldTy::Query));
+
     let query_handlers = fields
         .iter()
         .filter(|field| field.ty == FieldTy::Query)
@@ -167,6 +191,8 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
         .filter(|field| field.ty == FieldTy::Field)
         .map(|field| field.name.to_owned())
         .collect::<Vec<_>>();
+
+    let field_schema = schema(fields.iter().filter(|field| field.ty == FieldTy::Field));
 
     let field_handlers = fields
         .iter()
@@ -301,51 +327,56 @@ fn kono_impl(item: syn::Item) -> Result<proc_macro2::TokenStream, String> {
                 Ok(kono_executor::Intermediate::Object(kono_aspect::ObjectValue::Aspect(Box::new(self))))
             }
         }
-    })
-}
 
-#[proc_macro_attribute]
-pub fn kono(
-    attr: proc_macro::TokenStream,
-    item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(item as Item);
+        impl #generics kono_aspect::OutputType<<#self_ty as kono_aspect::Aspect>::Environment> for #self_ty #where_clause {
+            fn ty(_environment: &<#self_ty as kono_aspect::Aspect>::Environment) -> kono_schema::Type {
+                kono_schema::Type::Named(#name.into())
+            }
 
-    match kono_impl(input) {
-        Ok(result) => quote! { #result }.into(),
-        Err(error) => quote! { compile_error!(#error) }.into(),
-    }
-}
-
-fn kono_derive_impl(item: ItemEnum) -> Result<proc_macro2::TokenStream, String> {
-    let self_ty = item.ident;
-
-    let mut variants = vec![];
-
-    for variant in item.variants.iter() {
-        let name = &variant.ident;
-        let value = name.to_string().to_constant_case();
-
-        variants.push(quote! { Self::#name => #value, });
-    }
-
-    Ok(quote! {
-        impl<E> kono_aspect::IntoIntermediate<E> for #self_ty {
-            fn into_intermediate(self) -> Result<kono_executor::Intermediate<kono_aspect::ObjectValue>, E> {
-                match self {
-                    #(#variants)*
-                }.into_intermediate()
+            fn schema(_environment: &<#self_ty as kono_aspect::Aspect>::Environment) -> Vec<kono_schema::Item> {
+                vec![
+                    kono_schema::ItemType::new(#name)
+                        .fields(kono_schema::Fields::Named(vec![#(#field_schema)*]))
+                        .into(),
+                    kono_schema::ItemType::new("Query")
+                        .fields(kono_schema::Fields::Named(vec![#(#query_schema)*]))
+                        .into(),
+                ]
             }
         }
     })
 }
 
-#[proc_macro_derive(Kono)]
-pub fn kono_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(item as ItemEnum);
+/// Attribute that can be applied to an `impl` to turn it into a GraphQL type.
+///
+/// ### Example:
+/// ```rust
+/// pub struct User;
+///
+/// #[kono]
+/// impl User {
+///     fn name(&self) -> &str {
+///         "Tim"
+///     }
+/// }
+///
+/// server(User::resolver(), || ());
+/// ```
+#[proc_macro_attribute]
+pub fn kono(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let args = parse_macro_input!(attr as AttributeArgs);
+    let input = parse_macro_input!(item as Item);
 
-    match kono_derive_impl(input) {
+    match kono_impl(KonoImpl::from_list(&args).unwrap(), input) {
         Ok(result) => quote! { #result }.into(),
         Err(error) => quote! { compile_error!(#error) }.into(),
     }
+}
+
+#[proc_macro_derive(Kono)]
+pub fn kono_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    derive::kono_derive(item)
 }

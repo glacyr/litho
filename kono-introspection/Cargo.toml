@@ -11,3 +11,4 @@ graphql-parser = "0.4.0"
 kono-aspect = { path = "../kono-aspect" }
 kono-executor = { path = "../kono-executor" }
 kono-macros = { path = "../kono-macros" }
+kono-schema = { path = "../kono-schema" }

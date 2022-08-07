@@ -31,6 +31,8 @@ impl<C> Aspect for InputValue<C>
 where
     C: 'static,
 {
+    type Environment = schema::Document<'static, String>;
+
     fn name(&self) -> &str {
         &self.value.name
     }

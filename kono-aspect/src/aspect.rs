@@ -1,10 +1,11 @@
 use std::collections::HashMap;
-use std::future::{ready, Future};
+use std::future::Future;
 use std::pin::Pin;
 
 use kono_executor::{Intermediate, Resolver, Typename, Value};
+use kono_schema::{Item, Schema};
 
-use super::{Mutation, ObjectValue, Query, Reference, ResolveField};
+use super::{Mutation, ObjectValue, OutputType, Query, Reference, ResolveField};
 
 pub trait Aspect:
     Typename
@@ -21,6 +22,9 @@ pub trait Aspect:
         reference: Reference,
         context: &'a <Self as ResolveField>::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Box<Self>, <Self as ResolveField>::Error>> + 'a>> {
+        let _ = reference;
+        let _ = context;
+
         todo!()
     }
 }
@@ -72,6 +76,15 @@ where
                 .resolve_field(field_name, argument_values, context),
             _ => unreachable!(),
         }
+    }
+}
+
+impl<A> Schema for AspectResolver<A>
+where
+    A: Aspect + OutputType<<A as Aspect>::Environment>,
+{
+    fn schema(&self) -> Vec<Item> {
+        A::schema(&self.0)
     }
 }
 

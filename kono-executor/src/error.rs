@@ -29,4 +29,9 @@ pub trait Error: Sized {
     fn unspecified_operation(expected: &[&str]) -> Self {
         Self::custom(format_args!("document contains multiple operations, requires operation name to be specified, expected {:?}", expected))
     }
+
+    /// Called when a request's document contains no operations.
+    fn missing_operation() -> Self {
+        Self::custom(format_args!("document does not contain any operations"))
+    }
 }

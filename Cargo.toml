@@ -17,10 +17,15 @@ warp = { version = "0.3.2", optional = true }
 
 kono-aspect = { path = "kono-aspect" }
 kono-executor = { path = "kono-executor" }
+kono-introspection = { path = "kono-introspection" }
+kono-macros = { path = "kono-macros" }
+kono-schema = { path = "kono-schema" }
 
 [dev-dependencies]
 tokio = { version = "1.19.2", features = ["full"] }
+unindent = "0.1.10"
 
+kono-macros = { path = "kono-macros" }
 kono-introspection = { path = "kono-introspection" }
 
 [features]
@@ -28,4 +33,10 @@ default = ["warp-server"]
 warp-server = ["warp"]
 
 [workspace]
-members = ["kono-aspect", "kono-executor", "kono-introspection", "kono-macros"]
+members = [
+	"kono-aspect",
+	"kono-executor",
+	"kono-introspection",
+	"kono-macros",
+	"kono-schema",
+]

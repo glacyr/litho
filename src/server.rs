@@ -8,7 +8,10 @@ use graphql_parser::parse_query;
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
+use kono_aspect::{Error, ObjectValue};
 use kono_executor::{Executor, Resolver};
+use kono_introspection::introspection;
+use kono_schema::{Emit, Schema};
 
 #[derive(Debug, Deserialize)]
 pub struct Request {
@@ -58,12 +61,14 @@ where
     }
 }
 
-pub fn server<R, F>(executor: Executor<R>, context_fn: F) -> (Accept<R::Error>, impl Future)
+pub fn server<R, F>(resolver: R, context_fn: F) -> (Accept<R::Error>, impl Future)
 where
-    R: Resolver,
-    R::Error: Debug,
+    R: Resolver<Error = Error, Value = ObjectValue> + Schema,
+    R::Context: 'static,
     F: Fn() -> R::Context,
 {
+    let schema = resolver.schema();
+    let executor = Executor::new((resolver, introspection(schema.emit())));
     let (sender, mut receiver) = mpsc::channel(1024);
 
     (sender, async move {

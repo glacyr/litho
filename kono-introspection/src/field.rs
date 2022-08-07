@@ -31,6 +31,7 @@ where
     C: 'static,
 {
     type Context = C;
+    type Environment = schema::Document<'static, String>;
 
     fn name(&self) -> &str {
         &self.field.name

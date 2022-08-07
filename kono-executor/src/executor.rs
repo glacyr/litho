@@ -372,50 +372,56 @@ where
         document: &'b Document<'a, String>,
         operation_name: Option<&str>,
     ) -> Result<&'b OperationDefinition<'a, String>, R::Error> {
-        let mut operations = document.definitions.iter().flat_map(|def| match def {
-            Definition::Operation(op) => match op {
-                OperationDefinition::Query(_) | OperationDefinition::Mutation(_) => Some(op),
-                _ => None,
-            },
-            _ => None,
-        });
-
-        let names = operations
-            .clone()
-            .flat_map(|op| match op {
-                OperationDefinition::Query(query) => query.name.as_deref(),
-                OperationDefinition::Mutation(mutation) => mutation.name.as_deref(),
+        let names = document
+            .definitions
+            .iter()
+            .flat_map(|definition| match definition {
+                Definition::Operation(op) => match op {
+                    OperationDefinition::Query(query) => query.name.as_deref(),
+                    OperationDefinition::Mutation(mutation) => mutation.name.as_deref(),
+                    _ => None,
+                },
                 _ => None,
             })
             .collect::<Vec<&str>>();
 
-        let operation = match operation_name {
-            Some(name) => operations.find(|operation| match operation {
-                OperationDefinition::Query(query) => {
-                    query.name.as_ref().map(|name| name.as_str()) == Some(name)
-                }
-                OperationDefinition::Mutation(mutation) => {
-                    mutation.name.as_ref().map(|name| name.as_str()) == Some(name)
-                }
-                OperationDefinition::Subscription(subscription) => {
-                    subscription.name.as_ref().map(|name| name.as_str()) == Some(name)
-                }
-                _ => false,
-            }),
-            None => {
-                let operation = operations.next();
+        let mut applicable = document
+            .definitions
+            .iter()
+            .flat_map(|definition| match definition {
+                Definition::Operation(op) => match op {
+                    OperationDefinition::Query(_)
+                    | OperationDefinition::Mutation(_)
+                    | OperationDefinition::SelectionSet(_) => Some(op),
+                    _ => None,
+                },
+                _ => None,
+            });
 
-                if let Some(_) = operations.next() {
+        match operation_name {
+            Some(name) => applicable
+                .find(|operation| match operation {
+                    OperationDefinition::Query(query) => {
+                        query.name.as_ref().map(|name| name.as_str()) == Some(name)
+                    }
+                    OperationDefinition::Mutation(mutation) => {
+                        mutation.name.as_ref().map(|name| name.as_str()) == Some(name)
+                    }
+                    OperationDefinition::Subscription(subscription) => {
+                        subscription.name.as_ref().map(|name| name.as_str()) == Some(name)
+                    }
+                    _ => false,
+                })
+                .ok_or(Error::unknown_operation(name, &names)),
+            None => {
+                let operation = applicable.next();
+
+                if let Some(_) = applicable.next() {
                     return Err(Error::unspecified_operation(&names));
                 }
 
-                operation
+                operation.ok_or(Error::missing_operation())
             }
-        };
-
-        operation.ok_or(match operation_name {
-            Some(name) => Error::unknown_operation(name, &names),
-            None => Error::unspecified_operation(&names),
-        })
+        }
     }
 }

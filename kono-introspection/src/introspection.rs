@@ -7,7 +7,7 @@ use super::{Field, Schema, Type};
 
 pub fn introspection<C>(
     schema: Document<'static, String>,
-) -> impl Resolver<Context = C, Error = Error, Value = ObjectValue>
+) -> impl Resolver<Context = C, Error = Error, Value = ObjectValue> + kono_schema::Schema
 where
     C: 'static,
 {

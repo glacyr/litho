@@ -6,6 +6,12 @@ use kono_macros::{kono, Kono};
 
 use super::{Field, InputValue, SchemaExt};
 
+mod kono {
+    pub use kono_aspect::*;
+    pub use kono_executor::*;
+    pub use kono_schema::*;
+}
+
 #[derive(Kono)]
 pub enum TypeKind {
     Scalar,
@@ -83,12 +89,13 @@ impl<C> Type<C> {
     }
 }
 
-#[kono]
+#[kono(rename = "__Type")]
 impl<C> Aspect for Type<C>
 where
     C: 'static,
 {
     type Context = C;
+    type Environment = schema::Document<'static, String>;
 
     fn kind(&self) -> TypeKind {
         match &self.inner {
