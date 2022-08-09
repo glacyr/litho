@@ -3,7 +3,7 @@ use graphql_parser::schema::Document;
 use kono_aspect::{AspectExt, Error, ObjectValue};
 use kono_executor::Resolver;
 
-use super::{Field, Schema, Type};
+use super::{EnumValue, Field, Schema, Type};
 
 pub fn introspection<C>(
     schema: Document<'static, String>,
@@ -13,7 +13,8 @@ where
 {
     (
         Schema::with_env(schema),
-        Type::resolver(),
+        EnumValue::resolver(),
         Field::resolver(),
+        Type::resolver(),
     )
 }

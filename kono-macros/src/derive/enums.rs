@@ -6,20 +6,22 @@ pub fn kono_derive_enum(item: ItemEnum) -> Result<proc_macro2::TokenStream, Stri
     let self_ty = item.ident;
     let name = self_ty.to_string();
 
+    let mut serializers = vec![];
     let mut variants = vec![];
 
     for variant in item.variants.iter() {
         let name = &variant.ident;
         let value = name.to_string().to_constant_case();
 
-        variants.push(quote! { Self::#name => #value, });
+        variants.push(quote! { .variant(kono::schema::Variant::new(#value) )});
+        serializers.push(quote! { Self::#name => #value, });
     }
 
     Ok(quote! {
         impl<E> kono::aspect::IntoIntermediate<E> for #self_ty {
             fn into_intermediate(self) -> Result<kono::executor::Intermediate<kono::aspect::ObjectValue>, E> {
                 match self {
-                    #(#variants)*
+                    #(#serializers)*
                 }.into_intermediate()
             }
         }
@@ -34,7 +36,9 @@ pub fn kono_derive_enum(item: ItemEnum) -> Result<proc_macro2::TokenStream, Stri
             }
 
             fn schema(_environment: &E) -> Vec<kono::schema::Item> {
-                vec![kono::schema::ItemEnum::new(#name).into()]
+                vec![kono::schema::ItemEnum::new(#name)
+                    #(#variants)*
+                    .into()]
             }
         }
     })

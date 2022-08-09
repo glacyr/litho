@@ -188,16 +188,18 @@ impl Emit for ItemEnum {
     type Target = Vec<schema::TypeDefinition<'static, String>>;
 
     fn emit(self) -> Self::Target {
-        if !self.variants.is_empty() && self.variants.iter().all(|variant| variant.union()) {
-            return self.emit_as_union();
-        }
+        if !self.variants.is_empty() {
+            if self.variants.iter().all(|variant| variant.union()) {
+                return self.emit_as_union();
+            }
 
-        if self
-            .variants
-            .iter()
-            .all(|variant| matches!(variant.fields, Fields::Unit))
-        {
-            return self.emit_as_enum();
+            if self
+                .variants
+                .iter()
+                .all(|variant| matches!(variant.fields, Fields::Unit))
+            {
+                return self.emit_as_enum();
+            }
         }
 
         self.emit_as_type()
@@ -293,6 +295,18 @@ mod tests {
 			  Dog
 			  Horse
 			}
+            "#,
+        );
+    }
+
+    #[test]
+    fn test_enums_without_variants() {
+        test_eq(
+            ItemEnum::new("Animal"),
+            r#"
+            type Animal @oneOf {
+              __typename: String!
+            }
             "#,
         );
     }

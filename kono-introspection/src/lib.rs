@@ -4,12 +4,14 @@ mod kono {
     pub use kono_schema as schema;
 }
 
+mod enums;
 mod field;
 mod inputs;
 mod introspection;
 mod schema;
 mod ty;
 
+use enums::EnumValue;
 use field::Field;
 use inputs::InputValue;
 use schema::{Schema, SchemaExt};

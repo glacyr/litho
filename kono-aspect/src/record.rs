@@ -4,9 +4,9 @@ use std::collections::HashMap;
 use std::future::ready;
 use std::marker::PhantomData;
 
-use kono_executor::{Error as _, Intermediate, Resolver, Typename};
+use kono_executor::{Error, Intermediate, Resolver, Typename};
 
-use crate::{Error, ObjectValue};
+use crate::ObjectValue;
 
 #[derive(Debug)]
 pub struct Record {
@@ -29,18 +29,26 @@ impl Typename for Record {
     }
 }
 
-pub struct RecordResolver<C>(PhantomData<C>);
+pub struct RecordResolver<C, E>(PhantomData<(C, E)>)
+where
+    E: Error;
 
-impl<C> Default for RecordResolver<C> {
+impl<C, E> Default for RecordResolver<C, E>
+where
+    E: Error,
+{
     fn default() -> Self {
         RecordResolver(PhantomData)
     }
 }
 
-impl<C> Resolver for RecordResolver<C> {
+impl<C, E> Resolver for RecordResolver<C, E>
+where
+    E: Error,
+{
     type Context = C;
 
-    type Error = Error;
+    type Error = E;
 
     type Value = ObjectValue;
 
@@ -73,7 +81,7 @@ impl<C> Resolver for RecordResolver<C> {
             ObjectValue::Record(record) => Box::pin(ready(
                 match record.records.borrow_mut().remove(field_name) {
                     Some(value) => Ok(value),
-                    None => Err(Error::unknown_field(&record.typename(), field_name)),
+                    None => Err(E::unknown_field(&record.typename(), field_name)),
                 },
             )),
             _ => unreachable!(),

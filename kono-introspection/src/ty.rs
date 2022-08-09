@@ -4,7 +4,7 @@ use std::rc::Rc;
 use graphql_parser::schema;
 use kono_macros::{kono, Kono};
 
-use super::{kono, Field, InputValue, SchemaExt};
+use super::{kono, EnumValue, Field, InputValue, SchemaExt};
 
 #[derive(Kono)]
 pub enum TypeKind {
@@ -176,8 +176,17 @@ where
         }
     }
 
-    fn enum_values(&self) -> Option<Vec<()>> {
-        None
+    fn enum_values(&self) -> Option<Vec<EnumValue<C>>> {
+        match &self.inner {
+            InnerType::Definition(schema::TypeDefinition::Enum(inner)) => Some(
+                inner
+                    .values
+                    .iter()
+                    .map(|value| EnumValue::new(value))
+                    .collect(),
+            ),
+            _ => None,
+        }
     }
 
     fn input_fields(&self) -> Option<Vec<InputValue<C>>> {
