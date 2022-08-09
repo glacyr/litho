@@ -30,6 +30,7 @@
 //! - [ ] Fragments (like `@skip`) are not yet supported.
 
 mod error;
+mod execute;
 mod executor;
 mod intermediate;
 mod join;
@@ -38,6 +39,7 @@ mod root;
 mod typename;
 
 pub use error::Error;
+pub use execute::execute;
 pub use executor::Executor;
 pub use intermediate::Intermediate;
 pub use resolver::Resolver;

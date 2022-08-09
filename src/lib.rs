@@ -3,6 +3,7 @@ pub mod server;
 pub use server::{serve, server};
 
 pub use kono_aspect::AspectExt;
+pub use kono_executor::execute;
 pub use kono_macros::{kono, Kono};
 
 #[doc(inline)]
