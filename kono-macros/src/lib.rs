@@ -385,7 +385,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
 /// Attribute that can be applied to an `impl` to turn it into a GraphQL type.
 ///
 /// ### Example:
-/// ```rust
+/// ```rust ignore
 /// pub struct User;
 ///
 /// #[kono]

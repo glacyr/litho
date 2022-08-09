@@ -5,7 +5,7 @@
 //! introspection, validation or a server.
 //!
 //! # Sample
-//! ```rust
+//! ```rust ignore
 //! impl Error for MyError { ... }
 //! impl Resolver for MyResolver { ... }
 //! impl Root for MyValue { ... }
