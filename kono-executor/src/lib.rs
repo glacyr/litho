@@ -46,4 +46,4 @@ pub use resolver::Resolver;
 pub use root::Root;
 pub use typename::Typename;
 
-pub use serde_json::Value;
+pub use serde_json::{from_value, Value};

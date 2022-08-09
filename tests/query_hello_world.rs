@@ -5,8 +5,8 @@ pub struct HelloWorld;
 
 #[kono]
 impl HelloWorld {
-    pub fn hello() -> String {
-        format!("Welcome!")
+    pub fn hello(name: String) -> String {
+        format!("Welcome, {}!", name)
     }
 }
 
@@ -16,7 +16,7 @@ async fn test_query_hello_world() {
         kono::execute(
             r#"
 			query {
-				hello
+				hello(name: "Tim")
 			}
 			"#,
             HelloWorld::resolver(),
@@ -25,7 +25,7 @@ async fn test_query_hello_world() {
         .await
         .unwrap(),
         json! {{
-            "hello": "Welcome!"
+            "hello": "Welcome, Tim!"
         }},
     );
 }

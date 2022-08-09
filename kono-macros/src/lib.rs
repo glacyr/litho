@@ -35,6 +35,7 @@ struct Field {
     has_environment: bool,
     method: ImplItemMethod,
     ty: FieldTy,
+    inputs: Vec<Ident>,
     output: ReturnType,
 }
 
@@ -103,6 +104,20 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
         name,
         has_environment,
         output: method.sig.output.to_owned(),
+        inputs: method
+            .sig
+            .inputs
+            .iter()
+            .flat_map(|input| match input {
+                FnArg::Typed(pat) => match &*pat.pat {
+                    Pat::Ident(ident) if ident.ident != "environment" => {
+                        Some(ident.ident.to_owned())
+                    }
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect(),
         method,
         ty,
     }
@@ -226,6 +241,13 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
 
             if field.has_environment {
                 args.push(quote! { environment });
+            }
+
+            for input in field.inputs.iter() {
+                let name = input.to_string().to_camel_case();
+                args.push(quote! {
+                    kono::executor::from_value(args.get(#name).unwrap().to_owned()).unwrap()
+                });
             }
 
             quote! {

@@ -1,12 +1,14 @@
 use async_recursion::async_recursion;
 use indexmap::IndexMap;
+use serde_json::Number;
 
 use std::collections::{HashMap, HashSet};
 
 use graphql_parser::query::{
     Definition, Document, Field, Mutation, OperationDefinition, Query, Selection, SelectionSet,
-    Subscription, TypeCondition,
+    Subscription, Type, TypeCondition,
 };
+use graphql_parser::schema;
 
 use super::{Error, Intermediate, Resolver, Root, Typename, Value};
 
@@ -41,7 +43,13 @@ where
         variable_values: &HashMap<String, Value>,
         context: &R::Context,
     ) -> Result<IndexMap<String, Value>, R::Error> {
+        // 1. Let `operation` be the result of
+        //    `GetOperation(document, operationName)`.
         let operation = self.get_operation(&document, operation_name)?;
+
+        // 2. Let `coercedVariableValues` be the result of
+        //    `CoereceVariableValues(schema, operation, variableValues)`.
+        let coerced_variable_values = self.coerce_variable_values(operation, variable_values)?;
 
         match operation {
             OperationDefinition::SelectionSet(selection_set) => {
@@ -55,18 +63,142 @@ where
                 .await
             }
             OperationDefinition::Query(query) => {
-                self.execute_query(&document, query, variable_values, context)
+                self.execute_query(&document, query, &coerced_variable_values, context)
                     .await
             }
             OperationDefinition::Mutation(mutation) => {
-                self.execute_mutation(&document, mutation, variable_values, context)
+                self.execute_mutation(&document, mutation, &coerced_variable_values, context)
                     .await
             }
             OperationDefinition::Subscription(subscription) => {
-                self.execute_subscription(&document, subscription, variable_values, context)
-                    .await
+                self.execute_subscription(
+                    &document,
+                    subscription,
+                    &coerced_variable_values,
+                    context,
+                )
+                .await
             }
         }
+    }
+
+    fn coerce_variable_value<'a>(
+        &self,
+        value: schema::Value<'a, String>,
+        variable_values: &HashMap<String, Value>,
+    ) -> Result<Value, R::Error> {
+        Ok(match value {
+            schema::Value::Variable(name) => variable_values
+                .get(&name)
+                .ok_or(R::Error::missing_variable_value(&name))?
+                .to_owned(),
+            schema::Value::Int(value) => Value::Number(
+                value
+                    .as_i64()
+                    .ok_or(R::Error::incoercible_int_value(&format!("{:?}", value)))?
+                    .into(),
+            ),
+            schema::Value::Float(value) => Value::Number(
+                Number::from_f64(value).ok_or(R::Error::incoercible_float_literal(value))?,
+            ),
+            schema::Value::String(value) => Value::String(value),
+            schema::Value::Boolean(value) => Value::Bool(value),
+            schema::Value::Null => Value::Null,
+            schema::Value::Enum(value) => Value::String(value),
+            schema::Value::List(value) => Value::Array(
+                value
+                    .into_iter()
+                    .map(|value| self.coerce_variable_value(value, variable_values))
+                    .collect::<Result<Vec<_>, R::Error>>()?,
+            ),
+            schema::Value::Object(value) => Value::Object(
+                value
+                    .into_iter()
+                    .map(|(key, value)| {
+                        self.coerce_variable_value(value, variable_values)
+                            .map(|value| (key, value))
+                    })
+                    .collect::<Result<_, R::Error>>()?,
+            ),
+        })
+    }
+
+    fn coerce_variable_values<'a>(
+        &self,
+        operation: &OperationDefinition<'a, String>,
+        variable_values: &HashMap<String, Value>,
+    ) -> Result<HashMap<String, Value>, R::Error> {
+        // 1. Let `coercedValues` be an empty unordered Map.
+        let mut coerced_values = HashMap::new();
+
+        // 2. Let `variableDefinitions` be the variables defined by `operation`.
+        let variable_definitions = match operation {
+            OperationDefinition::Mutation(mutation) => &mutation.variable_definitions[..],
+            OperationDefinition::Query(query) => &query.variable_definitions,
+            OperationDefinition::SelectionSet(_) => &[],
+            OperationDefinition::Subscription(subscription) => &subscription.variable_definitions,
+        };
+
+        // 3. For each `variableDefinition` in `variableDefinitions`.
+        for variable_definition in variable_definitions {
+            // a. Let `variableName` be the name of `variableDefinition`.
+            let variable_name = &variable_definition.name;
+
+            // b. Let `variableType` be the expected type of
+            //    `variableDefinition`.
+            let variable_type = &variable_definition.var_type;
+
+            // c. Assert: `IsInputType(variableType)` must be `true`.
+            //    Note: we skip this test since we've moved into a separate
+            //    validation routine.
+
+            // d. Let `defaultValue` be the default value for
+            //    `variableDefinition`.
+            let default_value = variable_definition.default_value.as_ref();
+
+            // e. Let `hasValue` be `true` if `variableValues` provides a value
+            //    for the name `variableName`.
+            //
+            // f. Let `value` be the value provided in `variableValues` for the
+            //    name `variableName`.
+            let value = variable_values.get(variable_name);
+
+            // g. If `hasValue` is not `true` and `defaultValue` exists
+            //    (including `null`):
+            //
+            //    i. Add an entry to `coercedValues` named `variableName` with
+            //       the value `defaultValue`.
+            //
+            // h. Otherwise if `variableType` is a Non-Nullable type, and either
+            //    `hasValue` is not `true` or `value` is `null`, throw a query
+            //    error.
+            if let Some(value) = value {
+                coerced_values.insert(variable_name.to_owned(), value.to_owned());
+            } else if let Some(value) = default_value {
+                let value = self.coerce_variable_value(value.to_owned(), &HashMap::new())?;
+                coerced_values.insert(variable_name.to_owned(), value);
+            } else if matches!(variable_type, Type::NonNullType(_)) {
+                return Err(R::Error::missing_variable_value(variable_name));
+            }
+        }
+
+        Ok(coerced_values)
+    }
+
+    fn coerce_argument_values<'a>(
+        &self,
+        field: &Field<'a, String>,
+        variable_values: &HashMap<String, Value>,
+    ) -> Result<HashMap<String, Value>, R::Error> {
+        let mut coerced_values = HashMap::new();
+        let argument_values = &field.arguments;
+
+        for (name, value) in argument_values {
+            let value = self.coerce_variable_value(value.to_owned(), variable_values)?;
+            coerced_values.insert(name.to_owned(), value);
+        }
+
+        Ok(coerced_values)
     }
 
     async fn execute_query<'a>(
@@ -165,9 +297,7 @@ where
         // ...
         let field = fields.first().unwrap();
         let field_name = &field.name;
-        let argument_values = HashMap::new();
-        // self.coerce_argument_values(object_ty, field, variable_values);
-        // let argument_values = ();
+        let argument_values = self.coerce_argument_values(field, variable_values)?;
         let resolved_value = self
             .resolve_field_value(object_value, field_name, &argument_values, context)
             .await?;

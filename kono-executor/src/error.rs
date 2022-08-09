@@ -34,4 +34,31 @@ pub trait Error: Sized {
     fn missing_operation() -> Self {
         Self::custom(format_args!("document does not contain any operations"))
     }
+
+    /// Called when an operation defines a variable for which no value is
+    /// provided.
+    fn missing_variable_value(name: &str) -> Self {
+        Self::custom(format_args!(
+            "document is missing value for variable `{}`",
+            name
+        ))
+    }
+
+    /// Called when a document contains a float literal that cannot be expressed
+    /// in json.
+    fn incoercible_float_literal(value: f64) -> Self {
+        Self::custom(format_args!(
+            "float literal `{}` cannot be coerced to json",
+            value
+        ))
+    }
+
+    /// Called when a document contains an int literal that cannot be expressed
+    /// in json.
+    fn incoercible_int_value(value: &str) -> Self {
+        Self::custom(format_args!(
+            "int literal `{}` cannot be coerced to json",
+            value
+        ))
+    }
 }
