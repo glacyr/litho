@@ -104,7 +104,7 @@ macro_rules! ty {
             }
 
             fn schema(_environment: &Env) -> Vec<Item> {
-                vec![Item::Scalar(ItemScalar::new($name))]
+                vec![]
             }
 
             fn into_intermediate(

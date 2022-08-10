@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use kono_executor::{Error, Value};
-use kono_schema::{Item, ItemScalar, Type};
+use kono_schema::{Item, Type};
 
 pub trait InputType<Env> {
     fn ty(environment: &Env) -> Type;
@@ -33,7 +33,7 @@ macro_rules! ty {
             }
 
             fn schema(_environment: &Env) -> Vec<Item> {
-                vec![Item::Scalar(ItemScalar::new($name))]
+				vec![]
             }
 
             fn from_value<E>(value: Value) -> Result<Self, E>
