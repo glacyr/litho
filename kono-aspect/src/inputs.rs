@@ -43,7 +43,7 @@ macro_rules! ty {
             {
                 match value {
                     $($from)*,
-                    _ => Err(E::missing_value()),
+                    _ => Err(E::unexpected_value_type($name)),
                 }
             }
         }

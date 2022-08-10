@@ -67,4 +67,13 @@ pub trait Error: Sized {
     fn missing_value() -> Self {
         Self::custom(format_args!("missing value"))
     }
+
+    /// Called when a document is given a value for a variable with a type that
+    /// doesn't match.
+    fn unexpected_value_type(expected: &str) -> Self {
+        Self::custom(format_args!(
+            "value has unexpected type, expected `{}`",
+            expected
+        ))
+    }
 }
