@@ -4,8 +4,8 @@ use inflections::Inflect;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
-    parse_macro_input, AttributeArgs, FnArg, Ident, ImplItem, ImplItemMethod, Item, LitStr, Pat,
-    PatType, ReturnType, Type,
+    parse_macro_input, Attribute, AttributeArgs, FnArg, Ident, ImplItem, ImplItemMethod, Item, Lit,
+    LitStr, Meta, Pat, PatType, ReturnType, Type,
 };
 
 mod derive;
@@ -33,6 +33,7 @@ struct Field {
     ident: Ident,
     name: LitStr,
     has_environment: bool,
+    doc: Option<Lit>,
     method: ImplItemMethod,
     ty: FieldTy,
     inputs: Vec<PatType>,
@@ -51,11 +52,31 @@ fn assoc_type(item: &syn::ItemImpl, name: &str, default: fn() -> TokenStream) ->
         .unwrap_or(default())
 }
 
+fn kono_extract_comment(attrs: &[Attribute]) -> Option<Lit> {
+    attrs
+        .iter()
+        .find_map(|attr| match attr.path.get_ident()?.to_string().as_str() {
+            "doc" => match attr.parse_meta().ok()? {
+                Meta::NameValue(meta) => Some(meta.lit),
+                _ => None,
+            },
+            _ => None,
+        })
+}
+
 fn kono_impl_method(method: ImplItemMethod) -> Field {
     let kono = Kono::from_attributes(&method.attrs).unwrap();
+    let doc = kono_extract_comment(&method.attrs);
 
     let mut method = method;
-    method.attrs = vec![];
+    method.attrs = method
+        .attrs
+        .into_iter()
+        .filter(|attr| !match attr.path.get_ident() {
+            Some(ident) => ident.to_string() == "kono",
+            _ => false,
+        })
+        .collect::<Vec<_>>();
 
     let ident = method.sig.ident.to_owned();
     let name = match kono.rename {
@@ -103,6 +124,7 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
         ident,
         name,
         has_environment,
+        doc,
         output: method.sig.output.to_owned(),
         inputs: method
             .sig
@@ -126,6 +148,10 @@ fn schema<'a>(fields: impl Iterator<Item = &'a Field>) -> Vec<proc_macro2::Token
     fields
         .map(|field| {
             let name = &field.name;
+            let description = match &field.doc {
+                Some(description) => quote! { .description(#description.trim()) },
+                _ => quote! { },
+            };
             let ty = match &field.output {
                 ReturnType::Default => quote! { () },
                 ReturnType::Type(_, ty) => quote! { #ty },
@@ -146,6 +172,7 @@ fn schema<'a>(fields: impl Iterator<Item = &'a Field>) -> Vec<proc_macro2::Token
 
             quote! {
                 kono::schema::Field::new(Some(#name), <#ty as kono::aspect::OutputType<_>>::ty(_environment))
+                    #description
                     #(#inputs)*,
             }
         })
