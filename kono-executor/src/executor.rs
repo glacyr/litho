@@ -86,12 +86,9 @@ where
         &self,
         value: schema::Value<'a, String>,
         variable_values: &HashMap<String, Value>,
-    ) -> Result<Value, R::Error> {
-        Ok(match value {
-            schema::Value::Variable(name) => variable_values
-                .get(&name)
-                .ok_or(R::Error::missing_variable_value(&name))?
-                .to_owned(),
+    ) -> Result<Option<Value>, R::Error> {
+        Ok(Some(match value {
+            schema::Value::Variable(name) => return Ok(variable_values.get(&name).cloned()),
             schema::Value::Int(value) => Value::Number(
                 value
                     .as_i64()
@@ -109,18 +106,24 @@ where
                 value
                     .into_iter()
                     .map(|value| self.coerce_variable_value(value, variable_values))
-                    .collect::<Result<Vec<_>, R::Error>>()?,
+                    .collect::<Result<Vec<_>, R::Error>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect(),
             ),
             schema::Value::Object(value) => Value::Object(
                 value
                     .into_iter()
                     .map(|(key, value)| {
                         self.coerce_variable_value(value, variable_values)
-                            .map(|value| (key, value))
+                            .map(|value| value.map(|value| (key, value)))
                     })
-                    .collect::<Result<_, R::Error>>()?,
+                    .collect::<Result<Vec<_>, R::Error>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect(),
             ),
-        })
+        }))
     }
 
     fn coerce_variable_values<'a>(
@@ -172,16 +175,34 @@ where
             // h. Otherwise if `variableType` is a Non-Nullable type, and either
             //    `hasValue` is not `true` or `value` is `null`, throw a query
             //    error.
+            // i. Otherwise if `hasValue` is `true`:
+            //
+            //    i.  If `value` is `null`:
+            //        1. Add an entry to `coercedValues` named
+            //           `variableName` with the value `null`.
+            //
+            //    ii. Otherwise:
+            //        1. If `value` cannot be coerced according to input
+            //           coercion rules of `variableType`, throw a query error.
+            //        2. Let `ocercedValue` be the result of coercing `value`
+            //           according to the input coercion rules of
+            //           `variableType`.
+            //        3. Add an entry to `coercedValues` named `variableName`
+            //           with the value `coercedValue`.
             if let Some(value) = value {
                 coerced_values.insert(variable_name.to_owned(), value.to_owned());
             } else if let Some(value) = default_value {
                 let value = self.coerce_variable_value(value.to_owned(), &HashMap::new())?;
-                coerced_values.insert(variable_name.to_owned(), value);
+                coerced_values.insert(
+                    variable_name.to_owned(),
+                    value.ok_or(R::Error::missing_variable_value(variable_name))?,
+                );
             } else if matches!(variable_type, Type::NonNullType(_)) {
                 return Err(R::Error::missing_variable_value(variable_name));
             }
         }
 
+        // 4. Return `coercedValues`.
         Ok(coerced_values)
     }
 
@@ -194,8 +215,9 @@ where
         let argument_values = &field.arguments;
 
         for (name, value) in argument_values {
-            let value = self.coerce_variable_value(value.to_owned(), variable_values)?;
-            coerced_values.insert(name.to_owned(), value);
+            if let Some(value) = self.coerce_variable_value(value.to_owned(), variable_values)? {
+                coerced_values.insert(name.to_owned(), value);
+            }
         }
 
         Ok(coerced_values)
