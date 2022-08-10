@@ -229,7 +229,16 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
                 ReturnType::Type(_, ty) => quote! { #ty },
             };
 
+            let arguments = field.inputs.iter().map(|input| {
+                let ty = &input.ty;
+
+                quote! {
+                    .chain(<#ty as kono::aspect::InputType<_>>::schema(_environment).into_iter())
+                }
+            }).collect::<Vec<_>>();
+
             quote! {
+                #(#arguments)*
                 .chain(<#ty as kono::aspect::OutputType<_>>::inline_schema(_environment).into_iter())
             }
         })
@@ -448,7 +457,7 @@ pub fn kono(
     }
 }
 
-#[proc_macro_derive(Kono)]
+#[proc_macro_derive(Kono, attributes(kono))]
 pub fn kono_derive(item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     derive::kono_derive(item)
 }

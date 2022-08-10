@@ -26,11 +26,12 @@ impl<C> InputValue<C> {
     }
 }
 
-#[kono]
+#[kono(rename = "__InputValue")]
 impl<C> Aspect for InputValue<C>
 where
     C: 'static,
 {
+    type Context = C;
     type Environment = schema::Document<'static, String>;
 
     fn name(&self) -> &str {
@@ -43,5 +44,9 @@ where
 
     fn r#type(&self) -> Type<C> {
         Type::ty(&self.schema, &self.value.value_type)
+    }
+
+    fn default_value(&self) -> Option<&str> {
+        None
     }
 }

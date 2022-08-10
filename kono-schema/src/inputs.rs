@@ -1,13 +1,13 @@
 use graphql_parser::schema;
 
-use super::{Emit, Fields, Type};
+use super::{Emit, Item, Type};
 
 /// Representation of an input type with zero or more fields.
 #[derive(Default)]
 pub struct ItemInput {
     name: String,
     description: Option<String>,
-    fields: Fields,
+    fields: Vec<InputValue>,
 }
 
 impl ItemInput {
@@ -25,9 +25,9 @@ impl ItemInput {
         self
     }
 
-    /// Adds the given fields to this input item and returns the result.
-    pub fn fields(mut self, fields: Fields) -> ItemInput {
-        self.fields = fields.flatten();
+    /// Adds the given field to this input item and returns the result.
+    pub fn field(mut self, field: InputValue) -> ItemInput {
+        self.fields.push(field);
         self
     }
 }
@@ -40,11 +40,17 @@ impl Emit for ItemInput {
             schema::InputObjectType {
                 name: self.name,
                 description: self.description,
-                fields: vec![],
+                fields: self.fields.into_iter().map(Emit::emit).collect(),
                 directives: vec![],
                 position: Default::default(),
             },
         )]
+    }
+}
+
+impl Into<Item> for ItemInput {
+    fn into(self) -> Item {
+        Item::Input(self)
     }
 }
 

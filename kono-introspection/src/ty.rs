@@ -190,7 +190,16 @@ where
     }
 
     fn input_fields(&self) -> Option<Vec<InputValue<C>>> {
-        None
+        match &self.inner {
+            InnerType::Definition(schema::TypeDefinition::InputObject(inner)) => Some(
+                inner
+                    .fields
+                    .iter()
+                    .map(|value| InputValue::new(&self.schema, value))
+                    .collect(),
+            ),
+            _ => None,
+        }
     }
 
     fn of_type(&self) -> Option<Type<C>> {
