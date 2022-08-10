@@ -45,13 +45,13 @@ where
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<Self::Value>, Self::Error>> + 'a>> {
         match object_value {
             ObjectValue::Query => {
-                A::query(&self.0, field_name, argument_values.to_owned(), context)
+                A::query(field_name, argument_values.to_owned(), context, &self.0)
             }
             ObjectValue::Aspect(aspect) => aspect
                 .as_any()
                 .downcast_ref::<A>()
                 .unwrap()
-                .resolve_field(field_name, argument_values, context),
+                .resolve_field(field_name, argument_values, context, &self.0),
             _ => unreachable!(),
         }
     }

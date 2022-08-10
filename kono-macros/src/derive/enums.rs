@@ -18,27 +18,28 @@ pub fn kono_derive_enum(item: ItemEnum) -> Result<proc_macro2::TokenStream, Stri
     }
 
     Ok(quote! {
-        impl<E> kono::aspect::IntoIntermediate<E> for #self_ty {
-            fn into_intermediate(self) -> Result<kono::executor::Intermediate<kono::aspect::ObjectValue>, E> {
-                match self {
-                    #(#serializers)*
-                }.into_intermediate()
-            }
-        }
-
-        impl<E> kono::aspect::OutputType<E> for #self_ty {
-            fn ty(_environment: &E) -> kono::schema::Type {
+        impl<Env> kono::aspect::OutputType<Env> for #self_ty {
+            fn ty(_environment: &Env) -> kono::schema::Type {
                 kono::schema::Type::Named(#name.into())
             }
 
-            fn inline(_environment: &E) -> bool {
+            fn inline(_environment: &Env) -> bool {
                 true
             }
 
-            fn schema(_environment: &E) -> Vec<kono::schema::Item> {
+            fn schema(_environment: &Env) -> Vec<kono::schema::Item> {
                 vec![kono::schema::ItemEnum::new(#name)
                     #(#variants)*
                     .into()]
+            }
+
+            fn into_intermediate(self, environment: &Env) -> Result<
+                kono::executor::Intermediate<kono::aspect::ObjectValue>,
+                kono::aspect::Error
+            > {
+                match self {
+                    #(#serializers)*
+                }.into_intermediate(environment)
             }
         }
     })

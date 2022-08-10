@@ -24,10 +24,10 @@ pub trait Aspect: Typename {
     /// [`Query::can_query(field)`](Query::can_query) returns true.
     #[allow(unused)]
     fn query<'a>(
-        environment: &'a Self::Environment,
         field: &'a str,
         args: HashMap<String, Value>,
         context: &'a Self::Context,
+        environment: &'a Self::Environment,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
         unreachable!()
     }
@@ -63,6 +63,7 @@ pub trait Aspect: Typename {
         field: &'a str,
         args: &'a HashMap<String, Value>,
         context: &'a Self::Context,
+        environment: &'a Self::Environment,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
         unreachable!()
     }

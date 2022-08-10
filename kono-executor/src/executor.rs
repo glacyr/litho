@@ -316,7 +316,6 @@ where
         variable_values: &HashMap<String, Value>,
         context: &R::Context,
     ) -> Result<Value, R::Error> {
-        // ...
         let field = fields.first().unwrap();
         let field_name = &field.name;
         let argument_values = self.coerce_argument_values(field, variable_values)?;

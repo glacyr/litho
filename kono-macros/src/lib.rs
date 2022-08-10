@@ -240,7 +240,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             let mut args = vec![];
 
             if field.has_environment {
-                args.push(quote! { environment });
+                args.push(quote! { _environment });
             }
 
             for input in field.inputs.iter() {
@@ -251,7 +251,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             }
 
             quote! {
-                #name => Self::#ident(#(#args),*).into_intermediate(),
+                #name => Self::#ident(#(#args),*).into_intermediate(_environment),
             }
         })
         .collect::<Vec<_>>();
@@ -272,7 +272,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             let ident = field.ident.to_owned();
 
             quote! {
-                #name => self.#ident().into_intermediate(),
+                #name => self.#ident().into_intermediate(_environment),
             }
         })
         .collect::<Vec<_>>();
@@ -293,10 +293,10 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             }
 
             fn query<'a>(
-                environment: &'a Self::Environment,
                 field: &'a str,
                 args: std::collections::HashMap<String, kono::executor::Value>,
-                context: &'a Self::Context
+                context: &'a Self::Context,
+                _environment: &'a Self::Environment,
             ) -> std::pin::Pin<
                 Box<
                     dyn std::future::Future<
@@ -307,7 +307,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
                     > + 'a,
                 >,
             > {
-                use kono::aspect::IntoIntermediate;
+                use kono::aspect::OutputType;
 
                 Box::pin(async move { match field {
                     #(#query_handlers)*
@@ -331,7 +331,8 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
                 &'a self,
                 field: &'a str,
                 args: &'a std::collections::HashMap<String, kono::executor::Value>,
-                context: &'a Self::Context
+                context: &'a Self::Context,
+                _environment: &'a Self::Environment,
             ) -> std::pin::Pin<
                 Box<
                     dyn std::future::Future<
@@ -342,7 +343,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
                     > + 'a,
                 >,
             > {
-                use kono::aspect::IntoIntermediate;
+                use kono::aspect::OutputType;
 
                 Box::pin(async move { match field {
                     #(#field_handlers)*
@@ -373,15 +374,6 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             #query_impl
         }
 
-        impl #error_generics kono::aspect::IntoIntermediate<#error_env> for #self_ty #where_clause {
-            fn into_intermediate(self) -> Result<
-                kono::executor::Intermediate<kono::aspect::ObjectValue>,
-                #error_env,
-            > {
-                Ok(kono::executor::Intermediate::Object(kono::aspect::ObjectValue::Aspect(Box::new(self))))
-            }
-        }
-
         impl #schema_generics kono::aspect::OutputType<#schema_env> for #self_ty #where_clause {
             fn ty(_environment: &#schema_env) -> kono::schema::Type {
                 kono::schema::Type::Named(#name.into())
@@ -399,6 +391,13 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
                 .into_iter()
                 #(#inline_schemas)*
                 .collect()
+            }
+
+            fn into_intermediate(self, _environment: &#schema_env) -> Result<
+                kono::executor::Intermediate<kono::aspect::ObjectValue>,
+                kono::aspect::Error,
+            > {
+                Ok(kono::executor::Intermediate::Object(kono::aspect::ObjectValue::Aspect(Box::new(self))))
             }
         }
     })

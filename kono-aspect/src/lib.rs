@@ -4,7 +4,6 @@ mod inputs;
 mod record;
 mod reference;
 mod resolver;
-mod traits;
 mod types;
 mod value;
 
@@ -14,6 +13,5 @@ pub use inputs::InputType;
 pub use record::{Record, RecordResolver};
 pub use reference::Reference;
 pub use resolver::{AspectExt, AspectResolver};
-pub use traits::IntoIntermediate;
 pub use types::OutputType;
 pub use value::ObjectValue;

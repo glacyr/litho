@@ -1,117 +1,104 @@
-use kono_executor::{Error, Value};
+use kono_executor::{Intermediate, Value};
 use kono_schema::{Item, ItemScalar, Type};
 
-pub trait InputType<Env> {
+use super::{Error, ObjectValue};
+
+pub trait OutputType<Env> {
     fn ty(environment: &Env) -> Type;
 
     fn schema(environment: &Env) -> Vec<Item>;
 
-    fn from_value<E>(value: Value) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error;
-
-    fn from_value_option<E>(value: Option<Value>) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error,
-    {
-        match value {
-            Some(value) => Self::from_value(value),
-            None => Err(E::missing_value()),
-        }
-    }
-}
-
-pub trait OutputType<E> {
-    fn ty(environment: &E) -> Type;
-
-    fn schema(environment: &E) -> Vec<Item>;
-
-    fn inline(environment: &E) -> bool {
+    fn inline(environment: &Env) -> bool {
         let _ = environment;
 
         false
     }
 
-    fn inline_schema(environment: &E) -> Vec<Item> {
+    fn inline_schema(environment: &Env) -> Vec<Item> {
         match Self::inline(environment) {
             true => Self::schema(environment),
             false => vec![],
         }
     }
+
+    fn into_intermediate(self, environment: &Env) -> Result<Intermediate<ObjectValue>, Error>;
 }
 
-impl<E, T> OutputType<E> for Option<T>
+impl<Env, T> OutputType<Env> for Result<T, Error>
 where
-    T: OutputType<E>,
+    T: OutputType<Env>,
 {
-    fn ty(environment: &E) -> Type {
+    fn ty(environment: &Env) -> Type {
         Type::Optional(Box::new(T::ty(environment)))
     }
 
-    fn schema(environment: &E) -> Vec<Item> {
+    fn schema(environment: &Env) -> Vec<Item> {
         T::schema(environment)
+    }
+
+    fn into_intermediate(self, environment: &Env) -> Result<Intermediate<ObjectValue>, Error> {
+        self.and_then(|value| value.into_intermediate(environment))
     }
 }
 
-impl<E, T> OutputType<E> for Vec<T>
+impl<Env, T> OutputType<Env> for Option<T>
 where
-    T: OutputType<E>,
+    T: OutputType<Env>,
 {
-    fn ty(environment: &E) -> Type {
+    fn ty(environment: &Env) -> Type {
+        Type::Optional(Box::new(T::ty(environment)))
+    }
+
+    fn schema(environment: &Env) -> Vec<Item> {
+        T::schema(environment)
+    }
+
+    fn into_intermediate(self, environment: &Env) -> Result<Intermediate<ObjectValue>, Error> {
+        match self {
+            Some(value) => value.into_intermediate(environment),
+            None => ().into_intermediate(environment),
+        }
+    }
+}
+
+impl<Env, T> OutputType<Env> for Vec<T>
+where
+    T: OutputType<Env>,
+{
+    fn ty(environment: &Env) -> Type {
         Type::List(Box::new(T::ty(environment)))
     }
 
-    fn schema(environment: &E) -> Vec<Item> {
+    fn schema(environment: &Env) -> Vec<Item> {
         T::schema(environment)
+    }
+
+    fn into_intermediate(self, environment: &Env) -> Result<Intermediate<ObjectValue>, Error> {
+        Ok(Intermediate::Collection(
+            self.into_iter()
+                .map(|value| value.into_intermediate(environment))
+                .collect::<Result<Vec<_>, Error>>()?,
+        ))
     }
 }
 
-impl<E> OutputType<E> for () {
-    fn ty(environment: &E) -> Type {
+impl<Env> OutputType<Env> for () {
+    fn ty(environment: &Env) -> Type {
         Option::<bool>::ty(environment)
     }
 
-    fn schema(environment: &E) -> Vec<Item> {
+    fn schema(environment: &Env) -> Vec<Item> {
         Option::<bool>::schema(environment)
     }
-}
 
-trait BuiltinType {
-    fn from_value<E>(value: Value) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error;
-
-    fn from_value_option<E>(value: Option<Value>) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error,
-    {
-        match value {
-            Some(value) => Self::from_value(value),
-            None => Err(E::custom("abcd")),
-        }
+    fn into_intermediate(self, _environment: &Env) -> Result<Intermediate<ObjectValue>, Error> {
+        Ok(Intermediate::Value(Value::Null))
     }
 }
 
-impl BuiltinType for String {
-    fn from_value<E>(value: Value) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error,
-    {
-        match value {
-            Value::String(string) => Ok(string),
-            _ => Err(E::custom("abc")),
-        }
-    }
-}
-
-macro_rules! input {
+macro_rules! ty {
     ($ty:ty, $name:literal) => {
-        impl<Env> InputType<Env> for $ty {
+        impl<Env> OutputType<Env> for $ty {
             fn ty(_environment: &Env) -> Type {
                 Type::Scalar($name.to_owned())
             }
@@ -120,83 +107,26 @@ macro_rules! input {
                 vec![Item::Scalar(ItemScalar::new($name))]
             }
 
-            fn from_value<E>(value: Value) -> Result<Self, E>
-            where
-                Self: Sized,
-                E: Error,
-            {
-                BuiltinType::from_value(value)
+            fn into_intermediate(
+                self,
+                _environment: &Env,
+            ) -> Result<Intermediate<ObjectValue>, Error> {
+                Ok(Intermediate::Value(self.into()))
             }
         }
     };
 }
 
-macro_rules! output {
-    ($ty:ty, $name:literal) => {
-        impl<E> OutputType<E> for $ty {
-            fn ty(_environment: &E) -> Type {
-                Type::Scalar($name.to_owned())
-            }
-
-            fn schema(_environment: &E) -> Vec<Item> {
-                vec![Item::Scalar(ItemScalar::new($name))]
-            }
-        }
-    };
-}
-
-impl<Env, T> InputType<Env> for Option<T>
-where
-    T: InputType<Env>,
-{
-    fn ty(environment: &Env) -> Type {
-        T::ty(environment)
-    }
-
-    fn schema(environment: &Env) -> Vec<Item> {
-        T::schema(environment)
-    }
-
-    fn from_value<E>(value: Value) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error,
-    {
-        match value {
-            Value::Null => Ok(None),
-            value => T::from_value(value).map(Some),
-        }
-    }
-
-    fn from_value_option<E>(value: Option<Value>) -> Result<Self, E>
-    where
-        Self: Sized,
-        E: Error,
-    {
-        match value {
-            Some(value) => Self::from_value(value),
-            None => Ok(None),
-        }
-    }
-}
-
-macro_rules! builtin {
-    ($ty:ty, $name:literal) => {
-        input!($ty, $name);
-        output!($ty, $name);
-    };
-}
-
-output!(&str, "String");
-builtin!(String, "String");
-output!(bool, "Boolean");
-output!(u8, "Int");
-output!(u16, "Int");
-output!(u32, "Int");
-output!(u64, "Int");
-output!(i8, "Int");
-output!(i16, "Int");
-output!(i32, "Int");
-output!(i64, "Int");
-output!(f32, "Float");
-output!(f64, "Float");
+ty!(&str, "String");
+ty!(String, "String");
+ty!(bool, "Boolean");
+ty!(u8, "Int");
+ty!(u16, "Int");
+ty!(u32, "Int");
+ty!(u64, "Int");
+ty!(i8, "Int");
+ty!(i16, "Int");
+ty!(i32, "Int");
+ty!(i64, "Int");
+ty!(f32, "Float");
+ty!(f64, "Float");

@@ -40,7 +40,7 @@ pub fn kono_derive_struct(item: ItemStruct) -> Result<proc_macro2::TokenStream, 
                 });
 
                 return quote! {
-                    map.insert(#name.to_owned(), self.#ident.into_intermediate()?);
+                    map.insert(#name.to_owned(), self.#ident.into_intermediate(_environment)?);
                 };
             })
             .collect(),
@@ -48,8 +48,28 @@ pub fn kono_derive_struct(item: ItemStruct) -> Result<proc_macro2::TokenStream, 
     };
 
     Ok(quote! {
-        impl #generics kono::aspect::IntoIntermediate<kono::aspect::Error> for #self_ty #where_clause {
-            fn into_intermediate(self) -> Result<
+        impl<Env> kono::aspect::OutputType<Env> for #self_ty {
+            fn ty(_environment: &Env) -> kono::schema::Type {
+                kono::schema::Type::Named(#name.into())
+            }
+
+            fn inline(_environment: &Env) -> bool {
+                true
+            }
+
+            fn schema(_environment: &Env) -> Vec<kono::schema::Item> {
+                std::iter::once(
+                    kono::schema::ItemType::new(#name)
+                    .fields(kono::schema::Fields::Named(vec![
+                        #(#field_schemas)*
+                    ]))
+                    .into()
+                )
+                    #(#inline_schemas)*
+                    .collect()
+            }
+
+            fn into_intermediate(self, _environment: &Env) -> Result<
                 kono::executor::Intermediate<kono::aspect::ObjectValue>,
                 kono::aspect::Error,
             > {
@@ -60,28 +80,6 @@ pub fn kono_derive_struct(item: ItemStruct) -> Result<proc_macro2::TokenStream, 
                         kono::aspect::Record::new(#name, map),
                     ),
                 ))
-            }
-        }
-
-        impl<E> kono::aspect::OutputType<E> for #self_ty {
-            fn ty(_environment: &E) -> kono::schema::Type {
-                kono::schema::Type::Named(#name.into())
-            }
-
-            fn inline(_environment: &E) -> bool {
-                true
-            }
-
-            fn schema(_environment: &E) -> Vec<kono::schema::Item> {
-                std::iter::once(
-                    kono::schema::ItemType::new(#name)
-                    .fields(kono::schema::Fields::Named(vec![
-                        #(#field_schemas)*
-                    ]))
-                    .into()
-                )
-                    #(#inline_schemas)*
-                    .collect()
             }
         }
     })
