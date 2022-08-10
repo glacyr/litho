@@ -246,7 +246,7 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             for input in field.inputs.iter() {
                 let name = input.to_string().to_camel_case();
                 args.push(quote! {
-                    kono::executor::from_value(args.get(#name).unwrap().to_owned()).unwrap()
+                    kono::aspect::InputType::<Self::Environment>::from_value_option(args.get(#name).cloned())?
                 });
             }
 

@@ -61,4 +61,10 @@ pub trait Error: Sized {
             value
         ))
     }
+
+    /// Called when a document defines a required variable for which no value is
+    /// provided.
+    fn missing_value() -> Self {
+        Self::custom(format_args!("missing value"))
+    }
 }
