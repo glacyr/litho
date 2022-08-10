@@ -30,7 +30,7 @@ pub use emit::Emit;
 pub use enums::{ItemEnum, Variant};
 pub use fields::{Field, Fields};
 use graphql_parser::schema;
-pub use inputs::ItemInput;
+pub use inputs::{InputValue, ItemInput};
 pub use scalars::ItemScalar;
 pub use ty::Type;
 pub use types::ItemType;

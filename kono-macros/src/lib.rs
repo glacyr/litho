@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
     parse_macro_input, AttributeArgs, FnArg, Ident, ImplItem, ImplItemMethod, Item, LitStr, Pat,
-    ReturnType, Type,
+    PatType, ReturnType, Type,
 };
 
 mod derive;
@@ -35,7 +35,7 @@ struct Field {
     has_environment: bool,
     method: ImplItemMethod,
     ty: FieldTy,
-    inputs: Vec<Ident>,
+    inputs: Vec<PatType>,
     output: ReturnType,
 }
 
@@ -110,13 +110,12 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
             .iter()
             .flat_map(|input| match input {
                 FnArg::Typed(pat) => match &*pat.pat {
-                    Pat::Ident(ident) if ident.ident != "environment" => {
-                        Some(ident.ident.to_owned())
-                    }
+                    Pat::Ident(ident) if ident.ident != "environment" => Some(pat),
                     _ => None,
                 },
                 _ => None,
             })
+            .cloned()
             .collect(),
         method,
         ty,
@@ -132,8 +131,22 @@ fn schema<'a>(fields: impl Iterator<Item = &'a Field>) -> Vec<proc_macro2::Token
                 ReturnType::Type(_, ty) => quote! { #ty },
             };
 
+            let inputs = field.inputs.iter().map(|input|{
+                let name = match &*input.pat {
+                    Pat::Ident(pat) => pat.ident.to_string(),
+                    _ => unreachable!(),
+                };
+
+                let ty = &input.ty;
+
+                quote! {
+                    .argument(kono::schema::InputValue::new(#name, <#ty as kono::aspect::InputType<_>>::ty(_environment)))
+                }
+            });
+
             quote! {
-                kono::schema::Field::new(Some(#name), <#ty as kono::aspect::OutputType<_>>::ty(_environment)),
+                kono::schema::Field::new(Some(#name), <#ty as kono::aspect::OutputType<_>>::ty(_environment))
+                    #(#inputs)*,
             }
         })
         .collect::<Vec<_>>()
@@ -244,7 +257,10 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             }
 
             for input in field.inputs.iter() {
-                let name = input.to_string().to_camel_case();
+                let name = match &*input.pat {
+                    Pat::Ident(pat) => pat.ident.to_string().to_camel_case(),
+                    _ => unreachable!(),
+                };
                 args.push(quote! {
                     kono::aspect::InputType::<Self::Environment>::from_value_option(args.get(#name).cloned())?
                 });

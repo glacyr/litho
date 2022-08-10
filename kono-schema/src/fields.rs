@@ -2,12 +2,13 @@ use std::iter::once;
 
 use graphql_parser::schema;
 
-use super::{Emit, Type};
+use super::{Emit, InputValue, Type};
 
 /// Individual (optionally named) field of an input type, object type or enum.
 pub struct Field {
     name: Option<String>,
     description: Option<String>,
+    arguments: Vec<InputValue>,
     pub(crate) ty: Type,
 }
 
@@ -17,6 +18,7 @@ impl Field {
         Field {
             name: name.map(ToOwned::to_owned),
             description: None,
+            arguments: vec![],
             ty,
         }
     }
@@ -24,6 +26,12 @@ impl Field {
     /// Adds the given description to this field and returns the result.
     pub fn description(mut self, description: &str) -> Field {
         self.description = Some(description.to_owned());
+        self
+    }
+
+    /// Adds the given argument to this field and returns the result.
+    pub fn argument(mut self, argument: InputValue) -> Field {
+        self.arguments.push(argument);
         self
     }
 
@@ -40,7 +48,7 @@ impl Emit for Field {
         schema::Field {
             name: self.name.unwrap_or("".to_owned()),
             description: self.description,
-            arguments: vec![],
+            arguments: self.arguments.into_iter().map(Emit::emit).collect(),
             field_type: self.ty.emit(),
             directives: vec![],
             position: Default::default(),

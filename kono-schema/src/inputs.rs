@@ -1,6 +1,6 @@
 use graphql_parser::schema;
 
-use super::{Emit, Fields};
+use super::{Emit, Fields, Type};
 
 /// Representation of an input type with zero or more fields.
 #[derive(Default)]
@@ -45,5 +45,44 @@ impl Emit for ItemInput {
                 position: Default::default(),
             },
         )]
+    }
+}
+
+/// Value that is passed to a field or directive.
+pub struct InputValue {
+    name: String,
+    description: Option<String>,
+    ty: Type,
+}
+
+impl InputValue {
+    /// Returns a new input value with the given name and type.
+    pub fn new(name: &str, ty: Type) -> InputValue {
+        InputValue {
+            name: name.to_owned(),
+            description: None,
+            ty,
+        }
+    }
+
+    /// Adds the given description to this input value and returns the result.
+    pub fn description(mut self, description: &str) -> InputValue {
+        self.description = Some(description.to_owned());
+        self
+    }
+}
+
+impl Emit for InputValue {
+    type Target = schema::InputValue<'static, String>;
+
+    fn emit(self) -> Self::Target {
+        schema::InputValue {
+            name: self.name,
+            value_type: self.ty.emit(),
+            description: self.description,
+            default_value: None,
+            directives: vec![],
+            position: Default::default(),
+        }
     }
 }

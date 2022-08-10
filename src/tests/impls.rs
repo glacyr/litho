@@ -53,3 +53,31 @@ fn test_impl_queries() {
 	"#,
     )
 }
+
+#[test]
+fn test_impl_queries_with_inputs() {
+    pub struct Example;
+
+    #[kono]
+    impl Example {
+        fn example(id: String) -> Example {
+            let _ = id;
+
+            Example
+        }
+    }
+
+    kono::tests::test_eq(
+        Example::resolver(),
+        r#"
+    type Example {
+      __typename: String!
+    }
+
+    type Query {
+      __typename: String!
+      example(id: String!): Example!
+    }
+	"#,
+    )
+}
