@@ -1,3 +1,5 @@
+use std::iter::once;
+
 use graphql_parser::schema;
 
 use super::{Emit, Item, Type};
@@ -40,7 +42,13 @@ impl Emit for ItemInput {
             schema::InputObjectType {
                 name: self.name,
                 description: self.description,
-                fields: self.fields.into_iter().map(Emit::emit).collect(),
+                fields: once(InputValue::new(
+                    "__typename",
+                    Type::Optional(Box::new(Type::Scalar("String".to_owned()))),
+                ))
+                .chain(self.fields.into_iter())
+                .map(Emit::emit)
+                .collect(),
                 directives: vec![],
                 position: Default::default(),
             },
