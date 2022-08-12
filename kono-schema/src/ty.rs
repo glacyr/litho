@@ -20,6 +20,16 @@ pub enum Type {
     List(Box<Type>),
 }
 
+impl Type {
+    /// Returns the name of this type.
+    pub fn name(&self) -> &str {
+        match self {
+            Type::Named(name) | Type::Scalar(name) => name,
+            Type::Optional(ty) | Type::List(ty) => ty.name(),
+        }
+    }
+}
+
 impl Emit for Type {
     type Target = schema::Type<'static, String>;
 

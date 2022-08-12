@@ -2,6 +2,7 @@ mod aspect;
 mod error;
 mod inputs;
 mod outputs;
+mod pagination;
 mod record;
 mod reference;
 mod resolver;
@@ -15,3 +16,5 @@ pub use record::{Record, RecordResolver};
 pub use reference::Reference;
 pub use resolver::{AspectExt, AspectResolver};
 pub use value::ObjectValue;
+
+pub use copa::{Connection, Edge, Pagination};

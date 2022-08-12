@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 use kono_executor::{Error, Intermediate, Resolver, Typename};
 
-use crate::ObjectValue;
+use super::ObjectValue;
 
 #[derive(Debug)]
 pub struct Record {
@@ -20,6 +20,10 @@ impl Record {
             name: name.to_owned(),
             records: RefCell::new(records),
         }
+    }
+
+    pub fn into_intermediate<E>(self) -> Result<Intermediate<ObjectValue>, E> {
+        Ok(Intermediate::Object(ObjectValue::Record(self)))
     }
 }
 
