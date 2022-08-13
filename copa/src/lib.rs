@@ -66,6 +66,7 @@
 use std::future::Future;
 
 /// These are the arguments that are given to a paginated function.
+#[derive(Debug, PartialEq, Eq)]
 pub enum Pagination {
     /// Represents forward pagination (i.e. retrieving the first few items after
     /// the given cursor).

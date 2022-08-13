@@ -2,7 +2,8 @@ use darling::util::Flag;
 use darling::{FromAttributes, FromMeta};
 use inflections::Inflect;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{quote, quote_spanned, ToTokens};
+use syn::spanned::Spanned;
 use syn::{
     parse_macro_input, Attribute, AttributeArgs, FnArg, Ident, ImplItem, ImplItemMethod, Item, Lit,
     LitStr, Meta, Pat, PatType, ReturnType, Type,
@@ -22,11 +23,22 @@ struct Kono {
     rename: Option<LitStr>,
 }
 
+#[derive(Debug, FromAttributes)]
+#[darling(attributes(kono))]
+struct InputAttrs {
+    flatten: Flag,
+}
+
 #[derive(PartialEq, Eq)]
 enum FieldTy {
     Mutation,
     Field,
     Query,
+}
+
+struct Input {
+    attrs: InputAttrs,
+    pat_type: PatType,
 }
 
 struct Field {
@@ -36,7 +48,7 @@ struct Field {
     doc: Option<Lit>,
     method: ImplItemMethod,
     ty: FieldTy,
-    inputs: Vec<PatType>,
+    inputs: Vec<Input>,
     output: ReturnType,
 }
 
@@ -120,25 +132,47 @@ fn kono_impl_method(method: ImplItemMethod) -> Field {
         FieldTy::Query
     };
 
+    let output = method.sig.output.to_owned();
+    let inputs = method
+        .sig
+        .inputs
+        .iter()
+        .flat_map(|input| match input {
+            FnArg::Typed(pat) => match &*pat.pat {
+                Pat::Ident(ident) if ident.ident != "environment" => Some(pat),
+                _ => None,
+            },
+            _ => None,
+        })
+        .cloned()
+        .map(|pat_type| Input {
+            attrs: InputAttrs::from_attributes(&pat_type.attrs).unwrap(),
+            pat_type,
+        })
+        .collect();
+
+    for input in method.sig.inputs.iter_mut() {
+        match input {
+            FnArg::Typed(pat) => {
+                pat.attrs = std::mem::take(&mut pat.attrs)
+                    .into_iter()
+                    .filter(|attr| !match attr.path.get_ident() {
+                        Some(ident) => ident.to_string() == "kono",
+                        _ => false,
+                    })
+                    .collect::<Vec<_>>();
+            }
+            _ => {}
+        }
+    }
+
     Field {
         ident,
         name,
         has_environment,
         doc,
-        output: method.sig.output.to_owned(),
-        inputs: method
-            .sig
-            .inputs
-            .iter()
-            .flat_map(|input| match input {
-                FnArg::Typed(pat) => match &*pat.pat {
-                    Pat::Ident(ident) if ident.ident != "environment" => Some(pat),
-                    _ => None,
-                },
-                _ => None,
-            })
-            .cloned()
-            .collect(),
+        output,
+        inputs,
         method,
         ty,
     }
@@ -158,22 +192,68 @@ fn schema<'a>(fields: impl Iterator<Item = &'a Field>) -> Vec<proc_macro2::Token
             };
 
             let inputs = field.inputs.iter().map(|input|{
-                let name = match &*input.pat {
+                let name = match &*input.pat_type.pat {
                     Pat::Ident(pat) => pat.ident.to_string(),
                     _ => unreachable!(),
                 };
 
-                let ty = &input.ty;
+                let ty = &input.pat_type.ty;
 
-                quote! {
-                    .argument(kono::schema::InputValue::new(#name, <#ty as kono::aspect::InputType<_>>::ty(_environment)))
+                match input.attrs.flatten.is_present() {
+                    true => quote_spanned! { ty.span() =>
+                        .arguments(<#ty as kono::aspect::ArgumentType<_>>::schema(_environment))
+                    },
+                    false => quote_spanned! { ty.span() =>
+                        .argument(kono::schema::InputValue::new(#name, <#ty as kono::aspect::InputType<_>>::ty(_environment)))
+                    }
                 }
             });
 
-            quote! {
+            quote_spanned! { ty.span() =>
                 kono::schema::Field::new(Some(#name), <#ty as kono::aspect::OutputType<_>>::ty(_environment))
                     #description
                     #(#inputs)*,
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn handlers<'a, F>(fields: impl Iterator<Item = &'a Field>, f: F) -> Vec<proc_macro2::TokenStream>
+where
+    F: Fn(proc_macro2::TokenStream, proc_macro2::TokenStream) -> proc_macro2::TokenStream,
+{
+    fields
+        .map(|field| {
+            let name = &field.name;
+            let ident = field.ident.to_owned();
+
+            let mut args = vec![];
+
+            if field.has_environment {
+                args.push(quote! { _environment });
+            }
+
+            for input in field.inputs.iter() {
+                let name = match &*input.pat_type.pat {
+                    Pat::Ident(pat) => pat.ident.to_string().to_camel_case(),
+                    _ => unreachable!(),
+                };
+
+                let ty = &input.pat_type.ty;
+                args.push(match input.attrs.flatten.is_present() {
+                    true => quote_spanned! { ty.span() =>
+                        <#ty as kono::aspect::ArgumentType::<_>>::from_args(&args, _environment)?
+                    },
+                    false => quote_spanned! { ty.span() =>
+                        <#ty as kono::aspect::InputType::<_>>::from_value_option(args.get(#name).cloned(), _environment)?
+                    },
+            });
+            }
+
+            let im = f(quote! { #ident }, quote! { #(#args),* });
+
+            quote! {
+                #name => #im.into_intermediate(_environment),
             }
         })
         .collect::<Vec<_>>()
@@ -257,10 +337,13 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
             };
 
             let arguments = field.inputs.iter().map(|input| {
-                let ty = &input.ty;
+                let ty = &input.pat_type.ty;
 
-                quote! {
-                    .chain(<#ty as kono::aspect::InputType<_>>::schema(_environment).into_iter())
+                match input.attrs.flatten.is_present() {
+                    true => quote! {},
+                    false => quote_spanned! { ty.span() =>
+                        .chain(<#ty as kono::aspect::InputType<_>>::schema(_environment).into_iter())
+                    }
                 }
             }).collect::<Vec<_>>();
 
@@ -278,35 +361,10 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
         .collect::<Vec<_>>();
 
     let query_schema = schema(fields.iter().filter(|field| field.ty == FieldTy::Query));
-
-    let query_handlers = fields
-        .iter()
-        .filter(|field| field.ty == FieldTy::Query)
-        .map(|field| {
-            let name = &field.name;
-            let ident = field.ident.to_owned();
-
-            let mut args = vec![];
-
-            if field.has_environment {
-                args.push(quote! { _environment });
-            }
-
-            for input in field.inputs.iter() {
-                let name = match &*input.pat {
-                    Pat::Ident(pat) => pat.ident.to_string().to_camel_case(),
-                    _ => unreachable!(),
-                };
-                args.push(quote! {
-                    kono::aspect::InputType::<Self::Environment>::from_value_option(args.get(#name).cloned())?
-                });
-            }
-
-            quote! {
-                #name => Self::#ident(#(#args),*).into_intermediate(_environment),
-            }
-        })
-        .collect::<Vec<_>>();
+    let query_handlers = handlers(
+        fields.iter().filter(|field| field.ty == FieldTy::Query),
+        |ident, args| quote! { Self::#ident(#args) },
+    );
 
     let field_names = fields
         .iter()
@@ -316,18 +374,10 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
 
     let field_schema = schema(fields.iter().filter(|field| field.ty == FieldTy::Field));
 
-    let field_handlers = fields
-        .iter()
-        .filter(|field| field.ty == FieldTy::Field)
-        .map(|field| {
-            let name = &field.name;
-            let ident = field.ident.to_owned();
-
-            quote! {
-                #name => self.#ident().into_intermediate(_environment),
-            }
-        })
-        .collect::<Vec<_>>();
+    let field_handlers = handlers(
+        fields.iter().filter(|field| field.ty == FieldTy::Field),
+        |ident, args| quote! {self.#ident(#args) },
+    );
 
     let methods = fields
         .into_iter()

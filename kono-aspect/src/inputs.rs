@@ -8,18 +8,18 @@ pub trait InputType<Env> {
 
     fn schema(environment: &Env) -> Vec<Item>;
 
-    fn from_value<E>(value: Value) -> Result<Self, E>
+    fn from_value<E>(value: Value, environment: &Env) -> Result<Self, E>
     where
         Self: Sized,
         E: Error;
 
-    fn from_value_option<E>(value: Option<Value>) -> Result<Self, E>
+    fn from_value_option<E>(value: Option<Value>, environment: &Env) -> Result<Self, E>
     where
         Self: Sized,
         E: Error,
     {
         match value {
-            Some(value) => Self::from_value(value),
+            Some(value) => Self::from_value(value, environment),
             None => Err(E::missing_value()),
         }
     }
@@ -36,7 +36,7 @@ macro_rules! ty {
 				vec![]
             }
 
-            fn from_value<E>(value: Value) -> Result<Self, E>
+            fn from_value<E>(value: Value, _environment: &Env) -> Result<Self, E>
             where
                 Self: Sized,
                 E: Error,
@@ -102,10 +102,14 @@ ty!(u8, "Int", Value::Number(value) => FromNumber::<u64>::from_number(value));
 ty!(u16, "Int", Value::Number(value) => FromNumber::<u64>::from_number(value));
 ty!(u32, "Int", Value::Number(value) => FromNumber::<u64>::from_number(value));
 ty!(u64, "Int", Value::Number(value) => FromNumber::<u64>::from_number(value));
+ty!(u128, "Int", Value::Number(value) => FromNumber::<u64>::from_number(value));
+ty!(usize, "Int", Value::Number(value) => FromNumber::<u64>::from_number(value));
 ty!(i8, "Int", Value::Number(value) => FromNumber::<i64>::from_number(value));
 ty!(i16, "Int", Value::Number(value) => FromNumber::<i64>::from_number(value));
 ty!(i32, "Int", Value::Number(value) => FromNumber::<i64>::from_number(value));
 ty!(i64, "Int", Value::Number(value) => FromNumber::<i64>::from_number(value));
+ty!(i128, "Int", Value::Number(value) => FromNumber::<i64>::from_number(value));
+ty!(isize, "Int", Value::Number(value) => FromNumber::<i64>::from_number(value));
 ty!(f32, "Float", Value::Number(value) => FromNumber::<f64>::from_number(value).map(|value: f64| value as f32));
 ty!(f64, "Float", Value::Number(value) => FromNumber::<f64>::from_number(value));
 
@@ -114,31 +118,31 @@ where
     T: InputType<Env>,
 {
     fn ty(environment: &Env) -> Type {
-        T::ty(environment)
+        Type::Optional(Box::new(T::ty(environment)))
     }
 
     fn schema(environment: &Env) -> Vec<Item> {
         T::schema(environment)
     }
 
-    fn from_value<E>(value: Value) -> Result<Self, E>
+    fn from_value<E>(value: Value, environment: &Env) -> Result<Self, E>
     where
         Self: Sized,
         E: Error,
     {
         match value {
             Value::Null => Ok(None),
-            value => T::from_value(value).map(Some),
+            value => T::from_value(value, environment).map(Some),
         }
     }
 
-    fn from_value_option<E>(value: Option<Value>) -> Result<Self, E>
+    fn from_value_option<E>(value: Option<Value>, environment: &Env) -> Result<Self, E>
     where
         Self: Sized,
         E: Error,
     {
         match value {
-            Some(value) => Self::from_value(value),
+            Some(value) => Self::from_value(value, environment),
             None => Ok(None),
         }
     }
@@ -149,20 +153,23 @@ where
     T: InputType<Env>,
 {
     fn ty(environment: &Env) -> Type {
-        T::ty(environment)
+        Type::List(Box::new(T::ty(environment)))
     }
 
     fn schema(environment: &Env) -> Vec<Item> {
         T::schema(environment)
     }
 
-    fn from_value<E>(value: Value) -> Result<Self, E>
+    fn from_value<E>(value: Value, environment: &Env) -> Result<Self, E>
     where
         Self: Sized,
         E: Error,
     {
         match value {
-            Value::Array(items) => items.into_iter().map(InputType::from_value).collect(),
+            Value::Array(items) => items
+                .into_iter()
+                .map(|value| T::from_value(value, environment))
+                .collect(),
             _ => Err(E::custom("expected array")),
         }
     }

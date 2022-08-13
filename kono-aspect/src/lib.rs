@@ -1,3 +1,4 @@
+mod arguments;
 mod aspect;
 mod error;
 mod inputs;
@@ -8,6 +9,7 @@ mod reference;
 mod resolver;
 mod value;
 
+pub use arguments::ArgumentType;
 pub use aspect::Aspect;
 pub use error::Error;
 pub use inputs::InputType;

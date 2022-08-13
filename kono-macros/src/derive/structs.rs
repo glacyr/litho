@@ -49,7 +49,7 @@ pub fn kono_derive_struct_input(item: &ItemStruct) -> Result<proc_macro2::TokenS
                 return (
                     quote! { #ident },
                     quote_spanned! { ty.span() =>
-                        let #ident = kono::aspect::InputType::<Env>::from_value_option(object.get(#name).cloned())?;
+                        let #ident = <#ty as kono::aspect::InputType::<_>>::from_value_option(object.get(#name).cloned(), _environment)?;
                     },
                 );
             })
@@ -73,7 +73,7 @@ pub fn kono_derive_struct_input(item: &ItemStruct) -> Result<proc_macro2::TokenS
                     .collect()
             }
 
-            fn from_value<E>(value: kono::executor::Value) -> Result<Self, E>
+            fn from_value<E>(value: kono::executor::Value, _environment: &Env) -> Result<Self, E>
             where
                 Self: Sized,
                 E: kono::executor::Error {

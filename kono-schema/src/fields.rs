@@ -35,6 +35,15 @@ impl Field {
         self
     }
 
+    /// Adds the given arguments to this field and returns the result.
+    pub fn arguments<I>(mut self, arguments: I) -> Field
+    where
+        I: IntoIterator<Item = InputValue>,
+    {
+        self.arguments.extend(arguments);
+        self
+    }
+
     fn name_or_index(mut self, index: usize) -> Field {
         self.name = Some(self.name.unwrap_or(format!("_{}", index)));
         self
