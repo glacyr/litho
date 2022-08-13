@@ -250,7 +250,7 @@ where
         self.execute_selection_set(
             document,
             &mutation.selection_set,
-            &R::Value::query(),
+            &R::Value::mutation(),
             variable_values,
             context,
         )

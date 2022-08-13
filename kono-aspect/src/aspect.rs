@@ -49,7 +49,7 @@ pub trait Aspect: Typename {
         args: &'a HashMap<String, Value>,
         context: &'a Self::Context,
         environment: &'a Self::Environment,
-    ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>>>> {
+    ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
         unreachable!()
     }
 

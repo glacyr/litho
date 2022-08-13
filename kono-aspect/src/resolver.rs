@@ -26,12 +26,13 @@ where
         context: &Self::Context,
     ) -> bool {
         match object_value {
-            ObjectValue::Query => A::can_query(field_name, context, &self.0),
             ObjectValue::Aspect(aspect) => aspect
                 .as_any()
                 .downcast_ref::<A>()
                 .map(|_| A::can_resolve_field(field_name, context, &self.0))
                 .unwrap_or_default(),
+            ObjectValue::Mutation => A::can_mutate(field_name, context, &self.0),
+            ObjectValue::Query => A::can_query(field_name, context, &self.0),
             _ => false,
         }
     }
@@ -44,12 +45,13 @@ where
         context: &'a Self::Context,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<Self::Value>, Self::Error>> + 'a>> {
         match object_value {
-            ObjectValue::Query => A::query(field_name, argument_values, context, &self.0),
             ObjectValue::Aspect(aspect) => aspect
                 .as_any()
                 .downcast_ref::<A>()
                 .unwrap()
                 .resolve_field(field_name, argument_values, context, &self.0),
+            ObjectValue::Mutation => A::mutate(field_name, argument_values, context, &self.0),
+            ObjectValue::Query => A::query(field_name, argument_values, context, &self.0),
             _ => unreachable!(),
         }
     }

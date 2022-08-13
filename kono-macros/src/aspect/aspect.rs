@@ -54,6 +54,12 @@ impl Aspect {
             .filter(|field| field.ty() == FieldTy::Field)
     }
 
+    pub fn mutations(&self) -> impl Iterator<Item = &Field> + Clone {
+        self.fields
+            .iter()
+            .filter(|field| field.ty() == FieldTy::Mutation)
+    }
+
     pub fn queries(&self) -> impl Iterator<Item = &Field> + Clone {
         self.fields
             .iter()
@@ -220,10 +226,12 @@ impl Aspect {
         let inline_schema = self.inline_schema().collect::<Vec<_>>();
 
         let resolve_field = self.handler("resolve_field", self.fields(), true);
+        let mutate = self.handler("mutate", self.mutations(), false);
         let query = self.handler("query", self.queries(), false);
 
-        let query_schema = self.queries().map(Field::schema).collect::<Vec<_>>();
         let field_schema = self.fields().map(Field::schema).collect::<Vec<_>>();
+        let mutation_schema = self.mutations().map(Field::schema).collect::<Vec<_>>();
+        let query_schema = self.queries().map(Field::schema).collect::<Vec<_>>();
 
         let methods = self
             .fields
@@ -247,8 +255,9 @@ impl Aspect {
                 #environment
                 #error
 
-                #query
                 #resolve_field
+                #mutate
+                #query
             }
 
             impl #schema_generics kono::aspect::OutputType<#schema_env> for #self_ty #where_clause {
@@ -263,6 +272,9 @@ impl Aspect {
                             .into(),
                         kono::schema::ItemType::new("Query")
                             .fields(kono::schema::Fields::Named(vec![#(#query_schema)*]))
+                            .into(),
+                        kono::schema::ItemType::new("Mutation")
+                            .fields(kono::schema::Fields::Named(vec![#(#mutation_schema)*]))
                             .into(),
                     ]
                     .into_iter()
