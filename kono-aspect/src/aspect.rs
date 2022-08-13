@@ -25,7 +25,7 @@ pub trait Aspect: Typename {
     #[allow(unused)]
     fn query<'a>(
         field: &'a str,
-        args: HashMap<String, Value>,
+        args: &'a HashMap<String, Value>,
         context: &'a Self::Context,
         environment: &'a Self::Environment,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>> + 'a>> {
@@ -46,7 +46,7 @@ pub trait Aspect: Typename {
     #[allow(unused)]
     fn mutate<'a>(
         field: &'a str,
-        args: HashMap<String, Value>,
+        args: &'a HashMap<String, Value>,
         context: &'a Self::Context,
         environment: &'a Self::Environment,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>>>> {
