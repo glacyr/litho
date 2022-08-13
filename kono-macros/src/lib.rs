@@ -387,7 +387,11 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
     let query_impl = match query_handlers.is_empty() {
         true => quote! {},
         false => quote! {
-            fn can_query(_environment: &Self::Environment, field: &str, _context: &Self::Context) -> bool {
+            fn can_query(
+                field: &str,
+                _context: &Self::Context,
+                _environment: &Self::Environment,
+            ) -> bool {
                 match field {
                     #(#query_names)|* => true,
                     _ => false,
@@ -422,7 +426,11 @@ fn kono_impl(kono: KonoImpl, item: syn::Item) -> Result<proc_macro2::TokenStream
     let field_impl = match field_handlers.is_empty() {
         true => quote! {},
         false => quote! {
-            fn can_resolve_field(&self, field: &str) -> bool {
+            fn can_resolve_field(
+                field: &str,
+                _context: &Self::Context,
+                _environment: &Self::Environment,
+            ) -> bool {
                 match field {
                     #(#field_names)|* => true,
                     _ => false,

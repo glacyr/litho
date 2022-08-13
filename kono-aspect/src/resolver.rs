@@ -26,11 +26,11 @@ where
         context: &Self::Context,
     ) -> bool {
         match object_value {
-            ObjectValue::Query => A::can_query(&self.0, field_name, context),
+            ObjectValue::Query => A::can_query(field_name, context, &self.0),
             ObjectValue::Aspect(aspect) => aspect
                 .as_any()
                 .downcast_ref::<A>()
-                .map(|aspect| aspect.can_resolve_field(field_name))
+                .map(|_| A::can_resolve_field(field_name, context, &self.0))
                 .unwrap_or_default(),
             _ => false,
         }

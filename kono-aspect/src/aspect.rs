@@ -15,7 +15,7 @@ pub trait Aspect: Typename {
     /// the query with the given name. This controls whether the aspect resolver
     /// calls [`Query::can_query(field, ...)`](Query::can_query).
     #[allow(unused)]
-    fn can_query(environment: &Self::Environment, field: &str, context: &Self::Context) -> bool {
+    fn can_query(field: &str, context: &Self::Context, environment: &Self::Environment) -> bool {
         false
     }
 
@@ -36,7 +36,7 @@ pub trait Aspect: Typename {
     /// the mutation with the given name. This controls whether the aspect
     /// resolver calls [`Mutation::mutate(field, ...)`](Mutation::mutate).
     #[allow(unused)]
-    fn can_mutate(field: &str) -> bool {
+    fn can_mutate(field: &str, context: &Self::Context, environment: &Self::Environment) -> bool {
         false
     }
 
@@ -48,12 +48,17 @@ pub trait Aspect: Typename {
         field: &'a str,
         args: HashMap<String, Value>,
         context: &'a Self::Context,
+        environment: &'a Self::Environment,
     ) -> Pin<Box<dyn Future<Output = Result<Intermediate<ObjectValue>, Self::Error>>>> {
         unreachable!()
     }
 
     #[allow(unused)]
-    fn can_resolve_field(&self, field: &str) -> bool {
+    fn can_resolve_field(
+        field: &str,
+        context: &Self::Context,
+        environment: &Self::Environment,
+    ) -> bool {
         false
     }
 
