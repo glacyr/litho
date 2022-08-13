@@ -233,6 +233,15 @@ impl Aspect {
         let mutation_schema = self.mutations().map(Field::schema).collect::<Vec<_>>();
         let query_schema = self.queries().map(Field::schema).collect::<Vec<_>>();
 
+        let mutation_schema = match mutation_schema.is_empty() {
+            true => quote! {},
+            false => quote! {
+                kono::schema::ItemType::new("Mutation")
+                    .fields(kono::schema::Fields::Named(vec![#(#mutation_schema)*]))
+                    .into(),
+            },
+        };
+
         let methods = self
             .fields
             .into_iter()
@@ -273,9 +282,7 @@ impl Aspect {
                         kono::schema::ItemType::new("Query")
                             .fields(kono::schema::Fields::Named(vec![#(#query_schema)*]))
                             .into(),
-                        kono::schema::ItemType::new("Mutation")
-                            .fields(kono::schema::Fields::Named(vec![#(#mutation_schema)*]))
-                            .into(),
+                        #mutation_schema
                     ]
                     .into_iter()
                     #(#inline_schema)*
