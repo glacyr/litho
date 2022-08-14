@@ -1,5 +1,5 @@
 use kono_executor::{Intermediate, Value};
-use kono_schema::{Item, ItemScalar, Type};
+use kono_schema::{Item, Type};
 
 use super::{Error, ObjectValue};
 

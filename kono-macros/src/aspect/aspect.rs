@@ -206,23 +206,6 @@ impl Aspect {
             ),
         };
 
-        let (error_generics, error_env) = match self.item.items.iter().find_map(|item| match item {
-            ImplItem::Type(ty) if ty.ident == "Error" => Some(ty),
-            _ => None,
-        }) {
-            Some(item) => (quote! { #generics }, {
-                let ty = &item.ty;
-                quote! { #ty }
-            }),
-            None => (
-                {
-                    let params = &generics.params;
-                    quote! { <_E, #params> }
-                },
-                quote! { _E },
-            ),
-        };
-
         let inline_schema = self.inline_schema().collect::<Vec<_>>();
 
         let resolve_field = self.handler("resolve_field", self.fields(), true);
