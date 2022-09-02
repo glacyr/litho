@@ -85,6 +85,12 @@ where
         span: Span,
         name: &'a T::Value,
     },
+
+    /// Caused by violation of [`FragmentsMustBeUsed`](5.5.1.4 Fragments Must Be Used).
+    UnusedFragment {
+        fragment_name: &'a T::Value,
+        span: Span,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -224,7 +230,7 @@ where
                 }, span)
             }
             Error::NonCompositeFragmentTarget { fragment_name, span, name } => {
-                Diagnostic::new("5.5.1.2 Fragment Spread Type Existence")
+                Diagnostic::new("5.5.1.3 Fragments On Composite Types")
                 .message(match fragment_name {
                     Some(fragment_name) => format!("Fragment `{}` targets non-composite type `{}`.", fragment_name, name),
                     None => format!("Inline fragment targets non-composite type `{}`.", name)
@@ -233,6 +239,11 @@ where
                     Some(fragment_name) => format!("Fragment `{}` targets type `{}` here, but it is not a composite type (union, interface or object).", fragment_name, name),
                     None => format!("Inline fragment targets type `{}` here, but it is not a composite type (union, interface or object).", name)
                 }, span)
+            }
+            Error::UnusedFragment { fragment_name, span } => {
+                Diagnostic::new("5.5.1.4 Fragments Must Be Used")
+                .message(format!("Fragment `{}` is never used.", fragment_name))
+                .label(format!("Fragment `{}` is defined here but never used.", fragment_name), span)
             }
         }
     }

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use graphql_parser::query::{Definition, OperationDefinition, Text, TypeCondition};
+use graphql_parser::query::{Definition, Text};
 use graphql_parser::{query, schema};
 
 use crate::extensions::*;
@@ -39,7 +39,7 @@ where
         &self,
         document: &'v query::Document<'a, T>,
         schema: &'v schema::Document<'a, T>,
-        scope: &Scope<'_, 'v>,
+        _scope: &Scope<'_, 'v>,
         accumulator: &mut Self::Accumulator,
     ) {
         let mut used = HashSet::new();
@@ -53,9 +53,19 @@ where
                 _ => continue,
             };
 
-            // accumulator
+            accumulator.push(Error::UnusedFragment {
+                fragment_name: &fragment.name,
+                span: fragment.span(),
+            })
         }
     }
+}
+
+impl<'v, 'a, T> Traverse<'v, 'a, T> for FragmentsMustBeUsed
+where
+    'a: 'v,
+    T: Text<'a>,
+{
 }
 
 struct FragmentSpreadVisitor;

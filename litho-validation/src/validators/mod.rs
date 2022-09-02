@@ -31,5 +31,6 @@ where
         FragmentNameUniqueness,
         FragmentSpreadTypeExistence,
         FragmentsOnCompositeTypes,
+        FragmentsMustBeUsed,
     )
 }
