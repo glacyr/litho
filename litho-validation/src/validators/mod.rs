@@ -1,12 +1,14 @@
 use graphql_parser::query::Text;
 
 mod arguments;
+mod directives;
 mod documents;
 mod fields;
 mod fragments;
 mod operations;
 
 pub use arguments::*;
+pub use directives::*;
 pub use documents::*;
 pub use fields::*;
 pub use fragments::*;
@@ -35,5 +37,6 @@ where
         FragmentSpreadTargetDefined,
         FragmentSpreadsMustNotFormCycles,
         FragmentSpreadIsPossible,
+        DirectivesAreDefined,
     )
 }

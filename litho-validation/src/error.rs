@@ -127,6 +127,9 @@ where
         parent_type: &'a str,
         parent_span: Span,
     },
+
+    /// Caused by violation of [`DirectivesAreDefined`](5.7.1 Directives Are Defined)
+    UndefinedDirective { name: &'a str, span: Span },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -309,6 +312,12 @@ where
                 .message(format!("Fragment is applied to unrelated type `{}`.", fragment_type))
                 .label(format!("Fragment is used on selection of type `{}` here ...", parent_type), parent_span)
                 .label(format!("... but applies to type `{}` here.", fragment_type), fragment_span)
+            }
+
+            Error::UndefinedDirective { name, span } => {
+                Diagnostic::new("5.7.1 Directives Are Defined")
+                .message(format!("Directive `{}` does not exist.", name))
+                .label(format!("Directive `{}` is referenced here but does not exist.", name), span)
             }
         }
     }
