@@ -34,5 +34,6 @@ where
         FragmentsMustBeUsed,
         FragmentSpreadTargetDefined,
         FragmentSpreadsMustNotFormCycles,
+        FragmentSpreadIsPossible,
     )
 }

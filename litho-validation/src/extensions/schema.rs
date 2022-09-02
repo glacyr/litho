@@ -1,4 +1,4 @@
-use std::iter::empty;
+use std::iter::{empty, once};
 
 use graphql_parser::schema::{
     Definition, DirectiveDefinition, Document, Field, Text, Type, TypeDefinition,
@@ -19,6 +19,13 @@ where
     fn directive_definition<S>(&self, name: S) -> Option<&DirectiveDefinition<'a, T>>
     where
         S: AsRef<str>;
+
+    fn possible_types<'b>(&'b self, name: &'b str) -> Box<dyn Iterator<Item = &'b str> + 'b>;
+
+    fn types_implementing_interface<'b>(
+        &'b self,
+        name: &'b str,
+    ) -> Box<dyn Iterator<Item = &'b str> + '_>;
 }
 
 impl<'a, T> DocumentExt<'a, T> for Document<'a, T>
@@ -62,6 +69,42 @@ where
         self.directive_definitions()
             .find(|definition| definition.name.as_ref() == name.as_ref())
     }
+
+    fn possible_types<'b>(&'b self, name: &'b str) -> Box<dyn Iterator<Item = &'b str> + 'b> {
+        let definition = match self.type_definition(name) {
+            Some(definition) => definition,
+            None => return Box::new(empty()),
+        };
+
+        match definition {
+            TypeDefinition::Enum(_)
+            | TypeDefinition::InputObject(_)
+            | TypeDefinition::Scalar(_) => Box::new(empty()),
+            TypeDefinition::Interface(_) => self.types_implementing_interface(name),
+            TypeDefinition::Object(_) => Box::new(once(name)),
+            TypeDefinition::Union(definition) => {
+                Box::new(definition.types.iter().map(AsRef::as_ref))
+            }
+        }
+    }
+
+    fn types_implementing_interface<'b>(
+        &'b self,
+        name: &'b str,
+    ) -> Box<dyn Iterator<Item = &'b str> + '_> {
+        Box::new(
+            self.definitions
+                .iter()
+                .filter_map(move |definition| match definition {
+                    Definition::TypeDefinition(definition)
+                        if definition.implements_interface(&name) =>
+                    {
+                        Some(definition.name().as_ref())
+                    }
+                    _ => None,
+                }),
+        )
+    }
 }
 
 pub trait TypeExt<'a, T>
@@ -103,6 +146,10 @@ where
     fn field(&self, name: &T::Value) -> Option<&Field<'a, T>>;
 
     fn is_composite(&self) -> bool;
+
+    fn implements_interfaces(&self) -> Box<dyn Iterator<Item = &str> + '_>;
+
+    fn implements_interface(&self, name: &str) -> bool;
 }
 
 impl<'a, T> TypeDefinitionExt<'a, T> for TypeDefinition<'a, T>
@@ -143,5 +190,26 @@ where
             | TypeDefinition::Union(_) => true,
             TypeDefinition::Enum(_) | TypeDefinition::Scalar(_) => false,
         }
+    }
+
+    fn implements_interfaces(&self) -> Box<dyn Iterator<Item = &str> + '_> {
+        match self {
+            TypeDefinition::Enum(_)
+            | TypeDefinition::InputObject(_)
+            | TypeDefinition::Scalar(_)
+            | TypeDefinition::Union(_) => Box::new(empty()),
+            TypeDefinition::Object(definition) => {
+                Box::new(definition.implements_interfaces.iter().map(AsRef::as_ref))
+            }
+            TypeDefinition::Interface(definition) => Box::new(
+                definition.implements_interfaces.iter().map(AsRef::as_ref), // .chain(once(definition.name.as_ref())),
+            ),
+        }
+    }
+
+    fn implements_interface(&self, name: &str) -> bool {
+        self.implements_interfaces()
+            .find(|&interface| interface == name)
+            .is_some()
     }
 }

@@ -93,7 +93,7 @@ impl<'a, 'b> Scope<'a, 'b> {
         }
     }
 
-    pub fn ty(&self) -> &str {
+    pub fn ty(&self) -> &'b str {
         match self {
             Self::Document | Self::Query { .. } => "Query",
             Self::Mutation { .. } => "Mutation",

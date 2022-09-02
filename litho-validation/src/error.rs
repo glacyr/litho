@@ -110,6 +110,23 @@ where
         fragment_name: &'a T::Value,
         span: Span,
     },
+
+    /// Caused by violation of [`FragmentSpreadIsPossible`](5.5.2.3 Fragment Spread Is Possible)
+    ImpossibleFragmentSpread {
+        fragment_name: &'a str,
+        fragment_type: &'a str,
+        fragment_span: Span,
+        parent_type: &'a str,
+        parent_span: Span,
+    },
+
+    /// Caused by violation of [`FragmentSpreadIsPossible`](5.5.2.3 Fragment Spread Is Possible)
+    ImpossibleInlineFragment {
+        fragment_type: &'a str,
+        fragment_span: Span,
+        parent_type: &'a str,
+        parent_span: Span,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -278,6 +295,20 @@ where
                 Diagnostic::new("5.5.2.2 Fragment Spreads Must Not Form Cycles")
                 .message(format!("Fragment `{}` has already been spread.", fragment_name))
                 .label(format!("Spreading fragment `{}` again here forms a cycle.", fragment_name), span)
+            }
+
+            Error::ImpossibleFragmentSpread { fragment_name, fragment_type, fragment_span, parent_type, parent_span } => {
+                Diagnostic::new("5.5.2.3 Fragment Spread Is Possible")
+                .message(format!("Fragment `{}` can only be applied to type `{}`.", fragment_name, fragment_type))
+                .label(format!("Fragment `{}` can only be applied to type `{}` ...", fragment_name, fragment_type), fragment_span)
+                .label(format!("... but is used on selection of type `{}` here.", parent_type), parent_span)
+            }
+
+            Error::ImpossibleInlineFragment { fragment_type, fragment_span, parent_type, parent_span } => {
+                Diagnostic::new("5.5.2.3 Fragment Spread Is Possible")
+                .message(format!("Fragment is applied to unrelated type `{}`.", fragment_type))
+                .label(format!("Fragment is used on selection of type `{}` here ...", parent_type), parent_span)
+                .label(format!("... but applies to type `{}` here.", fragment_type), fragment_span)
             }
         }
     }
