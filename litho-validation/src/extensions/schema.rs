@@ -202,7 +202,11 @@ where
                 Box::new(definition.implements_interfaces.iter().map(AsRef::as_ref))
             }
             TypeDefinition::Interface(definition) => Box::new(
-                definition.implements_interfaces.iter().map(AsRef::as_ref), // .chain(once(definition.name.as_ref())),
+                definition
+                    .implements_interfaces
+                    .iter()
+                    .map(AsRef::as_ref)
+                    .chain(once(definition.name.as_ref())),
             ),
         }
     }
