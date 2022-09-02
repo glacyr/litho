@@ -40,7 +40,7 @@ where
         &self,
         document: &'v query::Document<'a, T>,
         schema: &'v schema::Document<'a, T>,
-        scope: &Scope<'_, 'v>,
+        _scope: &Scope<'_, 'v>,
         accumulator: &mut Self::Accumulator,
     ) {
         FragmentSpreadIsPossibleInner { document }.traverse(document, schema, accumulator);

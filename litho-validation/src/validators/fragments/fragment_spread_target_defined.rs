@@ -28,7 +28,7 @@ where
         &self,
         document: &'v query::Document<'a, T>,
         schema: &'v schema::Document<'a, T>,
-        scope: &Scope<'_, 'v>,
+        _scope: &Scope<'_, 'v>,
         accumulator: &mut Self::Accumulator,
     ) {
         let fragments = document
@@ -66,8 +66,8 @@ where
     fn visit_fragment_spread(
         &self,
         fragment_spread: &'v query::FragmentSpread<'a, T>,
-        schema: &'v schema::Document<'a, T>,
-        scope: &Scope<'_, 'v>,
+        _schema: &'v schema::Document<'a, T>,
+        _scope: &Scope<'_, 'v>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !self
