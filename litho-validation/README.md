@@ -39,7 +39,7 @@ compatibility checking.
 - [x] 5.5.1.3 Fragments On Composite Types
 - [x] 5.5.1.4 Fragments Must Be Used
 - [x] 5.5.2.1 Fragment Spread Target Defined
-- [ ] 5.5.2.2 Fragment Spreads Must Not Form Cycles
+- [x] 5.5.2.2 Fragment Spreads Must Not Form Cycles
 - [ ] 5.5.2.3 Fragment Spread Is Possible
 - [ ] 5.6.1 Values of Correct Type
 - [ ] 5.6.2 Input Object Field Names

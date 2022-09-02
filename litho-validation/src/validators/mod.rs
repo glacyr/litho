@@ -33,5 +33,6 @@ where
         FragmentsOnCompositeTypes,
         FragmentsMustBeUsed,
         FragmentSpreadTargetDefined,
+        FragmentSpreadsMustNotFormCycles,
     )
 }

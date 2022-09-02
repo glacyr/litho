@@ -97,6 +97,12 @@ where
         fragment_name: &'a T::Value,
         span: Span,
     },
+
+    /// Caused by violation of [`FragmentSpreadsMustNotFormCycles`](5.5.2.2 Fragment Spreads Must Not Form Cycles).
+    CyclicFragmentSpread {
+        fragment_name: &'a T::Value,
+        span: Span,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -255,6 +261,11 @@ where
                 Diagnostic::new("5.5.2.1 Fragment Spread Target Defined")
                 .message(format!("Fragment `{}` is not defined.", fragment_name))
                 .label(format!("Fragment `{}` is referenced here but never defined.", fragment_name), span)
+            }
+            Error::CyclicFragmentSpread { fragment_name, span } => {
+                Diagnostic::new("5.5.2.2 Fragment Spreads Must Not Form Cycles")
+                .message(format!("Fragment `{}` has already been spread.", fragment_name))
+                .label(format!("Spreading fragment `{}` again here forms a cycle.", fragment_name), span)
             }
         }
     }
