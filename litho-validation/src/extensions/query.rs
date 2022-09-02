@@ -2,6 +2,7 @@ use graphql_parser::query::{
     Definition, Document, Field, FragmentDefinition, FragmentSpread, InlineFragment,
     OperationDefinition, Selection, SelectionSet, Text,
 };
+use graphql_parser::schema::Directive;
 use graphql_parser::Pos;
 
 use super::Span;
@@ -70,6 +71,27 @@ where
             Definition::Fragment(fragment) => fragment.span(),
             Definition::Operation(operation) => operation.span(),
         }
+    }
+}
+
+pub trait DirectiveExt<'a, T>
+where
+    T: Text<'a>,
+{
+    fn position(&self) -> Pos;
+    fn span(&self) -> Span;
+}
+
+impl<'a, T> DirectiveExt<'a, T> for Directive<'a, T>
+where
+    T: Text<'a>,
+{
+    fn position(&self) -> Pos {
+        self.position
+    }
+
+    fn span(&self) -> Span {
+        Span(self.position, self.name.as_ref().len() + 1)
     }
 }
 

@@ -6,14 +6,8 @@ use unindent::unindent;
 pub fn main() {
     let schema = parse_schema::<&str>(
         r#"
-    scalar Weird
-
     type Query {
-        hello(foo: Boolean!, bar: String!): Hello!
-    }
-
-    type Hello {
-        world(foo: Boolean!): String!
+        hello: String!
     }
     "#,
     )
@@ -22,11 +16,15 @@ pub fn main() {
     let query_source = unindent(
         &r#"
     query {
-        hello(foo: true, bar: "ha") {
-            world(foo: true) {
-                bar
-            }
-        }
+        ...Foo
+    }
+
+    fragment Foo on Query {
+        ...Bar
+    }
+
+    fragment Bar on Query {
+        hello
     }
     "#,
     )

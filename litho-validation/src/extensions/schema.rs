@@ -1,6 +1,8 @@
 use std::iter::empty;
 
-use graphql_parser::schema::{Definition, Document, Field, Text, Type, TypeDefinition};
+use graphql_parser::schema::{
+    Definition, DirectiveDefinition, Document, Field, Text, Type, TypeDefinition,
+};
 
 pub trait DocumentExt<'a, T>
 where
@@ -9,6 +11,12 @@ where
     fn type_definitions(&self) -> Box<dyn Iterator<Item = &TypeDefinition<'a, T>> + '_>;
 
     fn type_definition<S>(&self, name: S) -> Option<&TypeDefinition<'a, T>>
+    where
+        S: AsRef<str>;
+
+    fn directive_definitions(&self) -> Box<dyn Iterator<Item = &DirectiveDefinition<'a, T>> + '_>;
+
+    fn directive_definition<S>(&self, name: S) -> Option<&DirectiveDefinition<'a, T>>
     where
         S: AsRef<str>;
 }
@@ -34,6 +42,25 @@ where
     {
         self.type_definitions()
             .find(|definition| definition.name().as_ref() == name.as_ref())
+    }
+
+    fn directive_definitions(&self) -> Box<dyn Iterator<Item = &DirectiveDefinition<'a, T>> + '_> {
+        Box::new(
+            self.definitions
+                .iter()
+                .flat_map(|definition| match definition {
+                    Definition::DirectiveDefinition(definition) => Some(definition),
+                    _ => None,
+                }),
+        )
+    }
+
+    fn directive_definition<S>(&self, name: S) -> Option<&DirectiveDefinition<'a, T>>
+    where
+        S: AsRef<str>,
+    {
+        self.directive_definitions()
+            .find(|definition| definition.name.as_ref() == name.as_ref())
     }
 }
 

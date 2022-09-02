@@ -53,6 +53,13 @@ where
         name: &'a T::Value,
     },
 
+    /// Caused by violation of [`ArgumentNames`](5.4.1 Argument Names).
+    UndefinedDirectiveArgument {
+        directive_name: &'a T::Value,
+        directive_span: Span,
+        name: &'a T::Value,
+    },
+
     /// Caused by violation of [`ArgumentUniqueness`](5.4.2 Argument Uniqueness).
     DuplicateArgumentName {
         field_name: &'a T::Value,
@@ -210,6 +217,11 @@ where
 				Diagnostic::new("5.4.1 Argument Names")
 				.message(format!("Given argument `{}` is not defined for field `{}` of type `{}`.", name, field_name, ty))
 				.label(format!("Argument `{}` does not exist on field `{}` of type `{}`.", name, field_name, ty), field_span)
+			}
+			Error::UndefinedDirectiveArgument { directive_name, directive_span, name } => {
+				Diagnostic::new("5.4.1 Argument Names")
+				.message(format!("Given argument `{}` is not defined for directive `{}`.", name, directive_name))
+				.label(format!("Argument `{}` does not exist on directive `{}`.", name, directive_name), directive_span)
 			}
 			Error::DuplicateArgumentName { field_name, field_span, ty, name } => {
 				Diagnostic::new("5.4.1 Argument Names")

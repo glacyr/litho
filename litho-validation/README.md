@@ -24,22 +24,22 @@ compatibility checking.
 
 #### Rules
 
-- [x] 5.1.1 Executable Definitions
-- [x] 5.2.1.1 Operation Name Uniqueness
-- [x] 5.2.2.1 Lone Anonymous Operation
+- [x] 5.1.1 Executable Definitions (no tests)
+- [x] 5.2.1.1 Operation Name Uniqueness (no tests)
+- [x] 5.2.2.1 Lone Anonymous Operation (no tests)
 - [ ] 5.2.3.1 Single Root Field
-- [x] 5.3.1 Field Selections
+- [x] 5.3.1 Field Selections (no tests)
 - [ ] 5.3.2 Field Selection Merging
-- [x] 5.3.3 Leaf Field Selections
+- [x] 5.3.3 Leaf Field Selections (no tests)
 - [x] 5.4.1 Argument Names
-- [x] 5.4.2 Argument Uniqueness
-- [x] 5.4.2.1 Required Arguments
-- [x] 5.5.1.1 Fragment Name Uniqueness
-- [x] 5.5.1.2 Fragment Spread Type Existence
-- [x] 5.5.1.3 Fragments On Composite Types
-- [x] 5.5.1.4 Fragments Must Be Used
-- [x] 5.5.2.1 Fragment Spread Target Defined
-- [x] 5.5.2.2 Fragment Spreads Must Not Form Cycles
+- [x] 5.4.2 Argument Uniqueness (no tests)
+- [x] 5.4.2.1 Required Arguments (no tests)
+- [x] 5.5.1.1 Fragment Name Uniqueness (no tests)
+- [x] 5.5.1.2 Fragment Spread Type Existence (no tests)
+- [x] 5.5.1.3 Fragments On Composite Types (no tests)
+- [x] 5.5.1.4 Fragments Must Be Used (no tests)
+- [x] 5.5.2.1 Fragment Spread Target Defined (no tests)
+- [x] 5.5.2.2 Fragment Spreads Must Not Form Cycles (no tests)
 - [ ] 5.5.2.3 Fragment Spread Is Possible
 - [ ] 5.6.1 Values of Correct Type
 - [ ] 5.6.2 Input Object Field Names
