@@ -32,5 +32,6 @@ where
         FragmentSpreadTypeExistence,
         FragmentsOnCompositeTypes,
         FragmentsMustBeUsed,
+        FragmentSpreadTargetDefined,
     )
 }

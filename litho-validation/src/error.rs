@@ -91,6 +91,12 @@ where
         fragment_name: &'a T::Value,
         span: Span,
     },
+
+    /// Caused by violation of [`FragmentSpreadTargetDefined`](5.5.2.1 Fragment Spread Target Defined).
+    UndefinedFragment {
+        fragment_name: &'a T::Value,
+        span: Span,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -244,6 +250,11 @@ where
                 Diagnostic::new("5.5.1.4 Fragments Must Be Used")
                 .message(format!("Fragment `{}` is never used.", fragment_name))
                 .label(format!("Fragment `{}` is defined here but never used.", fragment_name), span)
+            }
+            Error::UndefinedFragment { fragment_name, span } => {
+                Diagnostic::new("5.5.2.1 Fragment Spread Target Defined")
+                .message(format!("Fragment `{}` is not defined.", fragment_name))
+                .label(format!("Fragment `{}` is referenced here but never defined.", fragment_name), span)
             }
         }
     }

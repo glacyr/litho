@@ -1,6 +1,6 @@
 use graphql_parser::query::{
-    Definition, Field, FragmentDefinition, InlineFragment, OperationDefinition, Selection,
-    SelectionSet, Text,
+    Definition, Field, FragmentDefinition, FragmentSpread, InlineFragment, OperationDefinition,
+    Selection, SelectionSet, Text,
 };
 use graphql_parser::Pos;
 
@@ -91,6 +91,27 @@ where
 
     fn span(&self) -> Span {
         Span(self.position, "fragment".len())
+    }
+}
+
+pub trait FragmentSpreadExt<'a, T>
+where
+    T: Text<'a>,
+{
+    fn position(&self) -> Pos;
+    fn span(&self) -> Span;
+}
+
+impl<'a, T> FragmentSpreadExt<'a, T> for FragmentSpread<'a, T>
+where
+    T: Text<'a>,
+{
+    fn position(&self) -> Pos {
+        self.position
+    }
+
+    fn span(&self) -> Span {
+        Span(self.position, self.fragment_name.as_ref().len())
     }
 }
 
