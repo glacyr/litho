@@ -31,6 +31,14 @@ where
         field: &'a Field<'b, T>,
     },
 
+    /// Caused by violation of [`SingleRootField`](5.2.3.1 Single Root Field)
+    MultipleSubscriptionRoots {
+        first_name: &'a str,
+        first_span: Span,
+        second_name: &'a str,
+        second_span: Span,
+    },
+
     /// Caused by violation of [`LeafFieldSelections`](5.3.3 Leaf Field Selections).
     UnexpectedSubselection {
         field_name: Option<&'a str>,
@@ -189,6 +197,14 @@ where
                     .unwrap()
                     .span(),
             ),
+
+            Error::MultipleSubscriptionRoots { first_name, first_span, second_name, second_span } => {
+                Diagnostic::new("5.2.3.1 Single Root Field")
+                .message("Subscriptions should have exactly one field.")
+                .label(format!("Subscriptions should have exactly one field but first field `{}` is referenced here ...", first_name), first_span)
+                .label(format!("... and second field `{}` is referenced here.", second_name), second_span)
+            }
+
             Error::UndefinedField {
                 field_name,
                 parent_span,

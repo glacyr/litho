@@ -27,7 +27,7 @@ compatibility checking.
 - [x] 5.1.1 Executable Definitions (no tests)
 - [x] 5.2.1.1 Operation Name Uniqueness (no tests)
 - [x] 5.2.2.1 Lone Anonymous Operation (no tests)
-- [ ] 5.2.3.1 Single Root Field
+- [x] 5.2.3.1 Single Root Field
 - [x] 5.3.1 Field Selections (no tests)
 - [ ] 5.3.2 Field Selection Merging
 - [x] 5.3.3 Leaf Field Selections (no tests)

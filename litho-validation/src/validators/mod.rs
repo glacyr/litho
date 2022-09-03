@@ -27,6 +27,7 @@ where
         ExecutableDefinitions,
         OperationNameUniqueness,
         LoneAnonymousOperation,
+        SingleRootField,
         FieldSelections,
         LeafFieldSelections,
         ArgumentNames,
