@@ -142,6 +142,14 @@ where
         expected: &'a Type<'b, T>,
         actual: ValueType,
     },
+
+    /// Caused by violation of [`InputObjectFieldNames`](5.6.2 Input Object Field Names)
+    UndefinedInputObjectField {
+        name: Cow<'a, str>,
+        span: Span,
+        ty: &'a Type<'b, T>,
+        field: &'a str,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -342,6 +350,12 @@ where
                 Diagnostic::new("5.6.1 Values Of Correct Type")
                 .message(format!("Value provided for `{}` has incorrect type.", name))
                 .label(format!("Value provided for `{}` here is type `{}` but expected `{}`.", name, actual.as_str(), expected), span)
+            }
+
+            Error::UndefinedInputObjectField { name, span, ty, field } => {
+                Diagnostic::new("5.6.1 Values Of Correct Type")
+                .message(format!("Field `{}` does not exist for input type `{}`.", field, ty))
+                .label(format!("Input `{}` resolves to type `{}` here but does not have field `{}`.", name, ty, field), span)
             }
         }
     }

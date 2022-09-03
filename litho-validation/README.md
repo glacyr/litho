@@ -42,7 +42,7 @@ compatibility checking.
 - [x] 5.5.2.2 Fragment Spreads Must Not Form Cycles (no tests)
 - [x] 5.5.2.3 Fragment Spread Is Possible
 - [x] 5.6.1 Values of Correct Type
-- [ ] 5.6.2 Input Object Field Names
+- [x] 5.6.2 Input Object Field Names
 - [ ] 5.6.3 Input Object Field Uniqueness
 - [ ] 5.6.4 Input Object Required Fields
 - [x] 5.7.1 Directives Are Defined

@@ -198,6 +198,10 @@ where
 
     fn field(&self, name: &T::Value) -> Option<&Field<'a, T>>;
 
+    fn input_values(&self) -> Box<dyn Iterator<Item = &InputValue<'a, T>> + '_>;
+
+    fn input_value(&self, name: &T::Value) -> Option<&InputValue<'a, T>>;
+
     fn is_composite(&self) -> bool;
 
     fn implements_interfaces(&self) -> Box<dyn Iterator<Item = &str> + '_>;
@@ -233,6 +237,17 @@ where
 
     fn field(&self, name: &T::Value) -> Option<&Field<'a, T>> {
         self.fields().find(|field| &field.name == name)
+    }
+
+    fn input_values(&self) -> Box<dyn Iterator<Item = &InputValue<'a, T>> + '_> {
+        match self {
+            TypeDefinition::InputObject(ty) => Box::new(ty.fields.iter()),
+            _ => Box::new(empty()),
+        }
+    }
+
+    fn input_value(&self, name: &T::Value) -> Option<&InputValue<'a, T>> {
+        self.input_values().find(|value| &value.name == name)
     }
 
     fn is_composite(&self) -> bool {

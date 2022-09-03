@@ -42,5 +42,6 @@ where
         DirectivesAreDefined,
         DirectivesAreInvalidLocations,
         ValuesOfCorrectType,
+        InputObjectFieldNames,
     )
 }
