@@ -43,7 +43,7 @@ compatibility checking.
 - [x] 5.5.2.3 Fragment Spread Is Possible
 - [x] 5.6.1 Values of Correct Type
 - [x] 5.6.2 Input Object Field Names
-- [ ] 5.6.3 Input Object Field Uniqueness
+- [x] 5.6.3 Input Object Field Uniqueness
 - [ ] 5.6.4 Input Object Required Fields
 - [x] 5.7.1 Directives Are Defined
 - [x] 5.7.2 Directives Are In Valid Locations
