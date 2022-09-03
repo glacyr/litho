@@ -204,6 +204,8 @@ where
 
     fn is_composite(&self) -> bool;
 
+    fn is_input_type(&self) -> bool;
+
     fn implements_interfaces(&self) -> Box<dyn Iterator<Item = &str> + '_>;
 
     fn implements_interface(&self, name: &str) -> bool;
@@ -257,6 +259,17 @@ where
             | TypeDefinition::Object(_)
             | TypeDefinition::Union(_) => true,
             TypeDefinition::Enum(_) | TypeDefinition::Scalar(_) => false,
+        }
+    }
+
+    fn is_input_type(&self) -> bool {
+        match self {
+            TypeDefinition::Enum(_)
+            | TypeDefinition::InputObject(_)
+            | TypeDefinition::Scalar(_) => true,
+            TypeDefinition::Interface(_) | TypeDefinition::Object(_) | TypeDefinition::Union(_) => {
+                false
+            }
         }
     }
 

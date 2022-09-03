@@ -48,5 +48,6 @@ where
         InputObjectFieldNames,
         InputObjectFieldUniqueness,
         VariableUniqueness,
+        VariablesAreInputTypes,
     )
 }

@@ -165,6 +165,13 @@ where
         first: Span,
         second: Span,
     },
+
+    /// Caused by violation of [`VariablesAreInputTypes`](5.8.2 Variables Are Input Types)
+    NonInputVariable {
+        name: &'a str,
+        ty: &'a str,
+        span: Span,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -386,6 +393,12 @@ where
                 .message(format!("Variable `{}` is defined twice.", name))
                 .label(format!("Variable `{}` is first defined here ...", name), first)
                 .label("... and later defined again here.", second)
+            }
+
+            Error::NonInputVariable { name, ty, span } => {
+                Diagnostic::new("5.8.2 Variables Are Input Types")
+                .message(format!("Variable `{}` isn't input type.", name))
+                .label(format!("Variable `{}` is defined here but `{}` is not an input type.", name, ty), span)
             }
         }
     }
