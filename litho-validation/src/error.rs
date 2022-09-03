@@ -158,6 +158,13 @@ where
         ty: &'a Type<'b, T>,
         field: &'a str,
     },
+
+    /// Caused by violation of [`VariableUniqueness`](5.8.1 Variable Uniqueness)
+    DuplicateVariableName {
+        name: &'a str,
+        first: Span,
+        second: Span,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -372,6 +379,13 @@ where
                 Diagnostic::new("5.6.1 Values Of Correct Type")
                 .message(format!("Field `{}` does not exist for input type `{}`.", field, ty))
                 .label(format!("Input `{}` resolves to type `{}` here but does not have field `{}`.", name, ty, field), span)
+            }
+
+            Error::DuplicateVariableName { name, first, second } => {
+                Diagnostic::new("5.8.1 Variable Uniqueness")
+                .message(format!("Variable `{}` is defined twice.", name))
+                .label(format!("Variable `{}` is first defined here ...", name), first)
+                .label("... and later defined again here.", second)
             }
         }
     }

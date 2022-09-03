@@ -142,6 +142,7 @@ where
     T: Text<'a>,
 {
     fn name(&self) -> Option<&T::Value>;
+    fn variable_definitions(&self) -> &[VariableDefinition<'a, T>];
     fn selection_set(&self) -> &SelectionSet<'a, T>;
     fn position(&self) -> Pos;
     fn span(&self) -> Span;
@@ -157,6 +158,15 @@ where
             OperationDefinition::Query(query) => query.name.as_ref(),
             OperationDefinition::SelectionSet(_) => None,
             OperationDefinition::Subscription(sub) => sub.name.as_ref(),
+        }
+    }
+
+    fn variable_definitions(&self) -> &[VariableDefinition<'a, T>] {
+        match self {
+            OperationDefinition::Mutation(mutation) => &mutation.variable_definitions,
+            OperationDefinition::Query(query) => &query.variable_definitions,
+            OperationDefinition::SelectionSet(_) => &[],
+            OperationDefinition::Subscription(sub) => &sub.variable_definitions,
         }
     }
 

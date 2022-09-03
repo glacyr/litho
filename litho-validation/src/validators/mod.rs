@@ -7,6 +7,7 @@ mod fields;
 mod fragments;
 mod operations;
 mod values;
+mod variables;
 
 pub use arguments::*;
 pub use directives::*;
@@ -15,6 +16,7 @@ pub use fields::*;
 pub use fragments::*;
 pub use operations::*;
 pub use values::*;
+pub use variables::*;
 
 use crate::{Error, Traverse};
 
@@ -45,5 +47,6 @@ where
         ValuesOfCorrectType,
         InputObjectFieldNames,
         InputObjectFieldUniqueness,
+        VariableUniqueness,
     )
 }

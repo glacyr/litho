@@ -48,7 +48,7 @@ compatibility checking.
 - [x] 5.7.1 Directives Are Defined
 - [x] 5.7.2 Directives Are In Valid Locations
 - [ ] 5.7.3 Directives Are Unique Per Location
-- [ ] 5.8.1 Variable Uniqueness
+- [x] 5.8.1 Variable Uniqueness
 - [ ] 5.8.2 Variables Are Input Types
 - [ ] 5.8.3 All Variables Uses Defined
 - [ ] 5.8.4 All Variables Used
