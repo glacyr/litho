@@ -1,6 +1,7 @@
+use std::borrow::Cow;
 use std::fmt::Display;
 
-use graphql_parser::query::{Field, FragmentDefinition, OperationDefinition, Text};
+use graphql_parser::query::{Field, FragmentDefinition, OperationDefinition, Text, Type};
 
 use crate::diagnostics::{Diagnostic, IntoDiagnostic};
 use crate::extensions::*;
@@ -133,6 +134,14 @@ where
 
     /// Caused by violation of [`DirectivesAreInValidLocations`](5.7.2 Directives Are In Valid Locations)
     InvalidDirectiveLocation { name: &'a str, span: Span },
+
+    /// Caused by violation of [`ValuesOfCorrectType`](5.6.1 Values Of Correct Type)
+    IncorrectValueType {
+        name: Cow<'a, str>,
+        span: Span,
+        expected: &'a Type<'b, T>,
+        actual: ValueType,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -327,6 +336,12 @@ where
                 Diagnostic::new("5.7.2 Directives Are In Valid Locations")
                 .message(format!("Directive `{}` cannot be used in this location.", name))
                 .label(format!("Directive `{}` is used here but cannot be used in this location.", name), span)
+            }
+
+            Error::IncorrectValueType { name, span, expected, actual } => {
+                Diagnostic::new("5.6.1 Values Of Correct Type")
+                .message(format!("Value provided for `{}` has incorrect type.", name))
+                .label(format!("Value provided for `{}` here is type `{}` but expected `{}`.", name, actual.as_str(), expected), span)
             }
         }
     }

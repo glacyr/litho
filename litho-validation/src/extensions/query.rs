@@ -1,6 +1,6 @@
 use graphql_parser::query::{
     Definition, Document, Field, FragmentDefinition, FragmentSpread, InlineFragment,
-    OperationDefinition, Query, Selection, SelectionSet, Text,
+    OperationDefinition, Query, Selection, SelectionSet, Text, VariableDefinition,
 };
 use graphql_parser::schema::Directive;
 use graphql_parser::Pos;
@@ -292,5 +292,18 @@ where
 {
     fn span(&self) -> Span {
         Span(self.position, "query".len())
+    }
+}
+
+pub trait VariableDefinitionExt {
+    fn span(&self) -> Span;
+}
+
+impl<'a, T> VariableDefinitionExt for VariableDefinition<'a, T>
+where
+    T: Text<'a>,
+{
+    fn span(&self) -> Span {
+        Span(self.position, self.name.as_ref().len())
     }
 }

@@ -1,8 +1,27 @@
 use std::iter::{empty, once};
 
 use graphql_parser::schema::{
-    Definition, DirectiveDefinition, Document, Field, Text, Type, TypeDefinition,
+    Definition, DirectiveDefinition, Document, EnumType, Field, InputValue, Text, Type,
+    TypeDefinition,
 };
+
+pub trait DirectiveDefinitionExt<'a, T>
+where
+    T: Text<'a>,
+{
+    fn argument(&self, name: &str) -> Option<&InputValue<'a, T>>;
+}
+
+impl<'a, T> DirectiveDefinitionExt<'a, T> for DirectiveDefinition<'a, T>
+where
+    T: Text<'a>,
+{
+    fn argument(&self, name: &str) -> Option<&InputValue<'a, T>> {
+        self.arguments
+            .iter()
+            .find(|value| value.name.as_ref() == name)
+    }
+}
 
 pub trait DocumentExt<'a, T>
 where
@@ -104,6 +123,40 @@ where
                     _ => None,
                 }),
         )
+    }
+}
+
+pub trait EnumTypeExt {
+    fn has_value(&self, name: &str) -> bool;
+}
+
+impl<'a, T> EnumTypeExt for EnumType<'a, T>
+where
+    T: Text<'a>,
+{
+    fn has_value(&self, name: &str) -> bool {
+        self.values
+            .iter()
+            .find(|value| value.name.as_ref() == name)
+            .is_some()
+    }
+}
+
+pub trait FieldDefinitionExt<'a, T>
+where
+    T: Text<'a>,
+{
+    fn argument(&self, name: &str) -> Option<&InputValue<'a, T>>;
+}
+
+impl<'a, T> FieldDefinitionExt<'a, T> for Field<'a, T>
+where
+    T: Text<'a>,
+{
+    fn argument(&self, name: &str) -> Option<&InputValue<'a, T>> {
+        self.arguments
+            .iter()
+            .find(|input| input.name.as_ref() == name)
     }
 }
 

@@ -6,6 +6,7 @@ mod documents;
 mod fields;
 mod fragments;
 mod operations;
+mod values;
 
 pub use arguments::*;
 pub use directives::*;
@@ -13,6 +14,7 @@ pub use documents::*;
 pub use fields::*;
 pub use fragments::*;
 pub use operations::*;
+pub use values::*;
 
 use crate::{Error, Traverse};
 
@@ -39,5 +41,6 @@ where
         FragmentSpreadIsPossible,
         DirectivesAreDefined,
         DirectivesAreInvalidLocations,
+        ValuesOfCorrectType,
     )
 }
