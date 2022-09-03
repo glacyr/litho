@@ -1,6 +1,6 @@
 use graphql_parser::query::{
     Definition, Document, Field, FragmentDefinition, FragmentSpread, InlineFragment,
-    OperationDefinition, Selection, SelectionSet, Text,
+    OperationDefinition, Query, Selection, SelectionSet, Text,
 };
 use graphql_parser::schema::Directive;
 use graphql_parser::Pos;
@@ -276,5 +276,21 @@ where
                 Definition::Fragment(fragment) if fragment.name.as_ref() == name => Some(fragment),
                 Definition::Fragment(_) | Definition::Operation(_) => None,
             })
+    }
+}
+
+pub trait QueryExt<'a, T>
+where
+    T: Text<'a>,
+{
+    fn span(&self) -> Span;
+}
+
+impl<'a, T> QueryExt<'a, T> for Query<'a, T>
+where
+    T: Text<'a>,
+{
+    fn span(&self) -> Span {
+        Span(self.position, "query".len())
     }
 }

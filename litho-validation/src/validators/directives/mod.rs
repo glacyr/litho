@@ -1,3 +1,5 @@
 mod directives_are_defined;
+mod directives_are_in_valid_locations;
 
 pub use directives_are_defined::DirectivesAreDefined;
+pub use directives_are_in_valid_locations::DirectivesAreInvalidLocations;

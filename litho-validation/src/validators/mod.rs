@@ -38,5 +38,6 @@ where
         FragmentSpreadsMustNotFormCycles,
         FragmentSpreadIsPossible,
         DirectivesAreDefined,
+        DirectivesAreInvalidLocations,
     )
 }

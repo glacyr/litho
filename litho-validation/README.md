@@ -40,13 +40,13 @@ compatibility checking.
 - [x] 5.5.1.4 Fragments Must Be Used (no tests)
 - [x] 5.5.2.1 Fragment Spread Target Defined (no tests)
 - [x] 5.5.2.2 Fragment Spreads Must Not Form Cycles (no tests)
-- [ ] 5.5.2.3 Fragment Spread Is Possible
+- [x] 5.5.2.3 Fragment Spread Is Possible
 - [ ] 5.6.1 Values of Correct Type
 - [ ] 5.6.2 Input Object Field Names
 - [ ] 5.6.3 Input Object Field Uniqueness
 - [ ] 5.6.4 Input Object Required Fields
-- [ ] 5.7.1 Directives Are Defined
-- [ ] 5.7.2 Directives Are In Valid Locations
+- [x] 5.7.1 Directives Are Defined
+- [x] 5.7.2 Directives Are In Valid Locations
 - [ ] 5.7.3 Directives Are Unique Per Location
 - [ ] 5.8.1 Variable Uniqueness
 - [ ] 5.8.2 Variables Are Input Types

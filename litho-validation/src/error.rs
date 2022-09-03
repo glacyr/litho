@@ -130,6 +130,9 @@ where
 
     /// Caused by violation of [`DirectivesAreDefined`](5.7.1 Directives Are Defined)
     UndefinedDirective { name: &'a str, span: Span },
+
+    /// Caused by violation of [`DirectivesAreInValidLocations`](5.7.2 Directives Are In Valid Locations)
+    InvalidDirectiveLocation { name: &'a str, span: Span },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -318,6 +321,12 @@ where
                 Diagnostic::new("5.7.1 Directives Are Defined")
                 .message(format!("Directive `{}` does not exist.", name))
                 .label(format!("Directive `{}` is referenced here but does not exist.", name), span)
+            }
+
+            Error::InvalidDirectiveLocation { name, span } => {
+                Diagnostic::new("5.7.2 Directives Are In Valid Locations")
+                .message(format!("Directive `{}` cannot be used in this location.", name))
+                .label(format!("Directive `{}` is used here but cannot be used in this location.", name), span)
             }
         }
     }

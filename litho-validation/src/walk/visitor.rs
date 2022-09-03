@@ -174,7 +174,7 @@ macro_rules! branch {
     fn $name(
         &self,
         $arg: $ty,
-        schema: &'v Schema<'a, T>,
+        schema: &'v Schema<'a, _T>,
         scope: &Scope<'_, 'v>,
         accumulator: &mut Self::Accumulator,
     ) {
@@ -190,32 +190,32 @@ macro_rules! branch {
 macro_rules! impl_tuple (
     ($first:ident $($second:ident)*) => {
         #[allow(non_snake_case)]
-        impl<'v, 'a, T, $first, $($second),*> Visitor<'v, 'a, T> for ($first, $($second),*)
+        impl<'v, 'a, _T, $first, $($second),*> Visitor<'v, 'a, _T> for ($first, $($second),*)
         where
             'a: 'v,
-            $first: Visitor<'v, 'a, T>,
-            $($second: Visitor<'v, 'a, T, Accumulator = $first::Accumulator>,)*
-            T: Text<'a>,
+            $first: Visitor<'v, 'a, _T>,
+            $($second: Visitor<'v, 'a, _T, Accumulator = $first::Accumulator>,)*
+            _T: Text<'a>,
         {
             type Accumulator = $first::Accumulator;
 
-            branch!(($first $($second)*), visit_document, document: &'v Document<'a, T>);
-            branch!(($first $($second)*), visit_definition, definition: &'v Definition<'a, T>);
-            branch!(($first $($second)*), visit_fragment_definition, fragment_definition: &'v FragmentDefinition<'a, T>);
-            branch!(($first $($second)*), visit_type_condition, type_condition: &'v TypeCondition<'a, T>);
-            branch!(($first $($second)*), visit_directive, directive: &'v Directive<'a, T>);
-            branch!(($first $($second)*), visit_value, value: &'v Value<'a, T>);
-            branch!(($first $($second)*), visit_selection_set, selection_set: &'v SelectionSet<'a, T>);
-            branch!(($first $($second)*), visit_selection, selection: &'v Selection<'a, T>);
-            branch!(($first $($second)*), visit_field, field: &'v Field<'a, T>);
-            branch!(($first $($second)*), visit_fragment_spread, fragment_spread: &'v FragmentSpread<'a, T>);
-            branch!(($first $($second)*), visit_inline_fragment, inline_fragment: &'v InlineFragment<'a, T>);
-            branch!(($first $($second)*), visit_operation_definition, operation_definition: &'v OperationDefinition<'a, T>);
-            branch!(($first $($second)*), visit_mutation, mutation: &'v Mutation<'a, T>);
-            branch!(($first $($second)*), visit_variable_definition, variable_definition: &'v VariableDefinition<'a, T>);
-            branch!(($first $($second)*), visit_type, ty: &'v Type<'a, T>);
-            branch!(($first $($second)*), visit_query, ty: &'v Query<'a, T>);
-            branch!(($first $($second)*), visit_subscription, ty: &'v Subscription<'a, T>);
+            branch!(($first $($second)*), visit_document, document: &'v Document<'a, _T>);
+            branch!(($first $($second)*), visit_definition, definition: &'v Definition<'a, _T>);
+            branch!(($first $($second)*), visit_fragment_definition, fragment_definition: &'v FragmentDefinition<'a, _T>);
+            branch!(($first $($second)*), visit_type_condition, type_condition: &'v TypeCondition<'a, _T>);
+            branch!(($first $($second)*), visit_directive, directive: &'v Directive<'a, _T>);
+            branch!(($first $($second)*), visit_value, value: &'v Value<'a, _T>);
+            branch!(($first $($second)*), visit_selection_set, selection_set: &'v SelectionSet<'a, _T>);
+            branch!(($first $($second)*), visit_selection, selection: &'v Selection<'a, _T>);
+            branch!(($first $($second)*), visit_field, field: &'v Field<'a, _T>);
+            branch!(($first $($second)*), visit_fragment_spread, fragment_spread: &'v FragmentSpread<'a, _T>);
+            branch!(($first $($second)*), visit_inline_fragment, inline_fragment: &'v InlineFragment<'a, _T>);
+            branch!(($first $($second)*), visit_operation_definition, operation_definition: &'v OperationDefinition<'a, _T>);
+            branch!(($first $($second)*), visit_mutation, mutation: &'v Mutation<'a, _T>);
+            branch!(($first $($second)*), visit_variable_definition, variable_definition: &'v VariableDefinition<'a, _T>);
+            branch!(($first $($second)*), visit_type, ty: &'v Type<'a, _T>);
+            branch!(($first $($second)*), visit_query, ty: &'v Query<'a, _T>);
+            branch!(($first $($second)*), visit_subscription, ty: &'v Subscription<'a, _T>);
         }
     }
 );
@@ -236,3 +236,13 @@ impl_tuple!(A B C D E F G H I J K L M);
 impl_tuple!(A B C D E F G H I J K L M N);
 impl_tuple!(A B C D E F G H I J K L M N O);
 impl_tuple!(A B C D E F G H I J K L M N O P);
+impl_tuple!(A B C D E F G H I J K L M N O P Q);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z);

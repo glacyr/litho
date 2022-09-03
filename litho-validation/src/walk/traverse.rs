@@ -359,12 +359,12 @@ where
 macro_rules! impl_tuple (
     ($first:ident $($second:ident)*) => {
         #[allow(non_snake_case)]
-        impl<'v, 'a, T, $first, $($second),*> Traverse<'v, 'a, T> for ($first, $($second),*)
+        impl<'v, 'a, _T, $first, $($second),*> Traverse<'v, 'a, _T> for ($first, $($second),*)
         where
             'a: 'v,
-            $first: Traverse<'v, 'a, T>,
-            $($second: Traverse<'v, 'a, T, Accumulator = $first::Accumulator>,)*
-            T: Text<'a>,
+            $first: Traverse<'v, 'a, _T>,
+            $($second: Traverse<'v, 'a, _T, Accumulator = $first::Accumulator>,)*
+            _T: Text<'a>,
         {
         }
     }
@@ -386,3 +386,13 @@ impl_tuple!(A B C D E F G H I J K L M);
 impl_tuple!(A B C D E F G H I J K L M N);
 impl_tuple!(A B C D E F G H I J K L M N O);
 impl_tuple!(A B C D E F G H I J K L M N O P);
+impl_tuple!(A B C D E F G H I J K L M N O P Q);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z);
