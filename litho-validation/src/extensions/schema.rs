@@ -167,6 +167,8 @@ where
     fn name(&self) -> &T::Value;
 
     fn is_required(&self) -> bool;
+
+    fn unwrap(&self) -> &Type<'a, T>;
 }
 
 impl<'a, T> TypeExt<'a, T> for Type<'a, T>
@@ -184,6 +186,13 @@ where
         match self {
             Type::NonNullType(_) => true,
             Type::ListType(_) | Type::NamedType(_) => false,
+        }
+    }
+
+    fn unwrap(&self) -> &Type<'a, T> {
+        match self {
+            Type::ListType(inner) | Type::NonNullType(inner) => inner,
+            _ => self,
         }
     }
 }

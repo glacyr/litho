@@ -284,6 +284,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         match variable_definition.default_value.as_ref() {
+            Some(Value::Null) if !variable_definition.var_type.is_required() => {}
             Some(value) => {
                 accumulator.extend(
                     TypeChecker::new(variable_definition.span(), schema)

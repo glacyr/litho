@@ -186,6 +186,16 @@ where
 
     /// Caused by violation of [`AllVariablesUsed`](5.8.4 All Variables Used)
     UnusedVariable { name: &'a str, span: Span },
+
+    /// Caused by violation of [`AllVariableUsagesAreAllowed`](5.8.5 All Variable Usages Are Allowed)
+    IncompatibleVariableType {
+        name: &'a str,
+        span: Span,
+        variable_name: &'a str,
+        variable_span: Span,
+        expected_ty: &'a Type<'b, T>,
+        actual_ty: &'a Type<'b, T>,
+    },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -431,6 +441,12 @@ where
                 Diagnostic::new("5.8.4 All Variables Used")
                 .message(format!("Variable `{}` is never used.", name))
                 .label(format!("Variable `{}` is defined here but never used.", name), span)
+            }
+            Error::IncompatibleVariableType { name, span, variable_name, variable_span, expected_ty, actual_ty } => {
+                Diagnostic::new("5.8.5 All Variable Usages Are Allowed")
+                .message(format!("Variable `{}` has incompatible type.", variable_name))
+                .label(format!("Variable `{}` is defined here as type `{}` ...", variable_name, actual_ty), variable_span)
+                .label(format!("... but is used here as argument `{}` of type `{}`.", name, expected_ty), span)
             }
         }
     }

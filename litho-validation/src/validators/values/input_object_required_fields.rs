@@ -115,7 +115,7 @@ where
                                 ty,
                             )?;
                         }
-                        (None, Type::NonNullType(_)) if field.default_value.is_none() => {
+                        (None, Type::NonNullType(_)) if field.default_value.is_null() => {
                             return self.error(name, ty, field.name.as_ref());
                         }
                         (None, _) => {}

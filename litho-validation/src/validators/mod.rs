@@ -52,5 +52,6 @@ where
         VariablesAreInputTypes,
         AllVariableUsesDefined,
         AllVariablesUsed,
+        AllVariableUsagesAreAllowed,
     )
 }

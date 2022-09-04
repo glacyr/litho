@@ -94,7 +94,7 @@ where
 mod tests {
     const SCHEMA: &'static str = r#"
     type Dog {
-        isHouseTrained(atOtherHomes: Boolean!): Boolean!
+        isHouseTrained(atOtherHomes: Boolean): Boolean!
     }
 
     type Query {
