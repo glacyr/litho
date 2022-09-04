@@ -50,5 +50,6 @@ where
         VariableUniqueness,
         VariablesAreInputTypes,
         AllVariableUsesDefined,
+        AllVariablesUsed,
     )
 }

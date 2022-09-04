@@ -175,6 +175,9 @@ where
 
     /// Caused by violation of [`AllVariableUsesDefined`](5.8.3 All Variable Uses Defined)
     UndefinedVariable { name: &'a str, span: Span },
+
+    /// Caused by violation of [`AllVariablesUsed`](5.8.4 All Variables Used)
+    UnusedVariable { name: &'a str, span: Span },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -408,6 +411,12 @@ where
                 Diagnostic::new("5.8.3 All Variable Uses Defined")
                 .message(format!("Variable `{}` is not defined.", name))
                 .label(format!("Variable `{}` is used here but not defined anywhere.", name), span)
+            }
+
+            Error::UnusedVariable { name, span } => {
+                Diagnostic::new("5.8.4 All Variables Used")
+                .message(format!("Variable `{}` is never used.", name))
+                .label(format!("Variable `{}` is defined here but never used.", name), span)
             }
         }
     }
