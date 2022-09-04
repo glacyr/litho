@@ -159,6 +159,14 @@ where
         field: &'a str,
     },
 
+    /// Caused by violation of [`InputObjectRequiredFields`](5.6.4 Input Object Required Fields)
+    MissingRequiredInputObjectField {
+        name: Cow<'a, str>,
+        span: Span,
+        ty: &'a Type<'b, T>,
+        field: &'a str,
+    },
+
     /// Caused by violation of [`VariableUniqueness`](5.8.1 Variable Uniqueness)
     DuplicateVariableName {
         name: &'a str,
@@ -392,6 +400,12 @@ where
                 Diagnostic::new("5.6.2 Input Object Field Names")
                 .message(format!("Field `{}` does not exist for input type `{}`.", field, ty))
                 .label(format!("Input `{}` resolves to type `{}` here but does not have field `{}`.", name, ty, field), span)
+            }
+
+            Error::MissingRequiredInputObjectField { name, span, ty, field } => {
+                Diagnostic::new("5.6.4 Input Object Required Fields")
+                .message(format!("Field `{}` is required for input type `{}`.", field, ty))
+                .label(format!("Input `{}` resolves to type `{}` here but requires field `{}`.", name, ty, field), span)
             }
 
             Error::DuplicateVariableName { name, first, second } => {

@@ -47,6 +47,7 @@ where
         ValuesOfCorrectType,
         InputObjectFieldNames,
         InputObjectFieldUniqueness,
+        InputObjectRequiredFields,
         VariableUniqueness,
         VariablesAreInputTypes,
         AllVariableUsesDefined,
