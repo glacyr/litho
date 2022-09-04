@@ -208,8 +208,8 @@ mod tests {
           × Variable `atOtherHomes` is never used.
            ╭────
          1 │ query variableUnused($atOtherHomes: Boolean) {
-           ·                      ─────┬──────
-           ·                           ╰── Variable `atOtherHomes` is defined here but never used.
+           ·                      ──────┬──────
+           ·                            ╰── Variable `atOtherHomes` is defined here but never used.
            ·
          2 │     dog {
          3 │         isHouseTrained
@@ -259,8 +259,8 @@ mod tests {
           × Variable `atOtherHomes` is never used.
            ╭────
          1 │ query variableNotUsedWithinFragment($atOtherHomes: Boolean) {
-           ·                                     ─────┬──────
-           ·                                          ╰── Variable `atOtherHomes` is defined here but never used.
+           ·                                     ──────┬──────
+           ·                                           ╰── Variable `atOtherHomes` is defined here but never used.
            ·
          2 │     dog {
          3 │         ...isHouseTrainedWithoutVariableFragment
@@ -308,7 +308,7 @@ mod tests {
           5 │ }
           6 │ 
           7 │ query queryWithExtraVar($atOtherHomes: Boolean, $extra: Int) {
-            ·                                                 ──┬──
+            ·                                                 ──┬───
             ·                                                   ╰── Variable `extra` is defined here but never used.
             ·
           8 │     dog {

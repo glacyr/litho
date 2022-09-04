@@ -314,6 +314,6 @@ where
     T: Text<'a>,
 {
     fn span(&self) -> Span {
-        Span(self.position, self.name.as_ref().len())
+        Span(self.position, 1 + self.name.as_ref().len())
     }
 }

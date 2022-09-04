@@ -174,7 +174,7 @@ mod tests {
           × Variable `cat` isn't input type.
            ╭────
          1 │ query takesCat($cat: Cat) {
-           ·                ─┬─
+           ·                ─┬──
            ·                 ╰── Variable `cat` is defined here but `Cat` is not an input type.
            ·
          2 │     outputCat(cat: $cat) {
@@ -200,7 +200,7 @@ mod tests {
           × Variable `dog` isn't input type.
            ╭────
          1 │ query takesDogBang($dog: Dog!) {
-           ·                    ─┬─
+           ·                    ─┬──
            ·                     ╰── Variable `dog` is defined here but `Dog` is not an input type.
            ·
          2 │     outputDogBang(dog: $dog) {
@@ -226,8 +226,8 @@ mod tests {
           × Variable `pets` isn't input type.
            ╭────
          1 │ query takesListOfPet($pets: [Pet]) {
-           ·                      ─┬──
-           ·                       ╰── Variable `pets` is defined here but `Pet` is not an input type.
+           ·                      ──┬──
+           ·                        ╰── Variable `pets` is defined here but `Pet` is not an input type.
            ·
          2 │     outputListOfPets(pets: $pets) {
          3 │         name
@@ -254,8 +254,8 @@ mod tests {
           × Variable `catOrDog` isn't input type.
            ╭────
          1 │ query takesCatOrDog($catOrDog: CatOrDog) {
-           ·                     ───┬────
-           ·                        ╰── Variable `catOrDog` is defined here but `CatOrDog` is not an input type.
+           ·                     ────┬────
+           ·                         ╰── Variable `catOrDog` is defined here but `CatOrDog` is not an input type.
            ·
          2 │     outputCatOrDog(catOrDog: $catOrDog) {
          3 │         ... on Cat {

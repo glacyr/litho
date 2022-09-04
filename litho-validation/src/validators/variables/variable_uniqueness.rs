@@ -119,11 +119,11 @@ mod tests {
           × Variable `atOtherHomes` is defined twice.
            ╭────
          1 │ query houseTrainedQuery($atOtherHomes: Boolean, $atOtherHomes: Boolean) {
-           ·                         ─────┬──────
-           ·                              ╰── Variable `atOtherHomes` is first defined here ...
+           ·                         ──────┬──────
+           ·                               ╰── Variable `atOtherHomes` is first defined here ...
            ·
-           ·                                                 ─────┬──────
-           ·                                                      ╰── ... and later defined again here.
+           ·                                                 ──────┬──────
+           ·                                                       ╰── ... and later defined again here.
            ·
          2 │     dog {
          3 │         isHouseTrained(atOtherHomes: $atOtherHomes)
