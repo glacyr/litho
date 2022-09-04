@@ -50,6 +50,6 @@ compatibility checking.
 - [ ] 5.7.3 Directives Are Unique Per Location
 - [x] 5.8.1 Variable Uniqueness
 - [x] 5.8.2 Variables Are Input Types
-- [ ] 5.8.3 All Variables Uses Defined
+- [x] 5.8.3 All Variables Uses Defined
 - [ ] 5.8.4 All Variables Used
 - [ ] 5.8.5 All Variables Usages are Allowed

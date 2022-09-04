@@ -171,10 +171,6 @@ where
     ) {
         self.visit_field(field, schema, scope, accumulator);
 
-        for (_, value) in field.arguments.iter() {
-            self.traverse_value(value, schema, scope, accumulator);
-        }
-
         for directive in field.directives.iter() {
             self.traverse_directive(directive, schema, scope, accumulator);
         }
@@ -190,6 +186,10 @@ where
         };
 
         let scope = scope.field(field.name.as_ref(), field.span(), ty);
+
+        for (_, value) in field.arguments.iter() {
+            self.traverse_value(value, schema, &scope, accumulator);
+        }
 
         self.traverse_selection_set(&field.selection_set, schema, &scope, accumulator);
     }

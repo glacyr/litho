@@ -172,6 +172,9 @@ where
         ty: &'a str,
         span: Span,
     },
+
+    /// Caused by violation of [`AllVariableUsesDefined`](5.8.3 All Variable Uses Defined)
+    UndefinedVariable { name: &'a str, span: Span },
 }
 
 impl<'a, 'b, T> IntoDiagnostic for Error<'a, 'b, T>
@@ -399,6 +402,12 @@ where
                 Diagnostic::new("5.8.2 Variables Are Input Types")
                 .message(format!("Variable `{}` isn't input type.", name))
                 .label(format!("Variable `{}` is defined here but `{}` is not an input type.", name, ty), span)
+            }
+
+            Error::UndefinedVariable { name, span } => {
+                Diagnostic::new("5.8.3 All Variable Uses Defined")
+                .message(format!("Variable `{}` is not defined.", name))
+                .label(format!("Variable `{}` is used here but not defined anywhere.", name), span)
             }
         }
     }
