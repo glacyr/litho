@@ -427,4 +427,67 @@ mod tests {
         "#,
         )
     }
+
+    #[test]
+    fn test_values_of_correct_types_null() {
+        crate::tests::assert_err(
+            r#"
+        input ComplexInput {
+            name: Boolean!
+        }
+
+        type Query {
+            findDog(complex: [ComplexInput!]!): Boolean!
+        }
+        "#,
+            r#"
+        query badComplexValue {
+            a: findDog(complex: [null])
+            b: findDog(complex: null)
+        }
+        "#,
+            r#"
+        Error: 5.4.2.1 Required Arguments
+        
+          × Required argument `complex` is missing for field `findDog` of type `Query`.
+           ╭────
+         1 │ query badComplexValue {
+         2 │     a: findDog(complex: [null])
+         3 │     b: findDog(complex: null)
+           ·     ───┬───
+           ·        ╰── Argument `complex` is required but missing for field `findDog` of type `Query`.
+           ·
+         4 │ }
+           ╰────
+        
+        
+        Error: 5.6.1 Values Of Correct Type
+        
+          × Value provided for `complex[0]` has incorrect type.
+           ╭────
+         1 │ query badComplexValue {
+         2 │     a: findDog(complex: [null])
+           ·     ───┬───
+           ·        ╰── Value provided for `complex[0]` here is type `NULL` but expected `ComplexInput!`.
+           ·
+         3 │     b: findDog(complex: null)
+         4 │ }
+           ╰────
+        
+        
+        Error: 5.6.1 Values Of Correct Type
+        
+          × Value provided for `complex` has incorrect type.
+           ╭────
+         1 │ query badComplexValue {
+         2 │     a: findDog(complex: [null])
+         3 │     b: findDog(complex: null)
+           ·     ───┬───
+           ·        ╰── Value provided for `complex` here is type `NULL` but expected `[ComplexInput!]!`.
+           ·
+         4 │ }
+           ╰────
+        "#,
+        );
+    }
 }
