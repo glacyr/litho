@@ -78,7 +78,7 @@ where
         &self,
         variable_definition: &'v VariableDefinition<'a, T>,
         schema: &'v schema::Document<'a, T>,
-        scope: &Scope<'_, 'v>,
+        _scope: &Scope<'_, 'v>,
         accumulator: &mut Self::Accumulator,
     ) {
         match schema.type_definition(&variable_definition.var_type.name()) {
