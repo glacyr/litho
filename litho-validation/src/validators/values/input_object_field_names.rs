@@ -111,7 +111,7 @@ where
 
         match (self.schema.type_definition(ty_name.as_ref()), value) {
             (Some(definition), Value::Object(object)) => {
-                for (key, _) in object.iter() {
+                for (key, value) in object.iter() {
                     match definition.input_value(key) {
                         Some(field) => {
                             self.check_value_type(
@@ -274,7 +274,7 @@ mod tests {
         }
         "#,
             r#"
-        Error: 5.6.1 Values Of Correct Type
+        Error: 5.6.2 Input Object Field Names
         
           × Field `favoriteCookieFlavor` does not exist for input type `ComplexInput`.
            ╭────

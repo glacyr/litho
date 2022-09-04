@@ -389,7 +389,7 @@ where
             }
 
             Error::UndefinedInputObjectField { name, span, ty, field } => {
-                Diagnostic::new("5.6.1 Values Of Correct Type")
+                Diagnostic::new("5.6.2 Input Object Field Names")
                 .message(format!("Field `{}` does not exist for input type `{}`.", field, ty))
                 .label(format!("Input `{}` resolves to type `{}` here but does not have field `{}`.", name, ty, field), span)
             }
