@@ -5,7 +5,7 @@ use graphql_parser::query::{
 use graphql_parser::schema::Directive;
 use graphql_parser::Pos;
 
-use super::Span;
+use super::{Span, ValueExt};
 
 pub trait DefinitionExt<'a, T>
 where
@@ -205,6 +205,8 @@ where
     T: Text<'a>,
 {
     fn span(&self) -> Span;
+
+    fn is_equal(&self, other: &Self) -> bool;
 }
 
 impl<'a, T> FieldExt<'a, T> for Field<'a, T>
@@ -212,7 +214,18 @@ where
     T: Text<'a>,
 {
     fn span(&self) -> Span {
-        Span(self.position, self.name.as_ref().len())
+        Span(
+            self.position,
+            self.alias.as_ref().unwrap_or(&self.name).as_ref().len(),
+        )
+    }
+
+    fn is_equal(&self, other: &Self) -> bool {
+        self.name.as_ref() == other.name.as_ref()
+            && self.arguments.len() == other.arguments.len()
+            && self.arguments.iter().zip(other.arguments.iter()).all(
+                |((lhs, lhs_value), (rhs, rhs_value))| lhs == rhs && lhs_value.is_equal(rhs_value),
+            )
     }
 }
 

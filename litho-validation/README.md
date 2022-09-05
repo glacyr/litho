@@ -29,7 +29,7 @@ compatibility checking.
 - [x] 5.2.2.1 Lone Anonymous Operation (no tests)
 - [x] 5.2.3.1 Single Root Field
 - [x] 5.3.1 Field Selections (no tests)
-- [ ] 5.3.2 Field Selection Merging
+- [x] 5.3.2 Field Selection Merging
 - [x] 5.3.3 Leaf Field Selections (no tests)
 - [x] 5.4.1 Argument Names
 - [x] 5.4.2 Argument Uniqueness (no tests)
@@ -52,4 +52,4 @@ compatibility checking.
 - [x] 5.8.2 Variables Are Input Types
 - [x] 5.8.3 All Variables Uses Defined
 - [x] 5.8.4 All Variables Used
-- [ ] 5.8.5 All Variables Usages are Allowed
+- [x] 5.8.5 All Variables Usages are Allowed

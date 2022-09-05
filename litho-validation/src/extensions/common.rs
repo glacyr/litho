@@ -32,6 +32,8 @@ impl ValueType {
 pub trait ValueExt {
     fn ty(&self) -> ValueType;
 
+    fn is_equal(&self, other: &Self) -> bool;
+
     fn is_null(&self) -> bool;
 }
 
@@ -53,6 +55,32 @@ where
         }
     }
 
+    fn is_equal(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Variable(lhs), Value::Variable(rhs)) => lhs == rhs,
+            (Value::Int(lhs), Value::Int(rhs)) => lhs == rhs,
+            (Value::Float(lhs), Value::Float(rhs)) => lhs == rhs,
+            (Value::String(lhs), Value::String(rhs)) => lhs == rhs,
+            (Value::Boolean(lhs), Value::Boolean(rhs)) => lhs == rhs,
+            (Value::Null, Value::Null) => true,
+            (Value::Enum(lhs), Value::Enum(rhs)) => lhs == rhs,
+            (Value::List(lhs), Value::List(rhs)) => {
+                lhs.len() == rhs.len()
+                    && lhs
+                        .iter()
+                        .zip(rhs.iter())
+                        .all(|(lhs, rhs)| lhs.is_equal(rhs))
+            }
+            (Value::Object(lhs), Value::Object(rhs)) => {
+                lhs.len() == rhs.len()
+                    && lhs.iter().all(|(key, lhs)| {
+                        rhs.get(key.as_ref()).map(|rhs| lhs.is_equal(rhs)) == Some(true)
+                    })
+            }
+            _ => false,
+        }
+    }
+
     fn is_null(&self) -> bool {
         matches!(self, Value::Null)
     }
@@ -66,6 +94,14 @@ where
         match self {
             Some(value) => value.ty(),
             None => ValueType::Null,
+        }
+    }
+
+    fn is_equal(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Some(lhs), Some(rhs)) => lhs.is_equal(rhs),
+            (None, None) => true,
+            _ => false,
         }
     }
 

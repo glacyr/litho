@@ -31,6 +31,7 @@ where
         LoneAnonymousOperation,
         SingleRootField,
         FieldSelections,
+        FieldSelectionMerging,
         LeafFieldSelections,
         ArgumentNames,
         ArgumentUniqueness,

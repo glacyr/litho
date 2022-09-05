@@ -39,6 +39,35 @@ where
         second_span: Span,
     },
 
+    /// Caused by violation of [`FieldSelectionMerging`](5.3.2 Field Selection Merging)
+    UnmergedFieldName {
+        name: &'a str,
+        first_name: &'a str,
+        first_span: Span,
+        second_name: &'a str,
+        second_span: Span,
+    },
+
+    /// Caused by violation of [`FieldSelectionMerging`](5.3.2 Field Selection Merging)
+    UnmergedFieldArguments {
+        name: &'a str,
+        first_name: &'a str,
+        first_span: Span,
+        second_name: &'a str,
+        second_span: Span,
+    },
+
+    /// Caused by violation of [`FieldSelectionMerging`](5.3.2 Field Selection Merging)
+    UnmergedFieldType {
+        name: &'a str,
+        first_name: &'a str,
+        first_span: Span,
+        first_type: &'a Type<'b, T>,
+        second_name: &'a str,
+        second_span: Span,
+        second_type: &'a Type<'b, T>,
+    },
+
     /// Caused by violation of [`LeafFieldSelections`](5.3.3 Leaf Field Selections).
     UnexpectedSubselection {
         field_name: Option<&'a str>,
@@ -269,6 +298,28 @@ where
                     ),
                     field.span(),
                 ),
+
+            Error::UnmergedFieldName { name, first_name, first_span, second_name, second_span } => {
+                Diagnostic::new("5.3.2 Field Selection Merging")
+                .message(format!("Cannot merge two different fields into same response key `{}`.", name))
+                .label(format!("First, field `{}` is selected as `{}` here ...", first_name, name), first_span)
+                .label(format!("... and then field `{}` is also selected as `{}` here.", second_name, name), second_span)
+            }
+
+            Error::UnmergedFieldArguments { name, first_name, first_span, second_name, second_span } => {
+                Diagnostic::new("5.3.2 Field Selection Merging")
+                .message(format!("Cannot merge two fields with different arguments into same response key `{}`.", name))
+                .label(format!("First, field `{}` is selected as `{}` here ...", first_name, name), first_span)
+                .label(format!("... and then the same field with different arguments is also selected as `{}` here.", name), second_span)
+            }
+
+            Error::UnmergedFieldType { name, first_name, first_span, first_type, second_name, second_span, second_type } => {
+                Diagnostic::new("5.3.2 Field Selection Merging")
+                .message(format!("Cannot merge two fields with different types into same response key `{}`.", name))
+                .label(format!("First, field `{}` of type `{}` is selected as `{}` here ...", first_name, first_type, name), first_span)
+                .label(format!("... and then field `{}` of type `{}` is also selected as `{}` here.", second_name, second_type, name), second_span)
+            }
+
             Error::UnexpectedSubselection {
                 field_name,
                 parent_span,

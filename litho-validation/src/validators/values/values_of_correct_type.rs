@@ -134,6 +134,9 @@ where
             ("String", ValueType::String) => {}
             ("Boolean", ValueType::Boolean) => {}
             ("ID", ValueType::String) => {}
+            ("Int" | "Float" | "String" | "Boolean" | "ID", _) => {
+                self.error(name, ty, value.ty())?
+            }
             _ => match self.schema.type_definition(ty_name.as_ref()) {
                 Some(definition) => {
                     self.check_value_type_definition(name, value, ty, definition)?
@@ -455,8 +458,8 @@ mod tests {
          1 │ query badComplexValue {
          2 │     a: findDog(complex: [null])
          3 │     b: findDog(complex: null)
-           ·     ───┬───
-           ·        ╰── Argument `complex` is required but missing for field `findDog` of type `Query`.
+           ·     ┬
+           ·     ╰── Argument `complex` is required but missing for field `findDog` of type `Query`.
            ·
          4 │ }
            ╰────
@@ -468,8 +471,8 @@ mod tests {
            ╭────
          1 │ query badComplexValue {
          2 │     a: findDog(complex: [null])
-           ·     ───┬───
-           ·        ╰── Value provided for `complex[0]` here is type `NULL` but expected `ComplexInput!`.
+           ·     ┬
+           ·     ╰── Value provided for `complex[0]` here is type `NULL` but expected `ComplexInput!`.
            ·
          3 │     b: findDog(complex: null)
          4 │ }
@@ -483,8 +486,8 @@ mod tests {
          1 │ query badComplexValue {
          2 │     a: findDog(complex: [null])
          3 │     b: findDog(complex: null)
-           ·     ───┬───
-           ·        ╰── Value provided for `complex` here is type `NULL` but expected `[ComplexInput!]!`.
+           ·     ┬
+           ·     ╰── Value provided for `complex` here is type `NULL` but expected `[ComplexInput!]!`.
            ·
          4 │ }
            ╰────

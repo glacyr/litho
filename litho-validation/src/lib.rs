@@ -31,11 +31,21 @@ where
 
 #[cfg(test)]
 mod tests {
+    use graphql_parser::schema::{Definition, ScalarType, TypeDefinition};
+
     use crate::diagnostics::{Emit, IntoDiagnostic};
 
     pub fn assert_ok(schema: &str, query: &str) {
-        let schema_ast = graphql_parser::parse_schema::<&str>(schema).unwrap();
+        let mut schema_ast = graphql_parser::parse_schema::<&str>(schema).unwrap();
         let query_ast = graphql_parser::parse_query(query).unwrap();
+
+        for ty in ["Int", "Float", "String", "Boolean", "ID"] {
+            schema_ast
+                .definitions
+                .push(Definition::TypeDefinition(TypeDefinition::Scalar(
+                    ScalarType::new(ty),
+                )));
+        }
 
         let result = crate::validate(&schema_ast, &query_ast);
 
@@ -56,8 +66,16 @@ mod tests {
         let query = unindent::unindent(query);
         let expected = unindent::unindent(expected);
 
-        let schema_ast = graphql_parser::parse_schema::<&str>(&schema).unwrap();
+        let mut schema_ast = graphql_parser::parse_schema::<&str>(&schema).unwrap();
         let query_ast = graphql_parser::parse_query(&query).unwrap();
+
+        for ty in ["Int", "Float", "String", "Boolean", "ID"] {
+            schema_ast
+                .definitions
+                .push(Definition::TypeDefinition(TypeDefinition::Scalar(
+                    ScalarType::new(ty),
+                )));
+        }
 
         let result = crate::validate(&schema_ast, &query_ast);
         let errs = result

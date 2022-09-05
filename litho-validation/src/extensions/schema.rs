@@ -215,6 +215,8 @@ where
 
     fn is_input_type(&self) -> bool;
 
+    fn is_object_type(&self) -> bool;
+
     fn implements_interfaces(&self) -> Box<dyn Iterator<Item = &str> + '_>;
 
     fn implements_interface(&self, name: &str) -> bool;
@@ -279,6 +281,18 @@ where
             TypeDefinition::Interface(_) | TypeDefinition::Object(_) | TypeDefinition::Union(_) => {
                 false
             }
+        }
+    }
+
+    fn is_object_type(&self) -> bool {
+        match self {
+            TypeDefinition::Object(_) => true,
+            TypeDefinition::Enum(_)
+            | TypeDefinition::InputObject(_)
+            | TypeDefinition::Interface(_)
+            | TypeDefinition::Object(_)
+            | TypeDefinition::Scalar(_)
+            | TypeDefinition::Union(_) => false,
         }
     }
 
