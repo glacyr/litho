@@ -1,0 +1,13 @@
+[package]
+name = "litho-lsp"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+line-col = "0.2.1"
+tokio = { version = "1.21.1", features = ["full"] }
+tower-lsp = "0.17.0"
+
+litho-language = { path = "../litho-language" }

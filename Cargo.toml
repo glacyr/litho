@@ -40,5 +40,7 @@ members = [
 	"kono-introspection",
 	"kono-macros",
 	"kono-schema",
+    "litho-language",
+    "litho-lsp",
 	"litho-validation",
 ]
