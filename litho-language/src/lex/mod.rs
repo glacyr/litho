@@ -19,6 +19,22 @@ impl Span {
         self.end = self.end.max(other.end);
     }
 
+    pub fn between(left: Self, right: Self) -> Span {
+        Span {
+            source_id: left.source_id,
+            start: left.end,
+            end: right.start,
+        }
+    }
+
+    pub fn collapse_to_start(self) -> Self {
+        Self {
+            source_id: self.source_id,
+            start: self.start,
+            end: self.start,
+        }
+    }
+
     pub fn collapse_to_end(self) -> Self {
         Self {
             source_id: self.source_id,

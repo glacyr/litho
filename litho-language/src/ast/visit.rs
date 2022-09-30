@@ -1,5 +1,3 @@
-use wrom::Recoverable;
-
 use crate::lex::{Span, Token};
 
 use super::types::*;
@@ -16,7 +14,7 @@ pub trait Visit<'ast, 'a> {
 
     fn visit_recoverable<T>(
         &self,
-        node: &'ast Recoverable<Token<'a>, T>,
+        node: &'ast Recoverable<T>,
         accumulator: &mut Self::Accumulator,
     ) {
     }

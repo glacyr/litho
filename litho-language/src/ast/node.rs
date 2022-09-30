@@ -1,8 +1,6 @@
-use wrom::Recoverable;
-
 use crate::lex::{Span, Token};
 
-use super::Visit;
+use super::{Recoverable, Visit};
 
 pub trait Node<'a> {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
@@ -75,7 +73,7 @@ where
     }
 }
 
-impl<'a, T> Node<'a> for Recoverable<Token<'a>, T>
+impl<'a, T> Node<'a> for Recoverable<T>
 where
     T: Node<'a>,
 {
@@ -85,8 +83,10 @@ where
     {
         visitor.visit_recoverable(self, accumulator);
 
-        let Recoverable(_, value) = self;
-        value.traverse(visitor, accumulator);
+        match self {
+            Recoverable::Present(value) => value.traverse(visitor, accumulator),
+            Recoverable::Missing(_) => {}
+        }
     }
 }
 

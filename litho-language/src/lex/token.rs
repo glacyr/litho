@@ -70,6 +70,7 @@ impl<'a> Lexer<'a> {
     pub fn exact(self) -> ExactLexer<'a> {
         ExactLexer {
             tokens: self.collect(),
+            last_span: None,
         }
     }
 }
@@ -92,13 +93,27 @@ impl<'a> Iterator for Lexer<'a> {
 #[derive(Clone)]
 pub struct ExactLexer<'a> {
     tokens: VecDeque<Token<'a>>,
+    last_span: Option<Span>,
+}
+
+impl<'a> ExactLexer<'a> {
+    pub fn span(&self) -> Span {
+        match (self.last_span.as_ref(), self.tokens.get(0)) {
+            (Some(&left), Some(right)) => Span::between(left, right.span()),
+            (Some(&left), None) => left.collapse_to_end(),
+            (None, Some(right)) => right.span().collapse_to_start(),
+            (None, None) => todo!(),
+        }
+    }
 }
 
 impl<'a> Iterator for ExactLexer<'a> {
     type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.tokens.pop_front()
+        let token = self.tokens.pop_front();
+        self.last_span = token.as_ref().map(|token| token.span());
+        token
     }
 }
 

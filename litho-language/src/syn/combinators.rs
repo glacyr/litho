@@ -48,7 +48,7 @@ where
     I: Iterator<Item = Token<'a>> + Clone,
 {
     terminal(move |mut input: I| match input.next() {
-        Some(Token::Name(name)) => Ok((input, name)),
+        Some(Token::Name(name)) if name.as_ref() != "fragment" => Ok((input, name)),
         Some(token) => Err(nom::Err::Error(Error::ExpectedName(token.span(), vec![]))),
         None => Err(nom::Err::Error(Error::Incomplete)),
     })

@@ -2,17 +2,15 @@ use std::iter::once;
 
 use nom::combinator::{eof, opt};
 use nom::error::{ErrorKind, ParseError};
-use nom::multi::{many0, many_till};
 use nom::{IResult, InputLength, Parser};
+use wrom::multi::many0;
 use wrom::{terminal, RecoverableParser};
 
 use crate::ast::*;
 use crate::lex::{lexer, ExactLexer, Name, Punctuator, Span, Token};
 
 mod combinators;
-mod executable;
-
-pub use executable::operation_definition;
+pub mod executable;
 
 #[derive(Debug)]
 pub enum Error<'a> {
@@ -67,16 +65,88 @@ where
     }
 }
 
+pub fn document<'a, I>() -> impl RecoverableParser<I, Document<'a>, Error<'a>>
+where
+    I: Input<Item = Token<'a>, Missing = Missing>,
+{
+    many0(definition()).map(|definitions| Document { definitions })
+}
+
+pub fn definition<'a, I>() -> impl RecoverableParser<I, Definition<'a>, Error<'a>>
+where
+    I: Input<Item = Token<'a>, Missing = Missing>,
+{
+    executable::executable_definition().map(Definition::ExecutableDefinition)
+}
+
+#[derive(Clone)]
+pub struct Stream<'a> {
+    lexer: ExactLexer<'a>,
+    unexpected: Vec<Token<'a>>,
+}
+
+impl<'a> Stream<'a> {
+    pub fn into_unexpected<U>(self) -> U
+    where
+        U: FromIterator<Token<'a>>,
+    {
+        self.lexer.chain(self.unexpected).collect()
+    }
+}
+
+impl<'a> From<ExactLexer<'a>> for Stream<'a> {
+    fn from(lexer: ExactLexer<'a>) -> Self {
+        Stream {
+            lexer,
+            unexpected: vec![],
+        }
+    }
+}
+
+impl<'a> Iterator for Stream<'a> {
+    type Item = Token<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.lexer.next()
+    }
+}
+
+impl<'a> Extend<Token<'a>> for Stream<'a> {
+    fn extend<T: IntoIterator<Item = Token<'a>>>(&mut self, iter: T) {
+        self.unexpected.extend(iter)
+    }
+}
+
+impl<'a> InputLength for Stream<'a> {
+    fn input_len(&self) -> usize {
+        self.lexer.input_len()
+    }
+}
+
+use wrom::Input;
+
+impl<'a> Input for Stream<'a> {
+    type Item = Token<'a>;
+    type Missing = Missing;
+
+    fn missing(&self, missing: Missing) -> MissingToken {
+        MissingToken {
+            span: self.lexer.span(),
+            missing,
+        }
+    }
+}
+
 pub fn parse_from_str<'a, P, O>(
-    mut parser: P,
+    parser: P,
     source_id: usize,
     input: &'a str,
-) -> Result<O, Error<'a>>
+) -> Result<(Vec<Token<'a>>, O), Error<'a>>
 where
-    P: RecoverableParser<ExactLexer<'a>, O, Error<'a>>,
+    P: RecoverableParser<Stream<'a>, O, Error<'a>>,
 {
-    match parser.parse(lexer(source_id, input).exact(), terminal(eof)) {
-        Ok((_, result)) => Ok(result),
+    match parser.parse(lexer(source_id, input).exact().into(), terminal(eof)) {
+        Ok((input, result)) => Ok((input.into_unexpected(), result)),
         Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
         Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
     }
@@ -189,27 +259,5 @@ where
 //                 .collect(),
 //         })
 //         .parse(input)
-//     }
-// }
-
-// impl<'a> Parse<'a> for Document<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         Parse::parse
-//             .map(|definitions| Document { definitions })
-//             .parse(input)
-//     }
-// }
-
-// impl<'a> Parse<'a> for Definition<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         ExecutableDefinition::parse
-//             .map(|definition| Definition::ExecutableDefinition(definition))
-//             .parse(input)
 //     }
 // }
