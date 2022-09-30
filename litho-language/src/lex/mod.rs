@@ -4,7 +4,7 @@ mod token;
 
 pub use kind::TokenKind;
 pub use raw::{raw_lexer, RawLexer, RawToken};
-pub use token::{lexer, Lexer, Name, Punctuator, Token};
+pub use token::{lexer, ExactLexer, Lexer, Name, Punctuator, Token};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Span {

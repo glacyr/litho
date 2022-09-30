@@ -1,15 +1,18 @@
 use std::iter::once;
 
-use nom::combinator::opt;
+use nom::combinator::{eof, opt};
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::{many0, many_till};
 use nom::{IResult, InputLength, Parser};
+use wrom::{terminal, RecoverableParser};
 
 use crate::ast::*;
-use crate::lex::{lexer, Name, Punctuator, Span, Token};
+use crate::lex::{lexer, ExactLexer, Name, Punctuator, Span, Token};
 
 mod combinators;
 mod executable;
+
+pub use executable::operation_definition;
 
 #[derive(Debug)]
 pub enum Error<'a> {
@@ -64,134 +67,149 @@ where
     }
 }
 
-pub trait Parse<'a>: Sized {
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength;
-
-    fn parse_from_str(source_id: usize, input: &'a str) -> Result<Self, Error<'a>> {
-        match Self::parse(lexer(source_id, input).exact()) {
-            Ok((_, result)) => Ok(result),
-            Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
-            Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
-        }
-    }
-}
-
-impl<'a, T> Parse<'a> for Option<T>
+pub fn parse_from_str<'a, P, O>(
+    mut parser: P,
+    source_id: usize,
+    input: &'a str,
+) -> Result<O, Error<'a>>
 where
-    T: Parse<'a>,
+    P: RecoverableParser<ExactLexer<'a>, O, Error<'a>>,
 {
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        opt(T::parse).parse(input)
+    match parser.parse(lexer(source_id, input).exact(), terminal(eof)) {
+        Ok((_, result)) => Ok(result),
+        Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
+        Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
     }
 }
 
-impl<'a, T> Parse<'a> for Recoverable<'a, T>
-where
-    T: Parse<'a>,
-{
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        opt(T::parse)
-            .parse(input)
-            .map(|(input, output)| (input, output.ok_or(vec![])))
-    }
-}
+// pub trait Parse<'a>: Sized {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength;
 
-impl<'a> Parse<'a> for Token<'a> {
-    fn parse<I>(mut input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        match input.next() {
-            Some(token) => Ok((input, token)),
-            None => Err(nom::Err::Error(Error::Incomplete)),
-        }
-    }
-}
+//     fn parse_from_str(source_id: usize, input: &'a str) -> Result<Self, Error<'a>> {
+//         match Self::parse(lexer(source_id, input).exact()) {
+//             Ok((_, result)) => Ok(result),
+//             Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
+//             Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
+//         }
+//     }
+// }
 
-impl<'a> Parse<'a> for Name<'a> {
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        let (input, token) = Token::parse(input)?;
+// impl<'a, T> Parse<'a> for Option<T>
+// where
+//     T: Parse<'a>,
+// {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         opt(T::parse).parse(input)
+//     }
+// }
 
-        match token {
-            Token::Name(name) => Ok((input, name)),
-            token => Err(nom::Err::Error(Error::ExpectedName(token.span(), vec![]))),
-        }
-    }
-}
+// impl<'a, T> Parse<'a> for Recoverable<'a, T>
+// where
+//     T: Parse<'a>,
+// {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         opt(T::parse)
+//             .parse(input)
+//             .map(|(input, output)| (input, output.ok_or(vec![])))
+//     }
+// }
 
-impl<'a> Parse<'a> for Punctuator<'a> {
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        let (input, token) = Token::parse(input)?;
+// impl<'a> Parse<'a> for Token<'a> {
+//     fn parse<I>(mut input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         match input.next() {
+//             Some(token) => Ok((input, token)),
+//             None => Err(nom::Err::Error(Error::Incomplete)),
+//         }
+//     }
+// }
 
-        match token {
-            Token::Punctuator(punctuator) => Ok((input, punctuator)),
-            token => Err(nom::Err::Error(Error::ExpectedPunctuator(
-                token.span(),
-                vec![],
-            ))),
-        }
-    }
-}
+// impl<'a> Parse<'a> for Name<'a> {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         let (input, token) = Token::parse(input)?;
 
-impl<'a, T> Parse<'a> for Vec<Recoverable<'a, T>>
-where
-    T: Parse<'a>,
-{
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        many0(
-            many_till(Token::parse, T::parse).map(|(errors, item)| match errors.is_empty() {
-                true => vec![Ok(item)],
-                false => vec![Err(errors), Ok(item)],
-            }),
-        )
-        .and(many0(Token::parse))
-        .map(|(items, errors)| match errors.is_empty() {
-            true => items.into_iter().flatten().collect(),
-            false => items
-                .into_iter()
-                .flatten()
-                .chain(once(Err(errors)))
-                .collect(),
-        })
-        .parse(input)
-    }
-}
+//         match token {
+//             Token::Name(name) => Ok((input, name)),
+//             token => Err(nom::Err::Error(Error::ExpectedName(token.span(), vec![]))),
+//         }
+//     }
+// }
 
-impl<'a> Parse<'a> for Document<'a> {
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        Parse::parse
-            .map(|definitions| Document { definitions })
-            .parse(input)
-    }
-}
+// impl<'a> Parse<'a> for Punctuator<'a> {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         let (input, token) = Token::parse(input)?;
 
-impl<'a> Parse<'a> for Definition<'a> {
-    fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-    where
-        I: Iterator<Item = Token<'a>> + Clone + InputLength,
-    {
-        ExecutableDefinition::parse
-            .map(|definition| Definition::ExecutableDefinition(definition))
-            .parse(input)
-    }
-}
+//         match token {
+//             Token::Punctuator(punctuator) => Ok((input, punctuator)),
+//             token => Err(nom::Err::Error(Error::ExpectedPunctuator(
+//                 token.span(),
+//                 vec![],
+//             ))),
+//         }
+//     }
+// }
+
+// impl<'a, T> Parse<'a> for Vec<Recoverable<'a, T>>
+// where
+//     T: Parse<'a>,
+// {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         many0(
+//             many_till(Token::parse, T::parse).map(|(errors, item)| match errors.is_empty() {
+//                 true => vec![Ok(item)],
+//                 false => vec![Err(errors), Ok(item)],
+//             }),
+//         )
+//         .and(many0(Token::parse))
+//         .map(|(items, errors)| match errors.is_empty() {
+//             true => items.into_iter().flatten().collect(),
+//             false => items
+//                 .into_iter()
+//                 .flatten()
+//                 .chain(once(Err(errors)))
+//                 .collect(),
+//         })
+//         .parse(input)
+//     }
+// }
+
+// impl<'a> Parse<'a> for Document<'a> {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         Parse::parse
+//             .map(|definitions| Document { definitions })
+//             .parse(input)
+//     }
+// }
+
+// impl<'a> Parse<'a> for Definition<'a> {
+//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     where
+//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
+//     {
+//         ExecutableDefinition::parse
+//             .map(|definition| Definition::ExecutableDefinition(definition))
+//             .parse(input)
+//     }
+// }

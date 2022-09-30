@@ -1,4 +1,6 @@
-use crate::lex::Span;
+use wrom::Recoverable;
+
+use crate::lex::{Span, Token};
 
 use super::Visit;
 
@@ -70,6 +72,21 @@ where
         let (a, b) = self;
         a.traverse(visitor, accumulator);
         b.traverse(visitor, accumulator);
+    }
+}
+
+impl<'a, T> Node<'a> for Recoverable<Token<'a>, T>
+where
+    T: Node<'a>,
+{
+    fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
+    where
+        V: Visit<'ast, 'a>,
+    {
+        visitor.visit_recoverable(self, accumulator);
+
+        let Recoverable(_, value) = self;
+        value.traverse(visitor, accumulator);
     }
 }
 

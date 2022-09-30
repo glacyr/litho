@@ -1,12 +1,12 @@
 mod ast;
 mod chk;
 mod lex;
-mod syn;
+pub mod syn;
 
 pub use ast::*;
 pub use chk::{Errors, IntoReport, LabelBuilder, ReportBuilder};
 pub use lex::{Name, Punctuator, Span, Token, TokenKind};
-pub use syn::Parse;
+// pub use syn::Parse;
 
 pub use ariadne;
 
@@ -16,14 +16,18 @@ mod tests {
 
     use super::chk::{Errors, IntoReport};
     use super::lex::Span;
-    use super::syn::Parse;
+    use super::syn;
     use super::*;
 
     #[test]
     fn it_works() {
-        let source = r#"query Example
+        let source = r#"query Example($example: Hello- $world: Int {
+            query- {
+                hello<: (x: true)
+            }
+        }
         "#;
-        let ast = Document::parse_from_str(0, source).unwrap();
+        let ast = syn::parse_from_str(syn::operation_definition(), 0, source).unwrap();
 
         println!("Result: {:#?} (errors: {:#?})", ast, ast.errors());
 

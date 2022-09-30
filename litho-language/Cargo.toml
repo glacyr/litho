@@ -10,4 +10,4 @@ ariadne = "0.1.5"
 logos = "0.12.1"
 nom = "7.1.1"
 
-nom-recovery = { path = "../nom-recovery" }
+wrom = { path = "../../wrom" }

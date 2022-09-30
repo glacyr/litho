@@ -1,7 +1,8 @@
-use crate::lex::Span;
+use wrom::Recoverable;
+
+use crate::lex::{Span, Token};
 
 use super::types::*;
-use super::Recoverable;
 
 macro_rules! visit {
     ($name:ident, $ty:ident) => {
@@ -15,7 +16,7 @@ pub trait Visit<'ast, 'a> {
 
     fn visit_recoverable<T>(
         &self,
-        node: &'ast Recoverable<'a, T>,
+        node: &'ast Recoverable<Token<'a>, T>,
         accumulator: &mut Self::Accumulator,
     ) {
     }
