@@ -1,4 +1,4 @@
-use crate::lex::{Span, Token};
+use crate::lex::Span;
 
 use super::types::*;
 

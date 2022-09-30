@@ -1,27 +1,33 @@
 use std::iter::once;
 
-use nom::combinator::{eof, opt};
+use nom::combinator::eof;
 use nom::error::{ErrorKind, ParseError};
-use nom::{IResult, InputLength, Parser};
+use nom::Err;
 use wrom::multi::many0;
-use wrom::{terminal, RecoverableParser};
+use wrom::{terminal, Input, RecoverableParser};
 
 use crate::ast::*;
-use crate::lex::{lexer, ExactLexer, Name, Punctuator, Span, Token};
+use crate::lex::{lexer, Token};
 
 mod combinators;
 pub mod executable;
+mod parse;
+mod stream;
+
+pub use parse::Parse;
+pub use stream::Stream;
 
 #[derive(Debug)]
-pub enum Error<'a> {
+pub enum Error {
     Nom(ErrorKind),
     Incomplete,
-    ExpectedName(Span, Vec<&'a str>),
-    ExpectedPunctuator(Span, Vec<&'a str>),
-    Multiple(Vec<Error<'a>>),
+    ExpectedKeyword(&'static str),
+    ExpectedName,
+    ExpectedPunctuator(&'static str),
+    Multiple(Vec<Error>),
 }
 
-impl<'a, I> ParseError<I> for Error<'a>
+impl<'a, I> ParseError<I> for Error
 where
     I: Iterator<Item = Token<'a>> + Clone,
 {
@@ -40,16 +46,12 @@ where
     fn or(self, other: Self) -> Self {
         match (self, other) {
             (Error::Incomplete, Error::Incomplete) => Error::Incomplete,
-            (Error::ExpectedName(lhs_span, lhs), Error::ExpectedName(rhs_span, rhs))
-                if lhs_span == rhs_span =>
-            {
-                Error::ExpectedName(lhs_span, vec![lhs, rhs].concat())
+            (Error::ExpectedKeyword(lhs), Error::ExpectedKeyword(rhs)) if lhs == rhs => {
+                Error::ExpectedKeyword(lhs)
             }
-            (
-                Error::ExpectedPunctuator(lhs_span, lhs),
-                Error::ExpectedPunctuator(rhs_span, rhs),
-            ) if lhs_span == rhs_span => {
-                Error::ExpectedPunctuator(lhs_span, vec![lhs, rhs].concat())
+            (Error::ExpectedName, Error::ExpectedName) => Error::ExpectedName,
+            (Error::ExpectedPunctuator(lhs), Error::ExpectedPunctuator(rhs)) if lhs == rhs => {
+                Error::ExpectedPunctuator(lhs)
             }
             (Error::Multiple(lhs), Error::Multiple(rhs)) => {
                 Error::Multiple(lhs.into_iter().chain(rhs.into_iter()).collect())
@@ -65,85 +67,27 @@ where
     }
 }
 
-pub fn document<'a, I>() -> impl RecoverableParser<I, Document<'a>, Error<'a>>
+pub fn document<'a, I>() -> impl RecoverableParser<I, Document<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     many0(definition()).map(|definitions| Document { definitions })
 }
 
-pub fn definition<'a, I>() -> impl RecoverableParser<I, Definition<'a>, Error<'a>>
+pub fn definition<'a, I>() -> impl RecoverableParser<I, Definition<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     executable::executable_definition().map(Definition::ExecutableDefinition)
-}
-
-#[derive(Clone)]
-pub struct Stream<'a> {
-    lexer: ExactLexer<'a>,
-    unexpected: Vec<Token<'a>>,
-}
-
-impl<'a> Stream<'a> {
-    pub fn into_unexpected<U>(self) -> U
-    where
-        U: FromIterator<Token<'a>>,
-    {
-        self.lexer.chain(self.unexpected).collect()
-    }
-}
-
-impl<'a> From<ExactLexer<'a>> for Stream<'a> {
-    fn from(lexer: ExactLexer<'a>) -> Self {
-        Stream {
-            lexer,
-            unexpected: vec![],
-        }
-    }
-}
-
-impl<'a> Iterator for Stream<'a> {
-    type Item = Token<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.lexer.next()
-    }
-}
-
-impl<'a> Extend<Token<'a>> for Stream<'a> {
-    fn extend<T: IntoIterator<Item = Token<'a>>>(&mut self, iter: T) {
-        self.unexpected.extend(iter)
-    }
-}
-
-impl<'a> InputLength for Stream<'a> {
-    fn input_len(&self) -> usize {
-        self.lexer.input_len()
-    }
-}
-
-use wrom::Input;
-
-impl<'a> Input for Stream<'a> {
-    type Item = Token<'a>;
-    type Missing = Missing;
-
-    fn missing(&self, missing: Missing) -> MissingToken {
-        MissingToken {
-            span: self.lexer.span(),
-            missing,
-        }
-    }
 }
 
 pub fn parse_from_str<'a, P, O>(
     parser: P,
     source_id: usize,
     input: &'a str,
-) -> Result<(Vec<Token<'a>>, O), Error<'a>>
+) -> Result<(Vec<Token<'a>>, O), Error>
 where
-    P: RecoverableParser<Stream<'a>, O, Error<'a>>,
+    P: RecoverableParser<Stream<'a>, O, Error>,
 {
     match parser.parse(lexer(source_id, input).exact().into(), terminal(eof)) {
         Ok((input, result)) => Ok((input.into_unexpected(), result)),
@@ -152,112 +96,45 @@ where
     }
 }
 
-// pub trait Parse<'a>: Sized {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength;
+macro_rules! parse {
+    ($name:ident, $($fn:tt)*) => {
+        impl<'a> Parse<'a> for $name<'a> {
+            fn parse(stream: Stream<'a>) -> Result<(Self, Vec<Token<'a>>), Err<Error>> {
+                $($fn)*()
+                    .parse(stream, terminal(eof))
+                    .map(|(input, value)| (value, input.into_unexpected()))
+            }
+        }
+    };
+}
 
-//     fn parse_from_str(source_id: usize, input: &'a str) -> Result<Self, Error<'a>> {
-//         match Self::parse(lexer(source_id, input).exact()) {
-//             Ok((_, result)) => Ok(result),
-//             Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
-//             Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
-//         }
-//     }
-// }
-
-// impl<'a, T> Parse<'a> for Option<T>
-// where
-//     T: Parse<'a>,
-// {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         opt(T::parse).parse(input)
-//     }
-// }
-
-// impl<'a, T> Parse<'a> for Recoverable<'a, T>
-// where
-//     T: Parse<'a>,
-// {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         opt(T::parse)
-//             .parse(input)
-//             .map(|(input, output)| (input, output.ok_or(vec![])))
-//     }
-// }
-
-// impl<'a> Parse<'a> for Token<'a> {
-//     fn parse<I>(mut input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         match input.next() {
-//             Some(token) => Ok((input, token)),
-//             None => Err(nom::Err::Error(Error::Incomplete)),
-//         }
-//     }
-// }
-
-// impl<'a> Parse<'a> for Name<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         let (input, token) = Token::parse(input)?;
-
-//         match token {
-//             Token::Name(name) => Ok((input, name)),
-//             token => Err(nom::Err::Error(Error::ExpectedName(token.span(), vec![]))),
-//         }
-//     }
-// }
-
-// impl<'a> Parse<'a> for Punctuator<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         let (input, token) = Token::parse(input)?;
-
-//         match token {
-//             Token::Punctuator(punctuator) => Ok((input, punctuator)),
-//             token => Err(nom::Err::Error(Error::ExpectedPunctuator(
-//                 token.span(),
-//                 vec![],
-//             ))),
-//         }
-//     }
-// }
-
-// impl<'a, T> Parse<'a> for Vec<Recoverable<'a, T>>
-// where
-//     T: Parse<'a>,
-// {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Iterator<Item = Token<'a>> + Clone + InputLength,
-//     {
-//         many0(
-//             many_till(Token::parse, T::parse).map(|(errors, item)| match errors.is_empty() {
-//                 true => vec![Ok(item)],
-//                 false => vec![Err(errors), Ok(item)],
-//             }),
-//         )
-//         .and(many0(Token::parse))
-//         .map(|(items, errors)| match errors.is_empty() {
-//             true => items.into_iter().flatten().collect(),
-//             false => items
-//                 .into_iter()
-//                 .flatten()
-//                 .chain(once(Err(errors)))
-//                 .collect(),
-//         })
-//         .parse(input)
-//     }
-// }
+parse!(Document, document);
+parse!(Definition, definition);
+parse!(ExecutableDocument, executable::executable_document);
+parse!(ExecutableDefinition, executable::executable_definition);
+parse!(OperationDefinition, executable::operation_definition);
+parse!(OperationType, executable::operation_type);
+parse!(SelectionSet, executable::selection_set);
+parse!(Selection, executable::selection);
+parse!(Field, executable::field);
+parse!(Alias, executable::alias);
+parse!(Arguments, executable::arguments);
+parse!(Argument, executable::argument);
+parse!(FragmentSpread, executable::fragment_spread);
+parse!(InlineFragment, executable::inline_fragment);
+parse!(FragmentDefinition, executable::fragment_definition);
+parse!(TypeCondition, executable::type_condition);
+parse!(Value, executable::value);
+parse!(BooleanValue, executable::boolean_value);
+parse!(NullValue, executable::null_value);
+parse!(EnumValue, executable::enum_value);
+parse!(ListValue, executable::list_value);
+parse!(ObjectValue, executable::object_value);
+parse!(VariableDefinitions, executable::variable_definitions);
+parse!(VariableDefinition, executable::variable_definition);
+parse!(Variable, executable::variable);
+parse!(Type, executable::ty);
+parse!(NamedType, executable::named_type);
+parse!(NonNullType, executable::non_null_type);
+parse!(Directives, executable::directives);
+parse!(Directive, executable::directive);

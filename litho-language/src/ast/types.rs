@@ -298,7 +298,7 @@ node_unit!(EnumValue, visit_enum_value);
 #[derive(Clone, Debug)]
 pub struct ListValue<'a> {
     pub brackets: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub values: Recoverable<Vec<Value<'a>>>,
+    pub values: Vec<Value<'a>>,
 }
 
 node!(ListValue, visit_list_value, brackets, values);
@@ -306,7 +306,7 @@ node!(ListValue, visit_list_value, brackets, values);
 #[derive(Clone, Debug)]
 pub struct ObjectValue<'a> {
     pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub object_fields: Recoverable<Vec<ObjectField<'a>>>,
+    pub object_fields: Vec<ObjectField<'a>>,
 }
 
 node!(ObjectValue, visit_object_value, braces, object_fields);
@@ -314,8 +314,8 @@ node!(ObjectValue, visit_object_value, braces, object_fields);
 #[derive(Clone, Debug)]
 pub struct ObjectField<'a> {
     pub name: Name<'a>,
-    pub colon: Punctuator<'a>,
-    pub value: Value<'a>,
+    pub colon: Recoverable<Punctuator<'a>>,
+    pub value: Recoverable<Value<'a>>,
 }
 
 node!(ObjectField, visit_object_field, name, colon, value);

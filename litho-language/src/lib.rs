@@ -1,13 +1,14 @@
-mod ast;
-mod chk;
-mod lex;
+#![warn(missing_docs)]
+
+pub mod ast;
+pub mod chk;
+pub mod lex;
 pub mod syn;
 
-pub use ast::*;
-pub use chk::{Errors, IntoReport, LabelBuilder, ReportBuilder};
-pub use lex::{Name, Punctuator, Span, Token, TokenKind};
-// pub use syn::Parse;
+pub use ast::Document;
+pub use syn::{parse_from_str, Parse};
 
+#[doc(hidden)]
 pub use ariadne;
 
 #[cfg(test)]
@@ -16,12 +17,11 @@ mod tests {
 
     use super::chk::{Error, Errors, IntoReport};
     use super::lex::Span;
-    use super::syn;
-    use super::*;
+    use super::{Document, Parse};
 
     #[test]
     fn it_works() {
-        let source = r#"query Example($example: Hello, $world: Int) {
+        let source = r#"query Example($example: Hello, $world: Int}) % {
             query- {
                 hello(x-: }
 
@@ -29,7 +29,7 @@ mod tests {
                         value
                     }
         "#;
-        let (unrecognized, ast) = syn::parse_from_str(syn::document(), 0, source).unwrap();
+        let (ast, unrecognized) = Document::parse_from_str(0, source).unwrap();
 
         println!("Result: {:#?} (errors: {:#?})", ast, ast.errors());
 

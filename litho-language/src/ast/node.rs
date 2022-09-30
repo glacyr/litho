@@ -1,4 +1,4 @@
-use crate::lex::{Span, Token};
+use crate::lex::Span;
 
 use super::{Recoverable, Visit};
 
@@ -21,14 +21,6 @@ impl<'ast, 'a> Visit<'ast, 'a> for SpanCollector {
 
     fn visit_span(&self, span: crate::lex::Span, accumulator: &mut Self::Accumulator) {
         accumulator.get_or_insert(span).join(span)
-    }
-}
-
-impl<'a> Node<'a> for () {
-    fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
-    where
-        V: Visit<'ast, 'a>,
-    {
     }
 }
 

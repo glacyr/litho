@@ -2,7 +2,7 @@ use wrom::branch::alt;
 use wrom::combinator::opt;
 use wrom::multi::many0;
 use wrom::sequence::delimited;
-use wrom::{Input, Recognizer, RecoverableParser};
+use wrom::{recursive, Input, RecoverableParser};
 
 use crate::ast::*;
 use crate::lex::{Name, Token};
@@ -10,10 +10,16 @@ use crate::lex::{Name, Token};
 use super::combinators::{keyword, name, punctuator};
 use super::Error;
 
-pub fn executable_definition<'a, I>(
-) -> impl RecoverableParser<I, ExecutableDefinition<'a>, Error<'a>>
+pub fn executable_document<'a, I>() -> impl RecoverableParser<I, ExecutableDocument<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+{
+    many0(executable_definition()).map(|definitions| ExecutableDocument { definitions })
+}
+
+pub fn executable_definition<'a, I>() -> impl RecoverableParser<I, ExecutableDefinition<'a>, Error>
+where
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     alt((
         operation_definition().map(ExecutableDefinition::OperationDefinition),
@@ -21,9 +27,9 @@ where
     ))
 }
 
-pub fn operation_definition<'a, I>() -> impl RecoverableParser<I, OperationDefinition<'a>, Error<'a>>
+pub fn operation_definition<'a, I>() -> impl RecoverableParser<I, OperationDefinition<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     operation_type()
         .and(name().recover(|| "Missing name of this operation definition.".into()))
@@ -42,7 +48,7 @@ where
         )
 }
 
-pub fn operation_type<'a, I>() -> impl RecoverableParser<I, OperationType<'a>, Error<'a>>
+pub fn operation_type<'a, I>() -> impl RecoverableParser<I, OperationType<'a>, Error>
 where
     I: Iterator<Item = Token<'a>> + Clone,
 {
@@ -53,35 +59,31 @@ where
     ))
 }
 
-pub fn selection_set<'a, I>() -> impl RecoverableParser<I, SelectionSet<'a>, Error<'a>>
+pub fn selection_set<'a, I>() -> impl RecoverableParser<I, SelectionSet<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
-    wrom::recoverable_parser(
-        |input, recovery_point: &'_ dyn Recognizer<I, Error<'a>>| {
-            delimited(
-                punctuator("{"),
-                many0(selection()),
-                punctuator("}"),
-                Missing::delimiter_complaint(
-                    "Unlimited selection set.",
-                    "This `{` here ...",
-                    "... should have a corresponding `}` here.",
-                ),
-            )
-            .map(|(brace_left, selections, brace_right)| SelectionSet {
-                braces: (brace_left, brace_right),
-                selections,
-            })
-            .parse(input, recovery_point)
-        },
-        move |input| punctuator("{").recognize(input),
-    )
+    wrom::recursive(|| {
+        delimited(
+            punctuator("{"),
+            many0(selection()),
+            punctuator("}"),
+            Missing::delimiter_complaint(
+                "Unlimited selection set.",
+                "This `{` here ...",
+                "... should have a corresponding `}` here.",
+            ),
+        )
+        .map(|(brace_left, selections, brace_right)| SelectionSet {
+            braces: (brace_left, brace_right),
+            selections,
+        })
+    })
 }
 
-pub fn selection<'a, I>() -> impl RecoverableParser<I, Selection<'a>, Error<'a>>
+pub fn selection<'a, I>() -> impl RecoverableParser<I, Selection<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     alt((
         inline_fragment().map(Selection::InlineFragment),
@@ -90,9 +92,9 @@ where
     ))
 }
 
-fn field<'a, I>() -> impl RecoverableParser<I, Field<'a>, Error<'a>>
+pub fn field<'a, I>() -> impl RecoverableParser<I, Field<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     alt((
         alias()
@@ -127,18 +129,18 @@ where
     ))
 }
 
-pub fn alias<'a, I>() -> impl RecoverableParser<I, Alias<'a>, Error<'a>>
+pub fn alias<'a, I>() -> impl RecoverableParser<I, Alias<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     name()
         .and(punctuator(":"))
         .map(|(name, colon)| Alias { name, colon })
 }
 
-pub fn arguments<'a, I>() -> impl RecoverableParser<I, Arguments<'a>, Error<'a>>
+pub fn arguments<'a, I>() -> impl RecoverableParser<I, Arguments<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     delimited(
         punctuator("("),
@@ -156,9 +158,9 @@ where
     })
 }
 
-pub fn argument<'a, I>() -> impl RecoverableParser<I, Argument<'a>, Error<'a>>
+pub fn argument<'a, I>() -> impl RecoverableParser<I, Argument<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     name()
         .and(punctuator(":").recover(|| "Missing colon here.".into()))
@@ -167,9 +169,9 @@ where
         .map(|(name, colon, value)| Argument { name, colon, value })
 }
 
-pub fn fragment_spread<'a, I>() -> impl RecoverableParser<I, FragmentSpread<'a>, Error<'a>>
+pub fn fragment_spread<'a, I>() -> impl RecoverableParser<I, FragmentSpread<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     punctuator("...")
         .and(name().recover(|| "Fragment spread is missing name here.".into()))
@@ -182,9 +184,9 @@ where
         })
 }
 
-pub fn inline_fragment<'a, I>() -> impl RecoverableParser<I, InlineFragment<'a>, Error<'a>>
+pub fn inline_fragment<'a, I>() -> impl RecoverableParser<I, InlineFragment<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     punctuator("...")
         .and(opt(type_condition()))
@@ -201,9 +203,9 @@ where
         )
 }
 
-pub fn fragment_definition<'a, I>() -> impl RecoverableParser<I, FragmentDefinition<'a>, Error<'a>>
+pub fn fragment_definition<'a, I>() -> impl RecoverableParser<I, FragmentDefinition<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     keyword("fragment")
         .and(name().recover(|| "Fragment definition is missing a name.".into()))
@@ -224,45 +226,32 @@ where
         )
 }
 
-pub fn type_condition<'a, I>() -> impl RecoverableParser<I, TypeCondition<'a>, Error<'a>>
+pub fn type_condition<'a, I>() -> impl RecoverableParser<I, TypeCondition<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     keyword("on")
         .and(name().recover(|| "Type condition is missing name of type.".into()))
         .map(|(on, named_type)| TypeCondition { on, named_type })
 }
 
-pub fn value<'a, I>() -> impl RecoverableParser<I, Value<'a>, Error<'a>>
+pub fn value<'a, I>() -> impl RecoverableParser<I, Value<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     alt((
+        // int_value().map(Value::IntValue),
+        // float_value().map(Value::FloatValue),
         boolean_value().map(Value::BooleanValue),
         null_value().map(Value::NullValue),
+        enum_value().map(Value::EnumValue),
+        variable().map(Value::Variable),
+        list_value().map(Value::ListValue),
+        object_value().map(Value::ObjectValue),
     ))
 }
 
-// impl<'a> Parse<'a> for Value<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Input<Item = Token<'a>, Missing = Missing>,
-//     {
-//         alt((
-//             // IntValue::parse.map(Value::IntValue),
-//             // FloatValue::parse.map(Value::FloatValue),
-//             BooleanValue::parse.map(Value::BooleanValue),
-//             NullValue::parse.map(Value::NullValue),
-//             EnumValue::parse.map(Value::EnumValue),
-//             Variable::parse.map(Value::Variable),
-//             ListValue::parse.map(Value::ListValue),
-//             ObjectValue::parse.map(Value::ObjectValue),
-//         ))
-//         .parse(input)
-//     }
-// }
-
-pub fn boolean_value<'a, I>() -> impl RecoverableParser<I, BooleanValue<'a>, Error<'a>>
+pub fn boolean_value<'a, I>() -> impl RecoverableParser<I, BooleanValue<'a>, Error>
 where
     I: Iterator<Item = Token<'a>> + Clone,
 {
@@ -272,59 +261,79 @@ where
     ))
 }
 
-pub fn null_value<'a, I>() -> impl RecoverableParser<I, NullValue<'a>, Error<'a>>
+pub fn null_value<'a, I>() -> impl RecoverableParser<I, NullValue<'a>, Error>
 where
     I: Iterator<Item = Token<'a>> + Clone,
 {
     keyword("null").map(NullValue)
 }
 
-// impl<'a> Parse<'a> for EnumValue<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Input<Item = Token<'a>, Missing = Missing>,
-//     {
-//         name_if_fn(|name| match name {
-//             "true" | "false" | "null" => false,
-//             _ => true,
-//         })
-//         .map(EnumValue)
-//         .parse(input)
-//     }
-// }
+pub fn enum_value<'a, I>() -> impl RecoverableParser<I, EnumValue<'a>, Error>
+where
+    I: Iterator<Item = Token<'a>> + Clone,
+{
+    name().map(EnumValue)
+}
 
-// impl<'a> Parse<'a> for ListValue<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Input<Item = Token<'a>, Missing = Missing>,
-//     {
-//         group::<Value, I>("[", "]")
-//             .map(|(left, values, right)| ListValue {
-//                 brackets: (left, right),
-//                 values,
-//             })
-//             .parse(input)
-//     }
-// }
+pub fn list_value<'a, I>() -> impl RecoverableParser<I, ListValue<'a>, Error>
+where
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+{
+    recursive(|| {
+        delimited(
+            punctuator("["),
+            many0(value()),
+            punctuator("]"),
+            Missing::delimiter_complaint(
+                "List value is missing closing `]` delimiter.",
+                "This `[` here ...",
+                "... should have a corresponding `]` here.",
+            ),
+        )
+        .map(|(left, values, right)| ListValue {
+            brackets: (left, right),
+            values,
+        })
+    })
+}
 
-// impl<'a> Parse<'a> for ObjectValue<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
-//     where
-//         I: Input<Item = Token<'a>, Missing = Missing>,
-//     {
-//         group::<ObjectField, I>("{", "}")
-//             .map(|(left, object_fields, right)| ObjectValue {
-//                 braces: (left, right),
-//                 object_fields,
-//             })
-//             .parse(input)
-//     }
-// }
+pub fn object_value<'a, I>() -> impl RecoverableParser<I, ObjectValue<'a>, Error>
+where
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+{
+    recursive(|| {
+        delimited(
+            punctuator("{"),
+            many0(object_field()),
+            punctuator("}"),
+            Missing::delimiter_complaint(
+                "Object value is missing closing `}` delimiter.",
+                "This `{` here ...",
+                "... should have a corresponding `}` here.",
+            ),
+        )
+        .map(|(left, object_fields, right)| ObjectValue {
+            braces: (left, right),
+            object_fields,
+        })
+    })
+}
+
+pub fn object_field<'a, I>() -> impl RecoverableParser<I, ObjectField<'a>, Error>
+where
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+{
+    name()
+        .and(punctuator(":").recover(|| "Missing colon here.".into()))
+        .and(value().recover(|| "Missing value here.".into()))
+        .flatten()
+        .map(|(name, colon, value)| ObjectField { name, colon, value })
+}
 
 // impl<'a> Parse<'a> for ObjectField<'a> {
-//     fn parse<I>(input: I) -> IResult<I, Self, Error<'a>>
+//     fn parse<I>(input: I) -> IResult<I, Self, Error>
 //     where
-//         I: Input<Item = Token<'a>, Missing = Missing>,
+//         I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 //     {
 //         tuple((Name::parse, punctuator_if(":"), Value::parse))
 //             .map(|(name, colon, value)| ObjectField { name, colon, value })
@@ -332,9 +341,9 @@ where
 //     }
 // }
 
-fn variable_definitions<'a, I>() -> impl RecoverableParser<I, VariableDefinitions<'a>, Error<'a>>
+pub fn variable_definitions<'a, I>() -> impl RecoverableParser<I, VariableDefinitions<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     punctuator("(")
         .and(many0(variable_definition()))
@@ -353,9 +362,9 @@ where
         })
 }
 
-fn variable_definition<'a, I>() -> impl RecoverableParser<I, VariableDefinition<'a>, Error<'a>>
+pub fn variable_definition<'a, I>() -> impl RecoverableParser<I, VariableDefinition<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     variable()
         .and(punctuator(":").recover(|| "Expected a `:` here.".into()))
@@ -374,27 +383,27 @@ where
         )
 }
 
-pub fn variable<'a, I>() -> impl RecoverableParser<I, Variable<'a>, Error<'a>>
+pub fn variable<'a, I>() -> impl RecoverableParser<I, Variable<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     punctuator("$")
         .and(name())
         .map(|(dollar, name)| Variable { dollar, name })
 }
 
-pub fn default_value<'a, I>() -> impl RecoverableParser<I, DefaultValue<'a>, Error<'a>>
+pub fn default_value<'a, I>() -> impl RecoverableParser<I, DefaultValue<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     punctuator("=")
         .and(value().recover(|| "Expected a value here.".into()))
         .map(|(eq, value)| DefaultValue { eq, value })
 }
 
-pub fn ty<'a, I>() -> impl RecoverableParser<I, Type<'a>, Error<'a>>
+pub fn ty<'a, I>() -> impl RecoverableParser<I, Type<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     alt((
         non_null_type().map(Box::new).map(Type::NonNull),
@@ -403,42 +412,36 @@ where
     ))
 }
 
-pub fn named_type<'a, I>() -> impl RecoverableParser<I, NamedType<'a>, Error<'a>>
+pub fn named_type<'a, I>() -> impl RecoverableParser<I, NamedType<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     name().map(NamedType)
 }
 
-pub fn list_type<'a, I>() -> impl RecoverableParser<I, ListType<'a>, Error<'a>>
+pub fn list_type<'a, I>() -> impl RecoverableParser<I, ListType<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
-    wrom::recoverable_parser(
-        |input, recovery_point: &'_ dyn Recognizer<I, Error<'a>>| {
-            delimited(
-                punctuator("["),
-                ty().recover(|| "Expected a type here.".into()),
-                punctuator("]"),
-                Missing::delimiter_complaint(
-                    "List type is missing closing delimiter.",
-                    "This `[` here ...",
-                    "... should have a corresponding `]` here.",
-                ),
-            )
-            .map(|(left, ty, right)| ListType {
-                brackets: (left, right),
-                ty,
-            })
-            .parse(input, recovery_point)
-        },
-        |input| punctuator("[").recognize(input),
+    delimited(
+        punctuator("["),
+        wrom::recursive(|| ty()).recover(|| "Expected a type here.".into()),
+        punctuator("]"),
+        Missing::delimiter_complaint(
+            "List type is missing closing delimiter.",
+            "This `[` here ...",
+            "... should have a corresponding `]` here.",
+        ),
     )
+    .map(|(left, ty, right)| ListType {
+        brackets: (left, right),
+        ty,
+    })
 }
 
-pub fn non_null_type<'a, I>() -> impl RecoverableParser<I, NonNullType<'a>, Error<'a>>
+pub fn non_null_type<'a, I>() -> impl RecoverableParser<I, NonNullType<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     alt((
         named_type().map(Type::Named),
@@ -448,16 +451,16 @@ where
     .map(|(ty, bang)| NonNullType { ty, bang })
 }
 
-pub fn directives<'a, I>() -> impl RecoverableParser<I, Directives<'a>, Error<'a>>
+pub fn directives<'a, I>() -> impl RecoverableParser<I, Directives<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     many0(directive()).map(|directives| Directives { directives })
 }
 
-pub fn directive<'a, I>() -> impl RecoverableParser<I, Directive<'a>, Error<'a>>
+pub fn directive<'a, I>() -> impl RecoverableParser<I, Directive<'a>, Error>
 where
-    I: Input<Item = Token<'a>, Missing = Missing>,
+    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
     punctuator("@")
         .and(name().recover(|| "Expected the name of a directive here.".into()))

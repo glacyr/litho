@@ -1,16 +1,34 @@
 use logos::Logos;
 
+/// Represents a kind of token that appears in a GraphQL document and forms the
+/// basis of our [Logos] parser.
+///
+/// ```rbf
+/// SourceCharacter ::= U+0009 | U+000A | U+000D | U+0020-U+FFFF
+/// ```
+///
+/// GraphQL documents are expressed as a sequence of Unicode code points
+/// (informally referred to as _"characters"_ through most of this
+/// specification). However, with few exceptions, most of GraphQL is expressed
+/// only in the original non-control ASCII range so as to be as widely
+/// compatible with as many existing tools, languages and serialization formats
+/// as possible and avoid display issues in text editors and source control.
+///
+/// __Note:__ Non-ASCII Unicode characters may appear freely within
+/// _StringValue_ and _Comment_ portions of GraphQL.
+///
+/// _Source: [Sec. 2.1 Source Text](https://spec.graphql.org/October2021/#sec-Unicode)_
 #[derive(Logos, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TokenKind {
-    /// ### 2.1.1 Unicode
     /// The "Byte Order Mark" is a special Unicode character which may appear at
     /// the beginning of a file containing Unicode which programs may use to
     /// determine the fact that the text stream is Unicode, what endianness the
     /// text stream is in, and which of several Unicode encodings to interpret.
+    ///
+    /// _Source: [Sec. 2.1.1 Unicode](https://spec.graphql.org/October2021/#sec-Unicode)_
     #[token("\u{feff}", logos::skip)]
     ByteOrderMark,
 
-    /// ### 2.1.2 White Space
     /// White space is used to improve legibility of source code text and act as
     /// a separation between tokens, and any amount of white space may appear
     /// before or after any token. White space between tokens is not significant
@@ -20,9 +38,11 @@ pub enum TokenKind {
     /// Note: GraphQL intentionally does not consider Unicode "Zs" category
     /// characters as white-space, avoiding misinterpretation by text editors
     /// and source control tools.
+    ///
+    /// _Source: [Sec. 2.1.2 White Space](https://spec.graphql.org/October2021/#sec-White-Space)_
     #[token("\u{0009}", logos::skip)]
     #[token("\u{0020}", logos::skip)]
-    Whitespace,
+    WhiteSpace,
 
     /// ### 2.1.3 Line Terminators
     /// Like white space, line terminators are used to improve the legibility of
@@ -34,12 +54,13 @@ pub enum TokenKind {
     /// Note: Any error reporting which provides the line number in the source
     /// of the offending syntax should use the preceding amount of
     /// `LineTerminator` to produce the line number.
+    ///
+    /// _Source: [Sec. 2.1.3 Line Terminators](https://spec.graphql.org/October2021/#sec-Line-Terminators)_
     #[token("\u{000a}", logos::skip)]
     #[token("\u{000d}", logos::skip)]
     #[token("\u{000d}\u{000a}", logos::skip)]
-    Newline,
+    LineTerminator,
 
-    /// ### 2.1.4 Comments
     /// GraphQL source documents may contain single-line comments, starting with
     /// the # marker.
     ///
@@ -51,10 +72,11 @@ pub enum TokenKind {
     /// Comments are `Ignored` like white space and may appear after any token,
     /// or before a `LineTerminator`, and have no significance to the semantic
     /// meaning of a GraphQL Document.
+    ///
+    /// _Source: [Sec. 2.1.4 Comments](https://spec.graphql.org/October2021/#sec-Comments)_
     #[regex("#[\u{0009}\u{0020}-\u{ffff}]*")]
     Comment,
 
-    /// ### 2.1.5 Insignificant Commas
     /// Similar to white space and line terminators, commas (`,`) are used to
     /// improve the legibility of source text and separate lexical tokens but
     /// are otherwise syntactically and semantically insignificant within
@@ -66,20 +88,17 @@ pub enum TokenKind {
     /// allows for the stylistic use of either trailing commas or line
     /// terminators as list delimiters which are both often desired for
     /// legibility and maintainability of source code.
+    ///
+    /// _Source: [Sec. 2.1.5 Insignificant Commas](https://spec.graphql.org/October2021/#sec-Insignificant-Commas)_
     #[token(",", logos::skip)]
     Comma,
 
-    /// ### 2.1.6 Lexical Tokens
-    /// -
-    ///
-    /// ### Ignored Tokens
-    ///
-
-    /// ### 2.1.8 Punctuators
     /// GraphQL documents include punctuation in order to describe structure.
     /// GraphQL is a data description language and not a programming language,
     /// therefore GraphQL lacks the punctuation often used to describe
     /// mathematical expressions.
+    ///
+    /// _Source: [Sec. 2.1.8 Punctuators](https://spec.graphql.org/October2021/#sec-Punctuators)_
     #[token("!")]
     #[token("$")]
     #[token("&")]
@@ -96,7 +115,6 @@ pub enum TokenKind {
     #[token("}")]
     Punctuator,
 
-    /// ### 2.1.9 Names
     /// GraphQL Documents are full of named things: operations, fields,
     /// arguments, types, directives, fragments, and variables. All names must
     /// follow the same grammatical form.
@@ -115,11 +133,14 @@ pub enum TokenKind {
     /// systems as possible.
     ///
     /// ## Reserved Names
+    /// Any _Name_ within a GraphQL type system must not start with underscores
+    /// `"__"` unless it is part of the introspection system as defined by this
+    /// specification.
     ///
+    /// _Source: [Sec. 2.1.9 Names](https://spec.graphql.org/October2021/#sec-Names)_
     #[regex("[A-Za-z_][A-Za-z0-9_]*")]
     Name,
 
-    /// ### 2.9.1 Int Value
     /// An `IntValue` is specified without a decimal point or exponent but may
     /// be negative (ex. `-123`). It must not have any leading `0`.
     ///
@@ -135,10 +156,11 @@ pub enum TokenKind {
     /// a possible `FloatValue`. No other `NameStart` character can follow. For
     /// example the sequences `0x123` and `123L` have no valid lexical
     /// interpretations.
+    ///
+    /// _Source: [Sec. 2.9.1 Int Value](https://spec.graphql.org/October2021/#sec-Int-Value)_
     #[regex("-?(0|[1-9][0-9]*)")]
     IntValue,
 
-    /// ### 2.9.2 Float Value
     /// A `FloatValue` includes either a decimal point (ex. `1.0`) or an
     /// exponent (ex. `1e50`) or both (ex. `6.0221413e23`) and may be negative.
     /// Like `IntValue`, it also must not have any leading `0`.
@@ -158,11 +180,12 @@ pub enum TokenKind {
     /// being immediately followed by a letter (or other `NameStart`) to reduce
     /// confusion or unexpected behavior since GraphQL only supports decimal
     /// numbers.
+    ///
+    /// _Source: [Sec. 2.9.2 Float Value](https://spec.graphql.org/October2021/#sec-Float-Value)_
     #[regex("-?(0|[1-9][0-9]*)\\.[0-9]+")]
     #[regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?[eE][\\+\\-]?[0-9]+", priority = 3)]
     FloatValue,
 
-    /// ### 2.9.4 String Value
     /// Strings are sequences of characters wrapped in quotation marks (U+0022).
     /// (ex. `"Hello World"`). White space and other otherwise-ignored
     /// characters are significant within a string value.
@@ -177,10 +200,13 @@ pub enum TokenKind {
     /// escape sequences must be used to represent these characters. The `\, "`
     /// characters also must be escaped. All other escape sequences are
     /// optional.
+    ///
+    /// _Source: [Sec. 2.9.4 String Value](https://spec.graphql.org/October2021/#sec-String-Value)_
     #[regex(r#""([^"\\]|\\"|\\\\)*""#)]
     #[regex("\"\"\"(?:[^\"\"\"])*\"\"\"")]
     StringValue,
 
+    /// Any unrecognized token ends up being consumed by this rule.
     #[error]
     #[regex("-?(0|[1-9][0-9]*)[0-9A-Za-z_]+")]
     #[regex("-?(0|[1-9][0-9]*)\\.[0-9]+[A-Za-z_][0-9A-Za-z]*", priority = 2)]

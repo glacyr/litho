@@ -1,5 +1,4 @@
 use logos::Lexer;
-use nom::InputLength;
 
 use super::{Span, TokenKind};
 
