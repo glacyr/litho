@@ -3,6 +3,7 @@ use std::iter::once;
 use nom::combinator::eof;
 use nom::error::{ErrorKind, ParseError};
 use nom::Err;
+use wrom::branch::alt;
 use wrom::multi::many0;
 use wrom::{terminal, Input, RecoverableParser};
 
@@ -12,6 +13,7 @@ use crate::lex::{lexer, Token};
 mod combinators;
 pub mod executable;
 mod parse;
+pub mod schema;
 mod stream;
 
 pub use parse::Parse;
@@ -24,6 +26,9 @@ pub enum Error {
     ExpectedKeyword(&'static str),
     ExpectedName,
     ExpectedPunctuator(&'static str),
+    ExpectedIntValue,
+    ExpectedFloatValue,
+    ExpectedStringValue,
     Multiple(Vec<Error>),
 }
 
@@ -53,6 +58,9 @@ where
             (Error::ExpectedPunctuator(lhs), Error::ExpectedPunctuator(rhs)) if lhs == rhs => {
                 Error::ExpectedPunctuator(lhs)
             }
+            (Error::ExpectedIntValue, Error::ExpectedIntValue) => Error::ExpectedIntValue,
+            (Error::ExpectedFloatValue, Error::ExpectedFloatValue) => Error::ExpectedFloatValue,
+            (Error::ExpectedStringValue, Error::ExpectedStringValue) => Error::ExpectedStringValue,
             (Error::Multiple(lhs), Error::Multiple(rhs)) => {
                 Error::Multiple(lhs.into_iter().chain(rhs.into_iter()).collect())
             }
@@ -78,7 +86,11 @@ pub fn definition<'a, I>() -> impl RecoverableParser<I, Definition<'a>, Error>
 where
     I: Input<Item = Token<'a>, Missing = Missing> + 'a,
 {
-    executable::executable_definition().map(Definition::ExecutableDefinition)
+    alt((
+        executable::executable_definition().map(Definition::ExecutableDefinition),
+        schema::type_system_definition_or_extension()
+            .map(Definition::TypeSystemDefinitionOrExtension),
+    ))
 }
 
 pub fn parse_from_str<'a, P, O>(
@@ -109,32 +121,32 @@ macro_rules! parse {
 }
 
 parse!(Document, document);
-parse!(Definition, definition);
-parse!(ExecutableDocument, executable::executable_document);
-parse!(ExecutableDefinition, executable::executable_definition);
-parse!(OperationDefinition, executable::operation_definition);
-parse!(OperationType, executable::operation_type);
-parse!(SelectionSet, executable::selection_set);
-parse!(Selection, executable::selection);
-parse!(Field, executable::field);
-parse!(Alias, executable::alias);
-parse!(Arguments, executable::arguments);
-parse!(Argument, executable::argument);
-parse!(FragmentSpread, executable::fragment_spread);
-parse!(InlineFragment, executable::inline_fragment);
-parse!(FragmentDefinition, executable::fragment_definition);
-parse!(TypeCondition, executable::type_condition);
-parse!(Value, executable::value);
-parse!(BooleanValue, executable::boolean_value);
-parse!(NullValue, executable::null_value);
-parse!(EnumValue, executable::enum_value);
-parse!(ListValue, executable::list_value);
-parse!(ObjectValue, executable::object_value);
-parse!(VariableDefinitions, executable::variable_definitions);
-parse!(VariableDefinition, executable::variable_definition);
-parse!(Variable, executable::variable);
-parse!(Type, executable::ty);
-parse!(NamedType, executable::named_type);
-parse!(NonNullType, executable::non_null_type);
-parse!(Directives, executable::directives);
-parse!(Directive, executable::directive);
+// parse!(Definition, definition);
+// parse!(ExecutableDocument, executable::executable_document);
+// parse!(ExecutableDefinition, executable::executable_definition);
+// parse!(OperationDefinition, executable::operation_definition);
+// parse!(OperationType, executable::operation_type);
+// parse!(SelectionSet, executable::selection_set);
+// parse!(Selection, executable::selection);
+// parse!(Field, executable::field);
+// parse!(Alias, executable::alias);
+// parse!(Arguments, executable::arguments);
+// parse!(Argument, executable::argument);
+// parse!(FragmentSpread, executable::fragment_spread);
+// parse!(InlineFragment, executable::inline_fragment);
+// parse!(FragmentDefinition, executable::fragment_definition);
+// parse!(TypeCondition, executable::type_condition);
+// parse!(Value, executable::value);
+// parse!(BooleanValue, executable::boolean_value);
+// parse!(NullValue, executable::null_value);
+// parse!(EnumValue, executable::enum_value);
+// parse!(ListValue, executable::list_value);
+// parse!(ObjectValue, executable::object_value);
+// parse!(VariableDefinitions, executable::variable_definitions);
+// parse!(VariableDefinition, executable::variable_definition);
+// parse!(Variable, executable::variable);
+// parse!(Type, executable::ty);
+// parse!(NamedType, executable::named_type);
+// parse!(NonNullType, executable::non_null_type);
+// parse!(Directives, executable::directives);
+// parse!(Directive, executable::directive);

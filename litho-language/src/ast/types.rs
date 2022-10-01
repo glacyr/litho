@@ -1,4 +1,4 @@
-use crate::lex::{Name, Punctuator, Span};
+use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
 
 use super::{node, node_enum, node_unit, Node, Visit};
 
@@ -60,10 +60,15 @@ node!(Document, visit_document, definitions);
 #[derive(Clone, Debug)]
 pub enum Definition<'a> {
     ExecutableDefinition(ExecutableDefinition<'a>),
-    // TypeSystemDefinitionOrExtension(TypeSystemDefinitionOrExtension<'a>),
+    TypeSystemDefinitionOrExtension(TypeSystemDefinitionOrExtension<'a>),
 }
 
-node_enum!(Definition, visit_definition, ExecutableDefinition);
+node_enum!(
+    Definition,
+    visit_definition,
+    ExecutableDefinition,
+    TypeSystemDefinitionOrExtension
+);
 
 /// Documents are only executable by a GraphQL service if they are
 /// `ExecutableDocument` and contain at least one `OperationDefinition`. A
@@ -253,9 +258,9 @@ node!(TypeCondition, visit_type_condition, on, named_type);
 #[derive(Clone, Debug)]
 pub enum Value<'a> {
     Variable(Variable<'a>),
-    // IntValue(IntValue<'a>),
-    // FloatValue(FloatValue<'a>),
-    // StringValue(StringValue<'a>),
+    IntValue(IntValue<'a>),
+    FloatValue(FloatValue<'a>),
+    StringValue(StringValue<'a>),
     BooleanValue(BooleanValue<'a>),
     NullValue(NullValue<'a>),
     EnumValue(EnumValue<'a>),
@@ -267,9 +272,9 @@ node_enum!(
     Value,
     visit_value,
     Variable,
-    // IntValue,
-    // FloatValue,
-    // StringValue,
+    IntValue,
+    FloatValue,
+    StringValue,
     BooleanValue,
     NullValue,
     EnumValue,
@@ -413,3 +418,654 @@ pub struct Directive<'a> {
 }
 
 node!(Directive, visit_directive, at, name, arguments);
+
+/// The GraphQL Type system describes the capabilities of a GraphQL service and
+/// is used to determine if a requested operation is valid, to guarantee the
+/// type of response results, and describes the input types of variables to
+/// determine if values provided at request time are valid.
+///
+/// The GraphQL language includes an IDL used to describe a GraphQL service's
+/// type system. Tools may use this definition language to provide utilities
+/// such as client code generation or service bootstrapping.
+///
+/// GraphQL tools or services which only seek to execute GraphQL requests and
+/// not construct a new GraphQL schema may choose not to allow
+/// `TypeSystemDefinition`. Tools which only seek to produce schema and not
+/// execute requests may choose to only allow `TypeSystemDocument` and not allow
+/// `ExecutableDefinition` or `TypeSystemExtension` but should provide a
+/// descriptive error if present.
+#[derive(Clone, Debug)]
+pub struct TypeSystemDocument<'a> {
+    pub definitions: Vec<TypeSystemDefinition<'a>>,
+}
+
+node!(TypeSystemDocument, visit_type_system_document, definitions);
+
+#[derive(Clone, Debug)]
+pub enum TypeSystemDefinition<'a> {
+    SchemaDefinition(SchemaDefinition<'a>),
+    TypeDefinition(TypeDefinition<'a>),
+    DirectiveDefinition(DirectiveDefinition<'a>),
+}
+
+node_enum!(
+    TypeSystemDefinition,
+    visit_type_system_definition,
+    SchemaDefinition,
+    TypeDefinition,
+    DirectiveDefinition
+);
+
+#[derive(Clone, Debug)]
+pub struct TypeSystemExtensionDocument<'a> {
+    pub definitions: Vec<TypeSystemDefinitionOrExtension<'a>>,
+}
+
+node!(
+    TypeSystemExtensionDocument,
+    visit_type_system_extension_document,
+    definitions
+);
+
+#[derive(Clone, Debug)]
+pub enum TypeSystemDefinitionOrExtension<'a> {
+    TypeSystemDefinition(TypeSystemDefinition<'a>),
+    TypeSystemExtension(TypeSystemExtension<'a>),
+}
+
+node_enum!(
+    TypeSystemDefinitionOrExtension,
+    visit_type_system_definition_or_extension,
+    TypeSystemDefinition,
+    TypeSystemExtension
+);
+
+#[derive(Clone, Debug)]
+pub enum TypeSystemExtension<'a> {
+    SchemaExtension(SchemaExtension<'a>),
+    TypeExtension(TypeExtension<'a>),
+}
+
+node_enum!(
+    TypeSystemExtension,
+    visit_type_system_extension,
+    SchemaExtension,
+    TypeExtension
+);
+
+#[derive(Clone, Debug)]
+pub struct Description<'a>(pub StringValue<'a>);
+
+node_unit!(Description, visit_description);
+
+#[derive(Clone, Debug)]
+pub struct SchemaDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub schema: Name<'a>,
+    pub directives: Option<Directives<'a>>,
+    pub type_definitions: Recoverable<RootOperationTypeDefinitions<'a>>,
+}
+
+node!(
+    SchemaDefinition,
+    visit_schema_definition,
+    description,
+    schema,
+    directives,
+    type_definitions
+);
+
+#[derive(Clone, Debug)]
+pub struct RootOperationTypeDefinitions<'a> {
+    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
+    pub definitions: Vec<RootOperationTypeDefinition<'a>>,
+}
+
+node!(
+    RootOperationTypeDefinitions,
+    visit_root_operation_type_definitions,
+    braces,
+    definitions
+);
+
+#[derive(Clone, Debug)]
+pub struct RootOperationTypeDefinition<'a> {
+    pub operation_type: OperationType<'a>,
+    pub colon: Recoverable<Punctuator<'a>>,
+    pub named_type: Recoverable<NamedType<'a>>,
+}
+
+node!(
+    RootOperationTypeDefinition,
+    visit_root_operation_type_definition,
+    operation_type,
+    colon,
+    named_type
+);
+
+#[derive(Clone, Debug)]
+pub struct SchemaExtension<'a> {
+    pub extend_schema: (Name<'a>, Name<'a>),
+    pub directives: Option<Directives<'a>>,
+    pub type_definitions: Option<RootOperationTypeDefinitions<'a>>,
+}
+
+node!(
+    SchemaExtension,
+    visit_schema_extension,
+    extend_schema,
+    directives,
+    type_definitions
+);
+
+#[derive(Clone, Debug)]
+pub enum TypeDefinition<'a> {
+    ScalarTypeDefinition(ScalarTypeDefinition<'a>),
+    ObjectTypeDefinition(ObjectTypeDefinition<'a>),
+    InterfaceTypeDefinition(InterfaceTypeDefinition<'a>),
+    UnionTypeDefinition(UnionTypeDefinition<'a>),
+    EnumTypeDefinition(EnumTypeDefinition<'a>),
+    InputObjectTypeDefinition(InputObjectTypeDefinition<'a>),
+}
+
+node_enum!(
+    TypeDefinition,
+    visit_type_definition,
+    ScalarTypeDefinition,
+    ObjectTypeDefinition,
+    InterfaceTypeDefinition,
+    UnionTypeDefinition,
+    EnumTypeDefinition,
+    InputObjectTypeDefinition
+);
+
+#[derive(Clone, Debug)]
+pub enum TypeExtension<'a> {
+    ScalarTypeExtension(ScalarTypeExtension<'a>),
+    ObjectTypeExtension(ObjectTypeExtension<'a>),
+    InterfaceTypeExtension(InterfaceTypeExtension<'a>),
+    UnionTypeExtension(UnionTypeExtension<'a>),
+    EnumTypeExtension(EnumTypeExtension<'a>),
+    InputObjectTypeExtension(InputObjectTypeExtension<'a>),
+}
+
+node_enum!(
+    TypeExtension,
+    visit_type_extension,
+    ScalarTypeExtension,
+    ObjectTypeExtension,
+    InterfaceTypeExtension,
+    UnionTypeExtension,
+    EnumTypeExtension,
+    InputObjectTypeExtension
+);
+
+#[derive(Clone, Debug)]
+pub struct ScalarTypeDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub scalar: Name<'a>,
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+}
+
+node!(
+    ScalarTypeDefinition,
+    visit_scalar_type_definition,
+    scalar,
+    name,
+    directives
+);
+
+#[derive(Clone, Debug)]
+pub struct ScalarTypeExtension<'a> {
+    pub extend_scalar: (Name<'a>, Name<'a>),
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Recoverable<Directives<'a>>,
+}
+
+node!(
+    ScalarTypeExtension,
+    visit_scalar_type_extension,
+    extend_scalar,
+    name,
+    directives
+);
+
+#[derive(Clone, Debug)]
+pub struct ObjectTypeDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub ty: Name<'a>,
+    pub name: Recoverable<Name<'a>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub fields_definition: Option<FieldsDefinition<'a>>,
+}
+
+node!(
+    ObjectTypeDefinition,
+    visit_object_type_definition,
+    description,
+    ty,
+    name,
+    implements_interfaces,
+    directives,
+    fields_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct ImplementsInterfaces<'a> {
+    pub implements: Name<'a>,
+    pub ampersand: Option<Punctuator<'a>>,
+    pub first: Recoverable<NamedType<'a>>,
+    pub types: Vec<(Punctuator<'a>, Recoverable<NamedType<'a>>)>,
+}
+
+node!(
+    ImplementsInterfaces,
+    visit_implements_interfaces,
+    implements,
+    ampersand,
+    first,
+    types
+);
+
+#[derive(Clone, Debug)]
+pub struct FieldsDefinition<'a> {
+    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
+    pub definitions: Vec<FieldDefinition<'a>>,
+}
+
+node!(
+    FieldsDefinition,
+    visit_fields_definition,
+    braces,
+    definitions
+);
+
+#[derive(Clone, Debug)]
+pub struct FieldDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub name: Name<'a>,
+    pub arguments_definition: Option<ArgumentsDefinition<'a>>,
+    pub colon: Recoverable<Punctuator<'a>>,
+    pub ty: Recoverable<Type<'a>>,
+    pub directives: Option<Directives<'a>>,
+}
+
+node!(
+    FieldDefinition,
+    visit_field_definition,
+    description,
+    name,
+    arguments_definition,
+    colon,
+    ty,
+    directives
+);
+
+#[derive(Clone, Debug)]
+pub struct ArgumentsDefinition<'a> {
+    pub parens: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
+    pub definitions: Vec<InputValueDefinition<'a>>,
+}
+
+node!(
+    ArgumentsDefinition,
+    visit_arguments_definition,
+    parens,
+    definitions
+);
+
+#[derive(Clone, Debug)]
+pub struct InputValueDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub name: Name<'a>,
+    pub colon: Recoverable<Punctuator<'a>>,
+    pub ty: Recoverable<Type<'a>>,
+    pub default_value: Option<DefaultValue<'a>>,
+    pub directives: Option<Directives<'a>>,
+}
+
+node!(
+    InputValueDefinition,
+    visit_input_value_definition,
+    description,
+    name,
+    colon,
+    ty,
+    default_value,
+    directives
+);
+
+#[derive(Clone, Debug)]
+pub struct ObjectTypeExtension<'a> {
+    pub extend_type: (Name<'a>, Name<'a>),
+    pub name: Recoverable<Name<'a>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub fields_definition: Option<FieldsDefinition<'a>>,
+}
+
+node!(
+    ObjectTypeExtension,
+    visit_object_type_extension,
+    extend_type,
+    name,
+    implements_interfaces,
+    directives,
+    fields_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct InterfaceTypeDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub interface: Name<'a>,
+    pub name: Recoverable<Name<'a>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub fields_definition: Option<FieldsDefinition<'a>>,
+}
+
+node!(
+    InterfaceTypeDefinition,
+    visit_interface_type_definition,
+    description,
+    interface,
+    name,
+    implements_interfaces,
+    directives,
+    fields_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct InterfaceTypeExtension<'a> {
+    pub extend_interface: (Name<'a>, Name<'a>),
+    pub name: Recoverable<Name<'a>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub fields_definition: Option<FieldsDefinition<'a>>,
+}
+
+node!(
+    InterfaceTypeExtension,
+    visit_interface_type_extension,
+    extend_interface,
+    name,
+    implements_interfaces,
+    directives,
+    fields_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct UnionTypeDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub union_kw: Name<'a>,
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub member_types: Option<UnionMemberTypes<'a>>,
+}
+
+node!(
+    UnionTypeDefinition,
+    visit_union_type_definition,
+    description,
+    union_kw,
+    name,
+    directives,
+    member_types
+);
+
+#[derive(Clone, Debug)]
+pub struct UnionMemberTypes<'a> {
+    pub eq: Punctuator<'a>,
+    pub pipe: Option<Punctuator<'a>>,
+    pub first: Recoverable<NamedType<'a>>,
+    pub types: Vec<(Punctuator<'a>, Recoverable<NamedType<'a>>)>,
+}
+
+node!(
+    UnionMemberTypes,
+    visit_union_member_types,
+    eq,
+    pipe,
+    first,
+    types
+);
+
+#[derive(Clone, Debug)]
+pub struct UnionTypeExtension<'a> {
+    pub extend_union: (Name<'a>, Name<'a>),
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub member_types: Option<UnionMemberTypes<'a>>,
+}
+
+node!(
+    UnionTypeExtension,
+    visit_union_type_extension,
+    extend_union,
+    name,
+    directives,
+    member_types
+);
+
+#[derive(Clone, Debug)]
+pub struct EnumTypeDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub enum_kw: Name<'a>,
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub values_definition: Option<EnumValuesDefinition<'a>>,
+}
+
+node!(
+    EnumTypeDefinition,
+    visit_enum_type_definition,
+    description,
+    enum_kw,
+    name,
+    directives,
+    values_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct EnumValuesDefinition<'a> {
+    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
+    pub definitions: Vec<EnumValueDefinition<'a>>,
+}
+
+node!(
+    EnumValuesDefinition,
+    visit_enum_values_definition,
+    braces,
+    definitions
+);
+
+#[derive(Clone, Debug)]
+pub struct EnumValueDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub enum_value: EnumValue<'a>,
+    pub directives: Option<Directives<'a>>,
+}
+
+node!(
+    EnumValueDefinition,
+    visit_enum_value_definition,
+    description,
+    enum_value,
+    directives
+);
+
+#[derive(Clone, Debug)]
+pub struct EnumTypeExtension<'a> {
+    pub extend_enum: (Name<'a>, Name<'a>),
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub values_definition: Option<EnumValuesDefinition<'a>>,
+}
+
+node!(
+    EnumTypeExtension,
+    visit_enum_type_extension,
+    name,
+    directives,
+    values_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct InputObjectTypeDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub input: Name<'a>,
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub fields_definition: Option<InputFieldsDefinition<'a>>,
+}
+
+node!(
+    InputObjectTypeDefinition,
+    visit_input_object_type_definition,
+    description,
+    input,
+    name,
+    directives,
+    fields_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct InputFieldsDefinition<'a> {
+    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
+    pub definitions: Vec<InputValueDefinition<'a>>,
+}
+
+node!(
+    InputFieldsDefinition,
+    visit_input_fields_definition,
+    braces,
+    definitions
+);
+
+#[derive(Clone, Debug)]
+pub struct InputObjectTypeExtension<'a> {
+    pub extend_input: (Name<'a>, Name<'a>),
+    pub name: Recoverable<Name<'a>>,
+    pub directives: Option<Directives<'a>>,
+    pub fields_definition: Option<InputFieldsDefinition<'a>>,
+}
+
+node!(
+    InputObjectTypeExtension,
+    visit_input_object_type_extension,
+    extend_input,
+    name,
+    directives,
+    fields_definition
+);
+
+#[derive(Clone, Debug)]
+pub struct DirectiveDefinition<'a> {
+    pub description: Option<Description<'a>>,
+    pub directive: Name<'a>,
+    pub at: Recoverable<Punctuator<'a>>,
+    pub name: Recoverable<Name<'a>>,
+    pub arguments_definition: Option<ArgumentsDefinition<'a>>,
+    pub repeatable: Option<Name<'a>>,
+    pub locations: Recoverable<DirectiveLocations<'a>>,
+}
+
+node!(
+    DirectiveDefinition,
+    visit_directive_definition,
+    description,
+    directive,
+    at,
+    name,
+    arguments_definition,
+    repeatable,
+    locations
+);
+
+#[derive(Clone, Debug)]
+pub struct DirectiveLocations<'a> {
+    pub on: Name<'a>,
+    pub pipe: Option<Punctuator<'a>>,
+    pub first: Recoverable<DirectiveLocation<'a>>,
+    pub locations: Vec<(Punctuator<'a>, Recoverable<DirectiveLocation<'a>>)>,
+}
+
+node!(
+    DirectiveLocations,
+    visit_directive_locations,
+    on,
+    pipe,
+    first,
+    locations
+);
+
+#[derive(Clone, Debug)]
+pub enum DirectiveLocation<'a> {
+    ExecutableDirectiveLocation(ExecutableDirectiveLocation<'a>),
+    TypeSystemDirectiveLocation(TypeSystemDirectiveLocation<'a>),
+}
+
+node_enum!(
+    DirectiveLocation,
+    visit_directive_location,
+    ExecutableDirectiveLocation,
+    TypeSystemDirectiveLocation
+);
+
+#[derive(Clone, Debug)]
+pub enum ExecutableDirectiveLocation<'a> {
+    Query(Name<'a>),
+    Mutation(Name<'a>),
+    Subscription(Name<'a>),
+    Field(Name<'a>),
+    FragmentDefinition(Name<'a>),
+    FragmentSpread(Name<'a>),
+    InlineFragment(Name<'a>),
+    VariableDefinition(Name<'a>),
+}
+
+node_enum!(
+    ExecutableDirectiveLocation,
+    visit_executable_directive_location,
+    Query,
+    Mutation,
+    Subscription,
+    Field,
+    FragmentDefinition,
+    FragmentSpread,
+    InlineFragment,
+    VariableDefinition
+);
+
+#[derive(Clone, Debug)]
+pub enum TypeSystemDirectiveLocation<'a> {
+    Schema(Name<'a>),
+    Scalar(Name<'a>),
+    Object(Name<'a>),
+    FieldDefinition(Name<'a>),
+    ArgumentDefinition(Name<'a>),
+    Interface(Name<'a>),
+    Union(Name<'a>),
+    Enum(Name<'a>),
+    EnumValue(Name<'a>),
+    InputObject(Name<'a>),
+    InputFieldDefinition(Name<'a>),
+}
+
+node_enum!(
+    TypeSystemDirectiveLocation,
+    visit_type_system_directive_location,
+    Schema,
+    Scalar,
+    Object,
+    FieldDefinition,
+    ArgumentDefinition,
+    Interface,
+    Union,
+    Enum,
+    EnumValue,
+    InputObject,
+    InputFieldDefinition
+);

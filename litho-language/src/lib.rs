@@ -1,4 +1,4 @@
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 pub mod ast;
 pub mod chk;
@@ -21,14 +21,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let source = r#"query Example($example: Hello, $world: Int}) % {
-            query- {
-                hello(x-: }
-
-                    fragment Example {
-                        value
-                    }
-        "#;
+        let source = r#"scalar Example @specifiedBy(url: "https://example.com")"#;
         let (ast, unrecognized) = Document::parse_from_str(0, source).unwrap();
 
         println!("Result: {:#?} (errors: {:#?})", ast, ast.errors());

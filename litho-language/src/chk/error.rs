@@ -24,18 +24,18 @@ impl<'ast, 'a> IntoReport for Error<'ast, 'a> {
                 let mut span = tokens[0].span();
                 span.end = tokens.last().unwrap().span().end;
 
-                R::new(ReportKind::Error, span.source_id, span.start)
+                R::new(ReportKind::Error, span)
                     .with_code("E0001")
                     .with_message("Encountered unrecognized tokens.")
                     .with_label(
                         R::LabelBuilder::new(span)
-                            .with_message("Couldn't parse these tokens.")
+                            .with_message("Sorry, we couldn't figure out what you meant by this.")
                             .with_color(colors.next()),
                     )
                     .finish()
             }
             Error::Recoverable(MissingToken { span, missing }) => match missing {
-                Missing::Unknown => R::new(ReportKind::Error, span.source_id, span.start)
+                Missing::Unknown => R::new(ReportKind::Error, *span)
                     .with_code("E0002")
                     .with_message("Expected one or more tokens here.")
                     .with_label(
@@ -44,19 +44,17 @@ impl<'ast, 'a> IntoReport for Error<'ast, 'a> {
                             .with_color(colors.next()),
                     )
                     .finish(),
-                Missing::Simple(title, label) => {
-                    R::new(ReportKind::Error, span.source_id, span.start)
-                        .with_code("E0003")
-                        .with_message(title)
-                        .with_label(
-                            R::LabelBuilder::new(*span)
-                                .with_message(label)
-                                .with_color(colors.next()),
-                        )
-                        .finish()
-                }
+                Missing::Simple(title, label) => R::new(ReportKind::Error, *span)
+                    .with_code("E0003")
+                    .with_message(title)
+                    .with_label(
+                        R::LabelBuilder::new(*span)
+                            .with_message(label)
+                            .with_color(colors.next()),
+                    )
+                    .finish(),
                 Missing::Delimiter(title, start_label, start_span, label) => {
-                    R::new(ReportKind::Error, span.source_id, span.start)
+                    R::new(ReportKind::Error, *span)
                         .with_code("E0004")
                         .with_message(title)
                         .with_label(

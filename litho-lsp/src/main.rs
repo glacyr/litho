@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::Instant;
 
 use line_col::LineColLookup;
-use litho_language::{Document, Errors, IntoReport, Parse, Span};
+use litho_language::chk::{Errors, IntoReport};
+use litho_language::lex::Span;
+use litho_language::{Document, Parse};
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
@@ -19,7 +20,7 @@ pub struct LabelBuilder {
     message: Option<String>,
 }
 
-impl litho_language::LabelBuilder for LabelBuilder {
+impl litho_language::chk::LabelBuilder for LabelBuilder {
     type Label = Self;
 
     fn new(span: Span) -> Self {
@@ -48,6 +49,7 @@ impl litho_language::LabelBuilder for LabelBuilder {
 
 #[derive(Default)]
 pub struct ReportBuilder {
+    span: Span,
     code: Option<String>,
     message: Option<String>,
     labels: Vec<LabelBuilder>,
@@ -56,8 +58,8 @@ pub struct ReportBuilder {
 impl ReportBuilder {
     pub fn into_diagnostic(self, url: Url, source: &str) -> Diagnostic {
         let index = LineColLookup::new(source);
-        let start = index.get(self.labels[0].span.start);
-        let end = index.get(self.labels[0].span.end);
+        let start = index.get(self.span.start);
+        let end = index.get(self.span.end);
 
         Diagnostic {
             source: Some("litho".to_owned()),
@@ -92,12 +94,15 @@ impl ReportBuilder {
     }
 }
 
-impl litho_language::ReportBuilder for ReportBuilder {
+impl litho_language::chk::ReportBuilder for ReportBuilder {
     type Report = Self;
     type LabelBuilder = LabelBuilder;
 
-    fn new(kind: litho_language::ariadne::ReportKind, source_id: usize, offset: usize) -> Self {
-        Default::default()
+    fn new(kind: litho_language::ariadne::ReportKind, span: Span) -> Self {
+        ReportBuilder {
+            span,
+            ..Default::default()
+        }
     }
 
     fn with_code<C>(mut self, code: C) -> Self
@@ -156,8 +161,8 @@ fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
 
 impl Backend {
     pub async fn check(&self, url: Url, source: &str, version: i32) {
-        let ast = Document::parse_from_str(0, source).unwrap();
-        let errors = ast.errors();
+        let result = Document::parse_from_str(0, source).unwrap();
+        let errors = result.errors();
 
         self.client
             .publish_diagnostics(

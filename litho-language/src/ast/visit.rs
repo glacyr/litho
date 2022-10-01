@@ -1,4 +1,4 @@
-use crate::lex::Span;
+use crate::lex::{FloatValue, IntValue, Span, StringValue};
 
 use super::types::*;
 
@@ -54,4 +54,67 @@ pub trait Visit<'ast, 'a> {
     visit!(visit_non_null_type, NonNullType);
     visit!(visit_directives, Directives);
     visit!(visit_directive, Directive);
+    visit!(visit_type_system_document, TypeSystemDocument);
+    visit!(visit_type_system_definition, TypeSystemDefinition);
+    visit!(
+        visit_type_system_extension_document,
+        TypeSystemExtensionDocument
+    );
+    visit!(
+        visit_type_system_definition_or_extension,
+        TypeSystemDefinitionOrExtension
+    );
+    visit!(visit_type_system_extension, TypeSystemExtension);
+    visit!(visit_description, Description);
+    visit!(visit_schema_definition, SchemaDefinition);
+    visit!(
+        visit_root_operation_type_definitions,
+        RootOperationTypeDefinitions
+    );
+    visit!(
+        visit_root_operation_type_definition,
+        RootOperationTypeDefinition
+    );
+    visit!(visit_schema_extension, SchemaExtension);
+    visit!(visit_type_definition, TypeDefinition);
+    visit!(visit_type_extension, TypeExtension);
+    visit!(visit_scalar_type_definition, ScalarTypeDefinition);
+    visit!(visit_scalar_type_extension, ScalarTypeExtension);
+    visit!(visit_object_type_definition, ObjectTypeDefinition);
+    visit!(visit_implements_interfaces, ImplementsInterfaces);
+    visit!(visit_fields_definition, FieldsDefinition);
+    visit!(visit_field_definition, FieldDefinition);
+    visit!(visit_arguments_definition, ArgumentsDefinition);
+    visit!(visit_input_value_definition, InputValueDefinition);
+    visit!(visit_object_type_extension, ObjectTypeExtension);
+    visit!(visit_interface_type_definition, InterfaceTypeDefinition);
+    visit!(visit_interface_type_extension, InterfaceTypeExtension);
+    visit!(visit_union_type_definition, UnionTypeDefinition);
+    visit!(visit_union_member_types, UnionMemberTypes);
+    visit!(visit_union_type_extension, UnionTypeExtension);
+    visit!(visit_enum_type_definition, EnumTypeDefinition);
+    visit!(visit_enum_values_definition, EnumValuesDefinition);
+    visit!(visit_enum_value_definition, EnumValueDefinition);
+    visit!(visit_enum_type_extension, EnumTypeExtension);
+    visit!(
+        visit_input_object_type_definition,
+        InputObjectTypeDefinition
+    );
+    visit!(visit_input_fields_definition, InputFieldsDefinition);
+    visit!(visit_input_object_type_extension, InputObjectTypeExtension);
+    visit!(visit_directive_definition, DirectiveDefinition);
+    visit!(visit_directive_locations, DirectiveLocations);
+    visit!(visit_directive_location, DirectiveLocation);
+    visit!(
+        visit_executable_directive_location,
+        ExecutableDirectiveLocation
+    );
+    visit!(
+        visit_type_system_directive_location,
+        TypeSystemDirectiveLocation
+    );
+
+    visit!(visit_int_value, IntValue);
+    visit!(visit_float_value, FloatValue);
+    visit!(visit_string_value, StringValue);
 }

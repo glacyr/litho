@@ -26,7 +26,7 @@ pub trait ReportBuilder {
     type LabelBuilder: LabelBuilder;
     type Report;
 
-    fn new(kind: ariadne::ReportKind, source_id: usize, offset: usize) -> Self;
+    fn new(kind: ariadne::ReportKind, span: Span) -> Self;
 
     fn with_code<C>(self, code: C) -> Self
     where
@@ -72,8 +72,8 @@ impl ReportBuilder for ariadne::ReportBuilder<Span> {
     type LabelBuilder = ariadne::Label<Span>;
     type Report = ariadne::Report<Span>;
 
-    fn new(kind: ariadne::ReportKind, source_id: usize, offset: usize) -> Self {
-        ariadne::Report::build(kind, source_id, offset)
+    fn new(kind: ariadne::ReportKind, span: Span) -> Self {
+        ariadne::Report::build(kind, span.source_id, span.start)
     }
 
     fn with_code<C>(self, code: C) -> Self

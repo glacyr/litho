@@ -100,6 +100,35 @@ impl<'a> AsRef<str> for Punctuator<'a> {
     }
 }
 
+/// Represents an int value (literal) in a GraphQL document.
+#[derive(Clone, Copy, Debug)]
+pub struct IntValue<'a>(RawToken<'a>);
+
+impl<'a> IntValue<'a> {
+    pub fn span(&self) -> Span {
+        self.0.span
+    }
+}
+
+/// Represents a float value (literal) in a GraphQL document.
+#[derive(Clone, Copy, Debug)]
+pub struct FloatValue<'a>(RawToken<'a>);
+
+impl<'a> FloatValue<'a> {
+    pub fn span(&self) -> Span {
+        self.0.span
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StringValue<'a>(RawToken<'a>);
+
+impl<'a> StringValue<'a> {
+    pub fn span(&self) -> Span {
+        self.0.span
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum Token<'a> {
     Error(Error<'a>),
@@ -109,6 +138,15 @@ pub enum Token<'a> {
 
     /// Represents a [Punctuator] in GraphQL.
     Punctuator(Punctuator<'a>),
+
+    /// Represents an [IntValue] in GraphQL.
+    IntValue(IntValue<'a>),
+
+    /// Represents a [FloatValue] in GraphQL.
+    FloatValue(FloatValue<'a>),
+
+    /// Represents a [StringValue] in GraphQL.
+    StringValue(StringValue<'a>),
 }
 
 impl<'a> Token<'a> {
@@ -117,6 +155,9 @@ impl<'a> Token<'a> {
             Token::Error(token) => token.0.span,
             Token::Name(token) => token.0.span,
             Token::Punctuator(token) => token.0.span,
+            Token::IntValue(token) => token.0.span,
+            Token::FloatValue(token) => token.0.span,
+            Token::StringValue(token) => token.0.span,
         }
     }
 }
@@ -127,6 +168,9 @@ impl<'a> From<RawToken<'a>> for Token<'a> {
             TokenKind::Error => Token::Error(Error(raw)),
             TokenKind::Name => Token::Name(Name(raw)),
             TokenKind::Punctuator => Token::Punctuator(Punctuator(raw)),
+            TokenKind::IntValue => Token::IntValue(IntValue(raw)),
+            TokenKind::FloatValue => Token::FloatValue(FloatValue(raw)),
+            TokenKind::StringValue => Token::StringValue(StringValue(raw)),
             _ => unreachable!("All other token types should have been ignored by the lexer."),
         }
     }
