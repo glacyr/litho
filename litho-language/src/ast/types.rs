@@ -496,6 +496,12 @@ node_enum!(
 #[derive(Clone, Debug)]
 pub struct Description<'a>(pub StringValue<'a>);
 
+impl Description<'_> {
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 node_unit!(Description, visit_description);
 
 #[derive(Clone, Debug)]

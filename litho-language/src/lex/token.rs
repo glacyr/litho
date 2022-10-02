@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 
 use logos::Logos;
 use nom::InputLength;
+use unindent::unindent;
 
 use super::raw::{raw_lexer, RawLexer, RawToken};
 use super::{Span, TokenKind};
@@ -127,6 +128,13 @@ impl<'a> StringValue<'a> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+
+    pub fn to_string(&self) -> String {
+        match self.0.source.starts_with("\"\"\"") {
+            true => unindent(&self.0.source[3..self.0.source.len() - 3]),
+            false => self.0.source[1..self.0.source.len() - 1].replace("\\\"", "\""),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -232,7 +240,21 @@ impl<'a> InputLength for ExactLexer<'a> {
 }
 
 pub fn lexer(source_id: usize, source: &str) -> Lexer {
+    let _: <TokenKind as Logos>::Source;
+
     Lexer {
         lexer: raw_lexer(source_id, TokenKind::lexer(source)),
+    }
+}
+
+mod display {
+    use std::fmt::{Display, Formatter, Result};
+
+    use super::Name;
+
+    impl Display for Name<'_> {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            f.write_str(self.as_ref())
+        }
     }
 }

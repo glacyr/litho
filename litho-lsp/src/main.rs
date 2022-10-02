@@ -1,149 +1,23 @@
-use std::collections::HashMap;
-use std::sync::Mutex;
-
-use line_col::LineColLookup;
-use litho_language::chk::{Errors, IntoReport};
-use litho_language::lex::Span;
-use litho_language::{Document, Parse};
+use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
+mod document;
+mod hover;
+mod report;
+mod store;
+mod util;
+
+use document::Document;
+use hover::HoverProvider;
+use store::Store;
+use util::line_col_to_offset;
+
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    documents: Mutex<HashMap<String, String>>,
-}
-
-pub struct LabelBuilder {
-    span: Span,
-    message: Option<String>,
-}
-
-impl litho_language::chk::LabelBuilder for LabelBuilder {
-    type Label = Self;
-
-    fn new(span: Span) -> Self {
-        LabelBuilder {
-            span,
-            message: None,
-        }
-    }
-
-    fn with_message<M>(mut self, msg: M) -> Self
-    where
-        M: ToString,
-    {
-        self.message = Some(msg.to_string());
-        self
-    }
-
-    fn with_color(self, color: litho_language::ariadne::Color) -> Self {
-        self
-    }
-
-    fn finish(self) -> Self::Label {
-        self
-    }
-}
-
-#[derive(Default)]
-pub struct ReportBuilder {
-    span: Span,
-    code: Option<String>,
-    message: Option<String>,
-    labels: Vec<LabelBuilder>,
-}
-
-impl ReportBuilder {
-    pub fn into_diagnostic(self, url: Url, source: &str) -> Diagnostic {
-        let index = LineColLookup::new(source);
-        let start = index.get(self.span.start);
-        let end = index.get(self.span.end);
-
-        Diagnostic {
-            source: Some("litho".to_owned()),
-            code: self.code.map(NumberOrString::String),
-            message: self.message.unwrap_or_default(),
-            range: Range::new(
-                Position::new(start.0 as u32 - 1, start.1 as u32 - 1),
-                Position::new(end.0 as u32 - 1, end.1 as u32 - 1),
-            ),
-            related_information: Some(
-                self.labels
-                    .into_iter()
-                    .map(|label| {
-                        let start = index.get(label.span.start);
-                        let end = index.get(label.span.end);
-
-                        DiagnosticRelatedInformation {
-                            location: Location {
-                                uri: url.clone(),
-                                range: Range::new(
-                                    Position::new(start.0 as u32 - 1, start.1 as u32 - 1),
-                                    Position::new(end.0 as u32 - 1, end.1 as u32 - 1),
-                                ),
-                            },
-                            message: label.message.unwrap_or_default(),
-                        }
-                    })
-                    .collect(),
-            ),
-            ..Default::default()
-        }
-    }
-}
-
-impl litho_language::chk::ReportBuilder for ReportBuilder {
-    type Report = Self;
-    type LabelBuilder = LabelBuilder;
-
-    fn new(kind: litho_language::ariadne::ReportKind, span: Span) -> Self {
-        ReportBuilder {
-            span,
-            ..Default::default()
-        }
-    }
-
-    fn with_code<C>(mut self, code: C) -> Self
-    where
-        C: std::fmt::Display,
-    {
-        self.code = Some(format!("{}", code));
-        self
-    }
-
-    fn with_message<M>(mut self, msg: M) -> Self
-    where
-        M: ToString,
-    {
-        self.message = Some(msg.to_string());
-        self
-    }
-
-    fn with_help<N>(self, note: N) -> Self
-    where
-        N: ToString,
-    {
-        self
-    }
-
-    fn with_label(mut self, label: Self::LabelBuilder) -> Self {
-        self.labels.push(label);
-        self
-    }
-
-    fn finish(self) -> Self::Report {
-        self
-    }
-}
-
-fn line_col_to_offset(source: &str, line: u32, col: u32) -> usize {
-    let line_offset = source
-        .split_inclusive("\n")
-        .take(line as usize)
-        .fold(0, |sum, line| sum + line.len());
-    line_offset + col as usize
+    store: Mutex<Store>,
 }
 
 fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
@@ -160,22 +34,12 @@ fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
 }
 
 impl Backend {
-    pub async fn check(&self, url: Url, source: &str, version: i32) {
-        let result = Document::parse_from_str(0, source).unwrap();
-        let errors = result.errors();
-
+    pub async fn check<'a>(&self, document: &Document<'a>) {
         self.client
             .publish_diagnostics(
-                url.clone(),
-                errors
-                    .into_iter()
-                    .map(|error| {
-                        error
-                            .into_report::<ReportBuilder>()
-                            .into_diagnostic(url.clone(), source)
-                    })
-                    .collect(),
-                Some(version),
+                document.url().to_owned(),
+                document.diagnostics().collect(),
+                Some(document.version()),
             )
             .await;
     }
@@ -189,6 +53,7 @@ impl LanguageServer for Backend {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::INCREMENTAL,
                 )),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
                 ..Default::default()
             },
             ..Default::default()
@@ -204,31 +69,37 @@ impl LanguageServer for Backend {
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let source = {
-            let mut documents = self.documents.lock().unwrap();
-            documents.insert(url.to_string(), params.text_document.text.to_owned());
-            params.text_document.text
-        };
+        let mut store = self.store.lock().await;
+        let document = store.insert(
+            url.clone(),
+            params.text_document.version,
+            params.text_document.text.to_owned(),
+        );
 
-        self.check(url, &source, params.text_document.version).await;
+        self.check(document).await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let source = {
-            let mut documents = self.documents.lock().unwrap();
-            let source = documents.entry(url.to_string()).or_default();
-            let result = params
+        let mut store = self.store.lock().await;
+        let document = store.update(url, params.text_document.version, |source| {
+            params
                 .content_changes
                 .into_iter()
-                .fold(source.to_owned(), |source, change| apply(source, change));
+                .fold(source.to_owned(), |source, change| apply(source, change))
+        });
+        self.check(document).await;
+    }
 
-            let _ = std::mem::replace(source, result.to_owned());
-            result
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let store = self.store.lock().await;
+        let document = match store.get(&params.text_document_position_params.text_document.uri) {
+            Some(document) => document,
+            None => return Ok(None),
         };
 
-        self.check(url, &source, params.text_document.version).await;
+        Ok(HoverProvider::new(document).hover(params.text_document_position_params.position))
     }
 }
 
@@ -239,7 +110,7 @@ async fn main() {
 
     let (service, socket) = LspService::new(|client| Backend {
         client,
-        documents: Mutex::new(HashMap::new()),
+        store: Mutex::new(Store::new()),
     });
     Server::new(stdin, stdout, socket).serve(service).await;
 }

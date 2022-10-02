@@ -10,7 +10,7 @@ pub trait Node<'a> {
     fn span(&self) -> Span {
         let mut span = None;
         self.traverse(&SpanCollector, &mut span);
-        span.unwrap()
+        span.unwrap_or_default()
     }
 }
 

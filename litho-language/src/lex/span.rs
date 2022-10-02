@@ -6,9 +6,18 @@ pub struct Span {
 }
 
 impl Span {
+    pub fn contains(&self, index: usize) -> bool {
+        self.start <= index && index <= self.end
+    }
+
     pub fn join(&mut self, other: Span) {
         self.start = self.start.min(other.start);
         self.end = self.end.max(other.end);
+    }
+
+    pub fn joined(mut self, other: Span) -> Span {
+        self.join(other);
+        self
     }
 
     pub fn between(left: Self, right: Self) -> Span {
