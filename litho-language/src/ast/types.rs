@@ -585,6 +585,19 @@ node_enum!(
     InputObjectTypeDefinition
 );
 
+impl<'a> TypeDefinition<'a> {
+    pub fn name(&self) -> &Recoverable<Name<'a>> {
+        match self {
+            TypeDefinition::ScalarTypeDefinition(definition) => &definition.name,
+            TypeDefinition::ObjectTypeDefinition(definition) => &definition.name,
+            TypeDefinition::InterfaceTypeDefinition(definition) => &definition.name,
+            TypeDefinition::UnionTypeDefinition(definition) => &definition.name,
+            TypeDefinition::EnumTypeDefinition(definition) => &definition.name,
+            TypeDefinition::InputObjectTypeDefinition(definition) => &definition.name,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum TypeExtension<'a> {
     ScalarTypeExtension(ScalarTypeExtension<'a>),
@@ -605,6 +618,19 @@ node_enum!(
     EnumTypeExtension,
     InputObjectTypeExtension
 );
+
+impl<'a> TypeExtension<'a> {
+    pub fn name(&self) -> &Recoverable<Name<'a>> {
+        match self {
+            TypeExtension::ScalarTypeExtension(extension) => &extension.name,
+            TypeExtension::ObjectTypeExtension(extension) => &extension.name,
+            TypeExtension::InterfaceTypeExtension(extension) => &extension.name,
+            TypeExtension::UnionTypeExtension(extension) => &extension.name,
+            TypeExtension::EnumTypeExtension(extension) => &extension.name,
+            TypeExtension::InputObjectTypeExtension(extension) => &extension.name,
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct ScalarTypeDefinition<'a> {

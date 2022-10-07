@@ -42,5 +42,6 @@ members = [
 	"kono-schema",
     "litho-language",
     "litho-lsp",
+    "litho-types",
 	"litho-validation",
 ]

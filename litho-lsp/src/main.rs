@@ -3,12 +3,14 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
+mod definition;
 mod document;
 mod hover;
 mod report;
 mod store;
 mod util;
 
+use definition::DefinitionProvider;
 use document::Document;
 use hover::HoverProvider;
 use store::Store;
@@ -54,6 +56,7 @@ impl LanguageServer for Backend {
                     TextDocumentSyncKind::INCREMENTAL,
                 )),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                definition_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             ..Default::default()
@@ -100,6 +103,20 @@ impl LanguageServer for Backend {
         };
 
         Ok(HoverProvider::new(document).hover(params.text_document_position_params.position))
+    }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let store = self.store.lock().await;
+        let document = match store.get(&params.text_document_position_params.text_document.uri) {
+            Some(document) => document,
+            None => return Ok(None),
+        };
+
+        Ok(DefinitionProvider::new(document)
+            .goto_definition(params.text_document_position_params.position))
     }
 }
 
