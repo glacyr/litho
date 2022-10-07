@@ -36,7 +36,7 @@ fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
 }
 
 impl Backend {
-    pub async fn check<'a>(&self, document: &Document<'a>) {
+    pub async fn check<'a>(&self, document: &Document) {
         self.client
             .publish_diagnostics(
                 document.url().to_owned(),

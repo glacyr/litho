@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use nom::Err;
 use wrom::{terminal, RecoverableParser};
 
@@ -5,9 +7,10 @@ use crate::lex::{FloatValue, IntValue, Name, Punctuator, StringValue, Token};
 
 use super::Error;
 
-pub fn name<'a, I>() -> impl RecoverableParser<I, Name<'a>, Error>
+pub fn name<T, I>() -> impl RecoverableParser<I, Name<T>, Error>
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
+    T: Borrow<str>,
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::Name(name)) if name.as_ref() != "fragment" => Ok((input, name)),
@@ -16,9 +19,10 @@ where
     })
 }
 
-pub fn keyword<'a, I>(expected: &'static str) -> impl RecoverableParser<I, Name<'a>, Error>
+pub fn keyword<T, I>(expected: &'static str) -> impl RecoverableParser<I, Name<T>, Error>
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
+    T: Borrow<str>,
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::Name(name)) if name.as_ref() == expected => Ok((input, name)),
@@ -27,9 +31,10 @@ where
     })
 }
 
-pub fn punctuator<'a, I>(expected: &'static str) -> impl RecoverableParser<I, Punctuator<'a>, Error>
+pub fn punctuator<T, I>(expected: &'static str) -> impl RecoverableParser<I, Punctuator<T>, Error>
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
+    T: Borrow<str>,
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::Punctuator(actual)) if actual.as_ref() == expected => Ok((input, actual)),
@@ -38,9 +43,10 @@ where
     })
 }
 
-pub fn int_value<'a, I>() -> impl RecoverableParser<I, IntValue<'a>, Error>
+pub fn int_value<T, I>() -> impl RecoverableParser<I, IntValue<T>, Error>
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
+    T: Borrow<str>,
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::IntValue(int_value)) => Ok((input, int_value)),
@@ -49,9 +55,10 @@ where
     })
 }
 
-pub fn float_value<'a, I>() -> impl RecoverableParser<I, FloatValue<'a>, Error>
+pub fn float_value<T, I>() -> impl RecoverableParser<I, FloatValue<T>, Error>
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
+    T: Borrow<str>,
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::FloatValue(float_value)) => Ok((input, float_value)),
@@ -60,9 +67,10 @@ where
     })
 }
 
-pub fn string_value<'a, I>() -> impl RecoverableParser<I, StringValue<'a>, Error>
+pub fn string_value<T, I>() -> impl RecoverableParser<I, StringValue<T>, Error>
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
+    T: Borrow<str>,
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::StringValue(string_value)) => Ok((input, string_value)),

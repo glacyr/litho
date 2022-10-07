@@ -10,13 +10,13 @@ pub enum Missing {
 }
 
 impl Missing {
-    pub fn delimiter_complaint<'a, T>(
+    pub fn delimiter_complaint<N, T>(
         message: &'static str,
         first_label: &'static str,
         second_label: &'static str,
-    ) -> impl Fn(&T) -> Missing
+    ) -> impl Fn(&N) -> Missing
     where
-        T: Node<'a>,
+        N: Node<T>,
     {
         move |left| Missing::Delimiter(message, first_label, left.span(), second_label)
     }
@@ -51,16 +51,16 @@ pub type Recoverable<T> = wrom::Recoverable<T, Missing>;
 /// by a GraphQL service or client. A document contains multiple definitions,
 /// either executable or representative of a GraphQL type system.
 #[derive(Clone, Debug, Default)]
-pub struct Document<'a> {
-    pub definitions: Vec<Definition<'a>>,
+pub struct Document<T> {
+    pub definitions: Vec<Definition<T>>,
 }
 
 node!(Document, visit_document, definitions);
 
 #[derive(Clone, Debug)]
-pub enum Definition<'a> {
-    ExecutableDefinition(ExecutableDefinition<'a>),
-    TypeSystemDefinitionOrExtension(TypeSystemDefinitionOrExtension<'a>),
+pub enum Definition<T> {
+    ExecutableDefinition(ExecutableDefinition<T>),
+    TypeSystemDefinitionOrExtension(TypeSystemDefinitionOrExtension<T>),
 }
 
 node_enum!(
@@ -76,16 +76,16 @@ node_enum!(
 /// executed; GraphQL execution services which receive a Document containing
 /// these should return a descriptive error.
 #[derive(Clone, Debug)]
-pub struct ExecutableDocument<'a> {
-    pub definitions: Vec<ExecutableDefinition<'a>>,
+pub struct ExecutableDocument<T> {
+    pub definitions: Vec<ExecutableDefinition<T>>,
 }
 
 node!(ExecutableDocument, visit_executable_document, definitions);
 
 #[derive(Clone, Debug)]
-pub enum ExecutableDefinition<'a> {
-    OperationDefinition(OperationDefinition<'a>),
-    FragmentDefinition(FragmentDefinition<'a>),
+pub enum ExecutableDefinition<T> {
+    OperationDefinition(OperationDefinition<T>),
+    FragmentDefinition(FragmentDefinition<T>),
 }
 
 node_enum!(
@@ -96,12 +96,12 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub struct OperationDefinition<'a> {
-    pub ty: Option<OperationType<'a>>,
-    pub name: Recoverable<Name<'a>>,
-    pub variable_definitions: Option<VariableDefinitions<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub selection_set: Recoverable<SelectionSet<'a>>,
+pub struct OperationDefinition<T> {
+    pub ty: Option<OperationType<T>>,
+    pub name: Recoverable<Name<T>>,
+    pub variable_definitions: Option<VariableDefinitions<T>>,
+    pub directives: Option<Directives<T>>,
+    pub selection_set: Recoverable<SelectionSet<T>>,
 }
 
 node!(
@@ -115,10 +115,10 @@ node!(
 );
 
 #[derive(Clone, Copy, Debug)]
-pub enum OperationType<'a> {
-    Query(Name<'a>),
-    Mutation(Name<'a>),
-    Subscription(Name<'a>),
+pub enum OperationType<T> {
+    Query(Name<T>),
+    Mutation(Name<T>),
+    Subscription(Name<T>),
 }
 
 node_enum!(
@@ -130,18 +130,18 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub struct SelectionSet<'a> {
-    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub selections: Vec<Selection<'a>>,
+pub struct SelectionSet<T> {
+    pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub selections: Vec<Selection<T>>,
 }
 
 node!(SelectionSet, visit_selection_set, braces, selections);
 
 #[derive(Clone, Debug)]
-pub enum Selection<'a> {
-    Field(Field<'a>),
-    FragmentSpread(FragmentSpread<'a>),
-    InlineFragment(InlineFragment<'a>),
+pub enum Selection<T> {
+    Field(Field<T>),
+    FragmentSpread(FragmentSpread<T>),
+    InlineFragment(InlineFragment<T>),
 }
 
 node_enum!(
@@ -153,12 +153,12 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub struct Field<'a> {
-    pub alias: Option<Alias<'a>>,
-    pub name: Recoverable<Name<'a>>,
-    pub arguments: Option<Arguments<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub selection_set: Option<SelectionSet<'a>>,
+pub struct Field<T> {
+    pub alias: Option<Alias<T>>,
+    pub name: Recoverable<Name<T>>,
+    pub arguments: Option<Arguments<T>>,
+    pub directives: Option<Directives<T>>,
+    pub selection_set: Option<SelectionSet<T>>,
 }
 
 node!(
@@ -172,35 +172,35 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct Alias<'a> {
-    pub name: Name<'a>,
-    pub colon: Punctuator<'a>,
+pub struct Alias<T> {
+    pub name: Name<T>,
+    pub colon: Punctuator<T>,
 }
 
 node!(Alias, visit_alias, name, colon);
 
 #[derive(Clone, Debug)]
-pub struct Arguments<'a> {
-    pub parens: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub items: Vec<Argument<'a>>,
+pub struct Arguments<T> {
+    pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub items: Vec<Argument<T>>,
 }
 
 node!(Arguments, visit_arguments, parens, items);
 
 #[derive(Clone, Debug)]
-pub struct Argument<'a> {
-    pub name: Name<'a>,
-    pub colon: Recoverable<Punctuator<'a>>,
-    pub value: Recoverable<Value<'a>>,
+pub struct Argument<T> {
+    pub name: Name<T>,
+    pub colon: Recoverable<Punctuator<T>>,
+    pub value: Recoverable<Value<T>>,
 }
 
 node!(Argument, visit_argument, name, colon, value);
 
 #[derive(Clone, Debug)]
-pub struct FragmentSpread<'a> {
-    pub dots: Punctuator<'a>,
-    pub fragment_name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
+pub struct FragmentSpread<T> {
+    pub dots: Punctuator<T>,
+    pub fragment_name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
 }
 
 node!(
@@ -212,11 +212,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InlineFragment<'a> {
-    pub dots: Punctuator<'a>,
-    pub type_condition: Option<TypeCondition<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub selection_set: Recoverable<SelectionSet<'a>>,
+pub struct InlineFragment<T> {
+    pub dots: Punctuator<T>,
+    pub type_condition: Option<TypeCondition<T>>,
+    pub directives: Option<Directives<T>>,
+    pub selection_set: Recoverable<SelectionSet<T>>,
 }
 
 node!(
@@ -229,12 +229,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct FragmentDefinition<'a> {
-    pub fragment: Name<'a>,
-    pub fragment_name: Recoverable<Name<'a>>,
-    pub type_condition: Recoverable<TypeCondition<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub selection_set: Recoverable<SelectionSet<'a>>,
+pub struct FragmentDefinition<T> {
+    pub fragment: Name<T>,
+    pub fragment_name: Recoverable<Name<T>>,
+    pub type_condition: Recoverable<TypeCondition<T>>,
+    pub directives: Option<Directives<T>>,
+    pub selection_set: Recoverable<SelectionSet<T>>,
 }
 
 node!(
@@ -248,24 +248,24 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct TypeCondition<'a> {
-    pub on: Name<'a>,
-    pub named_type: Recoverable<Name<'a>>,
+pub struct TypeCondition<T> {
+    pub on: Name<T>,
+    pub named_type: Recoverable<Name<T>>,
 }
 
 node!(TypeCondition, visit_type_condition, on, named_type);
 
 #[derive(Clone, Debug)]
-pub enum Value<'a> {
-    Variable(Variable<'a>),
-    IntValue(IntValue<'a>),
-    FloatValue(FloatValue<'a>),
-    StringValue(StringValue<'a>),
-    BooleanValue(BooleanValue<'a>),
-    NullValue(NullValue<'a>),
-    EnumValue(EnumValue<'a>),
-    ListValue(ListValue<'a>),
-    ObjectValue(ObjectValue<'a>),
+pub enum Value<T> {
+    Variable(Variable<T>),
+    IntValue(IntValue<T>),
+    FloatValue(FloatValue<T>),
+    StringValue(StringValue<T>),
+    BooleanValue(BooleanValue<T>),
+    NullValue(NullValue<T>),
+    EnumValue(EnumValue<T>),
+    ListValue(ListValue<T>),
+    ObjectValue(ObjectValue<T>),
 }
 
 node_enum!(
@@ -283,52 +283,52 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub enum BooleanValue<'a> {
-    True(Name<'a>),
-    False(Name<'a>),
+pub enum BooleanValue<T> {
+    True(Name<T>),
+    False(Name<T>),
 }
 
 node_enum!(BooleanValue, visit_boolean_value, True, False);
 
 #[derive(Clone, Debug)]
-pub struct NullValue<'a>(pub Name<'a>);
+pub struct NullValue<T>(pub Name<T>);
 
 node_unit!(NullValue, visit_null_value);
 
 #[derive(Clone, Debug)]
-pub struct EnumValue<'a>(pub Name<'a>);
+pub struct EnumValue<T>(pub Name<T>);
 
 node_unit!(EnumValue, visit_enum_value);
 
 #[derive(Clone, Debug)]
-pub struct ListValue<'a> {
-    pub brackets: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub values: Vec<Value<'a>>,
+pub struct ListValue<T> {
+    pub brackets: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub values: Vec<Value<T>>,
 }
 
 node!(ListValue, visit_list_value, brackets, values);
 
 #[derive(Clone, Debug)]
-pub struct ObjectValue<'a> {
-    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub object_fields: Vec<ObjectField<'a>>,
+pub struct ObjectValue<T> {
+    pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub object_fields: Vec<ObjectField<T>>,
 }
 
 node!(ObjectValue, visit_object_value, braces, object_fields);
 
 #[derive(Clone, Debug)]
-pub struct ObjectField<'a> {
-    pub name: Name<'a>,
-    pub colon: Recoverable<Punctuator<'a>>,
-    pub value: Recoverable<Value<'a>>,
+pub struct ObjectField<T> {
+    pub name: Name<T>,
+    pub colon: Recoverable<Punctuator<T>>,
+    pub value: Recoverable<Value<T>>,
 }
 
 node!(ObjectField, visit_object_field, name, colon, value);
 
 #[derive(Clone, Debug)]
-pub struct VariableDefinitions<'a> {
-    pub parens: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub variable_definitions: Vec<VariableDefinition<'a>>,
+pub struct VariableDefinitions<T> {
+    pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub variable_definitions: Vec<VariableDefinition<T>>,
 }
 
 node!(
@@ -339,12 +339,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct VariableDefinition<'a> {
-    pub variable: Variable<'a>,
-    pub colon: Recoverable<Punctuator<'a>>,
-    pub ty: Recoverable<Type<'a>>,
-    pub default_value: Option<DefaultValue<'a>>,
-    pub directives: Option<Directives<'a>>,
+pub struct VariableDefinition<T> {
+    pub variable: Variable<T>,
+    pub colon: Recoverable<Punctuator<T>>,
+    pub ty: Recoverable<Type<T>>,
+    pub default_value: Option<DefaultValue<T>>,
+    pub directives: Option<Directives<T>>,
 }
 
 node!(
@@ -358,63 +358,63 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct Variable<'a> {
-    pub dollar: Punctuator<'a>,
-    pub name: Name<'a>,
+pub struct Variable<T> {
+    pub dollar: Punctuator<T>,
+    pub name: Name<T>,
 }
 
 node!(Variable, visit_variable, dollar, name);
 
 #[derive(Clone, Debug)]
-pub struct DefaultValue<'a> {
-    pub eq: Punctuator<'a>,
-    pub value: Recoverable<Value<'a>>,
+pub struct DefaultValue<T> {
+    pub eq: Punctuator<T>,
+    pub value: Recoverable<Value<T>>,
 }
 
 node!(DefaultValue, visit_default_value, eq, value);
 
 #[derive(Clone, Debug)]
-pub enum Type<'a> {
-    Named(NamedType<'a>),
-    List(Box<ListType<'a>>),
-    NonNull(Box<NonNullType<'a>>),
+pub enum Type<T> {
+    Named(NamedType<T>),
+    List(Box<ListType<T>>),
+    NonNull(Box<NonNullType<T>>),
 }
 
 node_enum!(Type, visit_type, Named, List, NonNull);
 
 #[derive(Clone, Debug)]
-pub struct NamedType<'a>(pub Name<'a>);
+pub struct NamedType<T>(pub Name<T>);
 
 node_unit!(NamedType, visit_named_type);
 
 #[derive(Clone, Debug)]
-pub struct ListType<'a> {
-    pub brackets: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub ty: Recoverable<Type<'a>>,
+pub struct ListType<T> {
+    pub brackets: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub ty: Recoverable<Type<T>>,
 }
 
 node!(ListType, visit_list_type, brackets, ty);
 
 #[derive(Clone, Debug)]
-pub struct NonNullType<'a> {
-    pub ty: Type<'a>,
-    pub bang: Punctuator<'a>,
+pub struct NonNullType<T> {
+    pub ty: Type<T>,
+    pub bang: Punctuator<T>,
 }
 
 node!(NonNullType, visit_non_null_type, ty, bang);
 
 #[derive(Clone, Debug)]
-pub struct Directives<'a> {
-    pub directives: Vec<Directive<'a>>,
+pub struct Directives<T> {
+    pub directives: Vec<Directive<T>>,
 }
 
 node!(Directives, visit_directives, directives);
 
 #[derive(Clone, Debug)]
-pub struct Directive<'a> {
-    pub at: Punctuator<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub arguments: Option<Arguments<'a>>,
+pub struct Directive<T> {
+    pub at: Punctuator<T>,
+    pub name: Recoverable<Name<T>>,
+    pub arguments: Option<Arguments<T>>,
 }
 
 node!(Directive, visit_directive, at, name, arguments);
@@ -435,17 +435,17 @@ node!(Directive, visit_directive, at, name, arguments);
 /// `ExecutableDefinition` or `TypeSystemExtension` but should provide a
 /// descriptive error if present.
 #[derive(Clone, Debug)]
-pub struct TypeSystemDocument<'a> {
-    pub definitions: Vec<TypeSystemDefinition<'a>>,
+pub struct TypeSystemDocument<T> {
+    pub definitions: Vec<TypeSystemDefinition<T>>,
 }
 
 node!(TypeSystemDocument, visit_type_system_document, definitions);
 
 #[derive(Clone, Debug)]
-pub enum TypeSystemDefinition<'a> {
-    SchemaDefinition(SchemaDefinition<'a>),
-    TypeDefinition(TypeDefinition<'a>),
-    DirectiveDefinition(DirectiveDefinition<'a>),
+pub enum TypeSystemDefinition<T> {
+    SchemaDefinition(SchemaDefinition<T>),
+    TypeDefinition(TypeDefinition<T>),
+    DirectiveDefinition(DirectiveDefinition<T>),
 }
 
 node_enum!(
@@ -457,8 +457,8 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub struct TypeSystemExtensionDocument<'a> {
-    pub definitions: Vec<TypeSystemDefinitionOrExtension<'a>>,
+pub struct TypeSystemExtensionDocument<T> {
+    pub definitions: Vec<TypeSystemDefinitionOrExtension<T>>,
 }
 
 node!(
@@ -468,9 +468,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub enum TypeSystemDefinitionOrExtension<'a> {
-    TypeSystemDefinition(TypeSystemDefinition<'a>),
-    TypeSystemExtension(TypeSystemExtension<'a>),
+pub enum TypeSystemDefinitionOrExtension<T> {
+    TypeSystemDefinition(TypeSystemDefinition<T>),
+    TypeSystemExtension(TypeSystemExtension<T>),
 }
 
 node_enum!(
@@ -481,9 +481,9 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub enum TypeSystemExtension<'a> {
-    SchemaExtension(SchemaExtension<'a>),
-    TypeExtension(TypeExtension<'a>),
+pub enum TypeSystemExtension<T> {
+    SchemaExtension(SchemaExtension<T>),
+    TypeExtension(TypeExtension<T>),
 }
 
 node_enum!(
@@ -494,10 +494,13 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub struct Description<'a>(pub StringValue<'a>);
+pub struct Description<T>(pub StringValue<T>);
 
-impl Description<'_> {
-    pub fn to_string(&self) -> String {
+impl<T> ToString for Description<T>
+where
+    T: ToString,
+{
+    fn to_string(&self) -> String {
         self.0.to_string()
     }
 }
@@ -505,11 +508,11 @@ impl Description<'_> {
 node_unit!(Description, visit_description);
 
 #[derive(Clone, Debug)]
-pub struct SchemaDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub schema: Name<'a>,
-    pub directives: Option<Directives<'a>>,
-    pub type_definitions: Recoverable<RootOperationTypeDefinitions<'a>>,
+pub struct SchemaDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub schema: Name<T>,
+    pub directives: Option<Directives<T>>,
+    pub type_definitions: Recoverable<RootOperationTypeDefinitions<T>>,
 }
 
 node!(
@@ -522,9 +525,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct RootOperationTypeDefinitions<'a> {
-    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub definitions: Vec<RootOperationTypeDefinition<'a>>,
+pub struct RootOperationTypeDefinitions<T> {
+    pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub definitions: Vec<RootOperationTypeDefinition<T>>,
 }
 
 node!(
@@ -535,10 +538,10 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct RootOperationTypeDefinition<'a> {
-    pub operation_type: OperationType<'a>,
-    pub colon: Recoverable<Punctuator<'a>>,
-    pub named_type: Recoverable<NamedType<'a>>,
+pub struct RootOperationTypeDefinition<T> {
+    pub operation_type: OperationType<T>,
+    pub colon: Recoverable<Punctuator<T>>,
+    pub named_type: Recoverable<NamedType<T>>,
 }
 
 node!(
@@ -550,10 +553,10 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct SchemaExtension<'a> {
-    pub extend_schema: (Name<'a>, Name<'a>),
-    pub directives: Option<Directives<'a>>,
-    pub type_definitions: Option<RootOperationTypeDefinitions<'a>>,
+pub struct SchemaExtension<T> {
+    pub extend_schema: (Name<T>, Name<T>),
+    pub directives: Option<Directives<T>>,
+    pub type_definitions: Option<RootOperationTypeDefinitions<T>>,
 }
 
 node!(
@@ -565,13 +568,13 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub enum TypeDefinition<'a> {
-    ScalarTypeDefinition(ScalarTypeDefinition<'a>),
-    ObjectTypeDefinition(ObjectTypeDefinition<'a>),
-    InterfaceTypeDefinition(InterfaceTypeDefinition<'a>),
-    UnionTypeDefinition(UnionTypeDefinition<'a>),
-    EnumTypeDefinition(EnumTypeDefinition<'a>),
-    InputObjectTypeDefinition(InputObjectTypeDefinition<'a>),
+pub enum TypeDefinition<T> {
+    ScalarTypeDefinition(ScalarTypeDefinition<T>),
+    ObjectTypeDefinition(ObjectTypeDefinition<T>),
+    InterfaceTypeDefinition(InterfaceTypeDefinition<T>),
+    UnionTypeDefinition(UnionTypeDefinition<T>),
+    EnumTypeDefinition(EnumTypeDefinition<T>),
+    InputObjectTypeDefinition(InputObjectTypeDefinition<T>),
 }
 
 node_enum!(
@@ -585,8 +588,8 @@ node_enum!(
     InputObjectTypeDefinition
 );
 
-impl<'a> TypeDefinition<'a> {
-    pub fn name(&self) -> &Recoverable<Name<'a>> {
+impl<T> TypeDefinition<T> {
+    pub fn name(&self) -> &Recoverable<Name<T>> {
         match self {
             TypeDefinition::ScalarTypeDefinition(definition) => &definition.name,
             TypeDefinition::ObjectTypeDefinition(definition) => &definition.name,
@@ -599,13 +602,13 @@ impl<'a> TypeDefinition<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub enum TypeExtension<'a> {
-    ScalarTypeExtension(ScalarTypeExtension<'a>),
-    ObjectTypeExtension(ObjectTypeExtension<'a>),
-    InterfaceTypeExtension(InterfaceTypeExtension<'a>),
-    UnionTypeExtension(UnionTypeExtension<'a>),
-    EnumTypeExtension(EnumTypeExtension<'a>),
-    InputObjectTypeExtension(InputObjectTypeExtension<'a>),
+pub enum TypeExtension<T> {
+    ScalarTypeExtension(ScalarTypeExtension<T>),
+    ObjectTypeExtension(ObjectTypeExtension<T>),
+    InterfaceTypeExtension(InterfaceTypeExtension<T>),
+    UnionTypeExtension(UnionTypeExtension<T>),
+    EnumTypeExtension(EnumTypeExtension<T>),
+    InputObjectTypeExtension(InputObjectTypeExtension<T>),
 }
 
 node_enum!(
@@ -619,8 +622,8 @@ node_enum!(
     InputObjectTypeExtension
 );
 
-impl<'a> TypeExtension<'a> {
-    pub fn name(&self) -> &Recoverable<Name<'a>> {
+impl<T> TypeExtension<T> {
+    pub fn name(&self) -> &Recoverable<Name<T>> {
         match self {
             TypeExtension::ScalarTypeExtension(extension) => &extension.name,
             TypeExtension::ObjectTypeExtension(extension) => &extension.name,
@@ -633,11 +636,11 @@ impl<'a> TypeExtension<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub struct ScalarTypeDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub scalar: Name<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
+pub struct ScalarTypeDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub scalar: Name<T>,
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
 }
 
 node!(
@@ -649,10 +652,10 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct ScalarTypeExtension<'a> {
-    pub extend_scalar: (Name<'a>, Name<'a>),
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Recoverable<Directives<'a>>,
+pub struct ScalarTypeExtension<T> {
+    pub extend_scalar: (Name<T>, Name<T>),
+    pub name: Recoverable<Name<T>>,
+    pub directives: Recoverable<Directives<T>>,
 }
 
 node!(
@@ -664,13 +667,13 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct ObjectTypeDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub ty: Name<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub fields_definition: Option<FieldsDefinition<'a>>,
+pub struct ObjectTypeDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub ty: Name<T>,
+    pub name: Recoverable<Name<T>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<T>>,
+    pub directives: Option<Directives<T>>,
+    pub fields_definition: Option<FieldsDefinition<T>>,
 }
 
 node!(
@@ -685,11 +688,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct ImplementsInterfaces<'a> {
-    pub implements: Name<'a>,
-    pub ampersand: Option<Punctuator<'a>>,
-    pub first: Recoverable<NamedType<'a>>,
-    pub types: Vec<(Punctuator<'a>, Recoverable<NamedType<'a>>)>,
+pub struct ImplementsInterfaces<T> {
+    pub implements: Name<T>,
+    pub ampersand: Option<Punctuator<T>>,
+    pub first: Recoverable<NamedType<T>>,
+    pub types: Vec<(Punctuator<T>, Recoverable<NamedType<T>>)>,
 }
 
 node!(
@@ -702,9 +705,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct FieldsDefinition<'a> {
-    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub definitions: Vec<FieldDefinition<'a>>,
+pub struct FieldsDefinition<T> {
+    pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub definitions: Vec<FieldDefinition<T>>,
 }
 
 node!(
@@ -715,13 +718,13 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct FieldDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub name: Name<'a>,
-    pub arguments_definition: Option<ArgumentsDefinition<'a>>,
-    pub colon: Recoverable<Punctuator<'a>>,
-    pub ty: Recoverable<Type<'a>>,
-    pub directives: Option<Directives<'a>>,
+pub struct FieldDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub name: Name<T>,
+    pub arguments_definition: Option<ArgumentsDefinition<T>>,
+    pub colon: Recoverable<Punctuator<T>>,
+    pub ty: Recoverable<Type<T>>,
+    pub directives: Option<Directives<T>>,
 }
 
 node!(
@@ -736,9 +739,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct ArgumentsDefinition<'a> {
-    pub parens: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub definitions: Vec<InputValueDefinition<'a>>,
+pub struct ArgumentsDefinition<T> {
+    pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub definitions: Vec<InputValueDefinition<T>>,
 }
 
 node!(
@@ -749,13 +752,13 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InputValueDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub name: Name<'a>,
-    pub colon: Recoverable<Punctuator<'a>>,
-    pub ty: Recoverable<Type<'a>>,
-    pub default_value: Option<DefaultValue<'a>>,
-    pub directives: Option<Directives<'a>>,
+pub struct InputValueDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub name: Name<T>,
+    pub colon: Recoverable<Punctuator<T>>,
+    pub ty: Recoverable<Type<T>>,
+    pub default_value: Option<DefaultValue<T>>,
+    pub directives: Option<Directives<T>>,
 }
 
 node!(
@@ -770,12 +773,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct ObjectTypeExtension<'a> {
-    pub extend_type: (Name<'a>, Name<'a>),
-    pub name: Recoverable<Name<'a>>,
-    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub fields_definition: Option<FieldsDefinition<'a>>,
+pub struct ObjectTypeExtension<T> {
+    pub extend_type: (Name<T>, Name<T>),
+    pub name: Recoverable<Name<T>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<T>>,
+    pub directives: Option<Directives<T>>,
+    pub fields_definition: Option<FieldsDefinition<T>>,
 }
 
 node!(
@@ -789,13 +792,13 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InterfaceTypeDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub interface: Name<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub fields_definition: Option<FieldsDefinition<'a>>,
+pub struct InterfaceTypeDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub interface: Name<T>,
+    pub name: Recoverable<Name<T>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<T>>,
+    pub directives: Option<Directives<T>>,
+    pub fields_definition: Option<FieldsDefinition<T>>,
 }
 
 node!(
@@ -810,12 +813,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InterfaceTypeExtension<'a> {
-    pub extend_interface: (Name<'a>, Name<'a>),
-    pub name: Recoverable<Name<'a>>,
-    pub implements_interfaces: Option<ImplementsInterfaces<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub fields_definition: Option<FieldsDefinition<'a>>,
+pub struct InterfaceTypeExtension<T> {
+    pub extend_interface: (Name<T>, Name<T>),
+    pub name: Recoverable<Name<T>>,
+    pub implements_interfaces: Option<ImplementsInterfaces<T>>,
+    pub directives: Option<Directives<T>>,
+    pub fields_definition: Option<FieldsDefinition<T>>,
 }
 
 node!(
@@ -829,12 +832,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct UnionTypeDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub union_kw: Name<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub member_types: Option<UnionMemberTypes<'a>>,
+pub struct UnionTypeDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub union_kw: Name<T>,
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
+    pub member_types: Option<UnionMemberTypes<T>>,
 }
 
 node!(
@@ -848,11 +851,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct UnionMemberTypes<'a> {
-    pub eq: Punctuator<'a>,
-    pub pipe: Option<Punctuator<'a>>,
-    pub first: Recoverable<NamedType<'a>>,
-    pub types: Vec<(Punctuator<'a>, Recoverable<NamedType<'a>>)>,
+pub struct UnionMemberTypes<T> {
+    pub eq: Punctuator<T>,
+    pub pipe: Option<Punctuator<T>>,
+    pub first: Recoverable<NamedType<T>>,
+    pub types: Vec<(Punctuator<T>, Recoverable<NamedType<T>>)>,
 }
 
 node!(
@@ -865,11 +868,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct UnionTypeExtension<'a> {
-    pub extend_union: (Name<'a>, Name<'a>),
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub member_types: Option<UnionMemberTypes<'a>>,
+pub struct UnionTypeExtension<T> {
+    pub extend_union: (Name<T>, Name<T>),
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
+    pub member_types: Option<UnionMemberTypes<T>>,
 }
 
 node!(
@@ -882,12 +885,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct EnumTypeDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub enum_kw: Name<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub values_definition: Option<EnumValuesDefinition<'a>>,
+pub struct EnumTypeDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub enum_kw: Name<T>,
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
+    pub values_definition: Option<EnumValuesDefinition<T>>,
 }
 
 node!(
@@ -901,9 +904,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct EnumValuesDefinition<'a> {
-    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub definitions: Vec<EnumValueDefinition<'a>>,
+pub struct EnumValuesDefinition<T> {
+    pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub definitions: Vec<EnumValueDefinition<T>>,
 }
 
 node!(
@@ -914,10 +917,10 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct EnumValueDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub enum_value: EnumValue<'a>,
-    pub directives: Option<Directives<'a>>,
+pub struct EnumValueDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub enum_value: EnumValue<T>,
+    pub directives: Option<Directives<T>>,
 }
 
 node!(
@@ -929,11 +932,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct EnumTypeExtension<'a> {
-    pub extend_enum: (Name<'a>, Name<'a>),
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub values_definition: Option<EnumValuesDefinition<'a>>,
+pub struct EnumTypeExtension<T> {
+    pub extend_enum: (Name<T>, Name<T>),
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
+    pub values_definition: Option<EnumValuesDefinition<T>>,
 }
 
 node!(
@@ -945,12 +948,12 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InputObjectTypeDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub input: Name<'a>,
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub fields_definition: Option<InputFieldsDefinition<'a>>,
+pub struct InputObjectTypeDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub input: Name<T>,
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
+    pub fields_definition: Option<InputFieldsDefinition<T>>,
 }
 
 node!(
@@ -964,9 +967,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InputFieldsDefinition<'a> {
-    pub braces: (Punctuator<'a>, Recoverable<Punctuator<'a>>),
-    pub definitions: Vec<InputValueDefinition<'a>>,
+pub struct InputFieldsDefinition<T> {
+    pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+    pub definitions: Vec<InputValueDefinition<T>>,
 }
 
 node!(
@@ -977,11 +980,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct InputObjectTypeExtension<'a> {
-    pub extend_input: (Name<'a>, Name<'a>),
-    pub name: Recoverable<Name<'a>>,
-    pub directives: Option<Directives<'a>>,
-    pub fields_definition: Option<InputFieldsDefinition<'a>>,
+pub struct InputObjectTypeExtension<T> {
+    pub extend_input: (Name<T>, Name<T>),
+    pub name: Recoverable<Name<T>>,
+    pub directives: Option<Directives<T>>,
+    pub fields_definition: Option<InputFieldsDefinition<T>>,
 }
 
 node!(
@@ -994,14 +997,14 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct DirectiveDefinition<'a> {
-    pub description: Option<Description<'a>>,
-    pub directive: Name<'a>,
-    pub at: Recoverable<Punctuator<'a>>,
-    pub name: Recoverable<Name<'a>>,
-    pub arguments_definition: Option<ArgumentsDefinition<'a>>,
-    pub repeatable: Option<Name<'a>>,
-    pub locations: Recoverable<DirectiveLocations<'a>>,
+pub struct DirectiveDefinition<T> {
+    pub description: Option<Description<T>>,
+    pub directive: Name<T>,
+    pub at: Recoverable<Punctuator<T>>,
+    pub name: Recoverable<Name<T>>,
+    pub arguments_definition: Option<ArgumentsDefinition<T>>,
+    pub repeatable: Option<Name<T>>,
+    pub locations: Recoverable<DirectiveLocations<T>>,
 }
 
 node!(
@@ -1017,11 +1020,11 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub struct DirectiveLocations<'a> {
-    pub on: Name<'a>,
-    pub pipe: Option<Punctuator<'a>>,
-    pub first: Recoverable<DirectiveLocation<'a>>,
-    pub locations: Vec<(Punctuator<'a>, Recoverable<DirectiveLocation<'a>>)>,
+pub struct DirectiveLocations<T> {
+    pub on: Name<T>,
+    pub pipe: Option<Punctuator<T>>,
+    pub first: Recoverable<DirectiveLocation<T>>,
+    pub locations: Vec<(Punctuator<T>, Recoverable<DirectiveLocation<T>>)>,
 }
 
 node!(
@@ -1034,9 +1037,9 @@ node!(
 );
 
 #[derive(Clone, Debug)]
-pub enum DirectiveLocation<'a> {
-    ExecutableDirectiveLocation(ExecutableDirectiveLocation<'a>),
-    TypeSystemDirectiveLocation(TypeSystemDirectiveLocation<'a>),
+pub enum DirectiveLocation<T> {
+    ExecutableDirectiveLocation(ExecutableDirectiveLocation<T>),
+    TypeSystemDirectiveLocation(TypeSystemDirectiveLocation<T>),
 }
 
 node_enum!(
@@ -1047,15 +1050,15 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub enum ExecutableDirectiveLocation<'a> {
-    Query(Name<'a>),
-    Mutation(Name<'a>),
-    Subscription(Name<'a>),
-    Field(Name<'a>),
-    FragmentDefinition(Name<'a>),
-    FragmentSpread(Name<'a>),
-    InlineFragment(Name<'a>),
-    VariableDefinition(Name<'a>),
+pub enum ExecutableDirectiveLocation<T> {
+    Query(Name<T>),
+    Mutation(Name<T>),
+    Subscription(Name<T>),
+    Field(Name<T>),
+    FragmentDefinition(Name<T>),
+    FragmentSpread(Name<T>),
+    InlineFragment(Name<T>),
+    VariableDefinition(Name<T>),
 }
 
 node_enum!(
@@ -1072,18 +1075,18 @@ node_enum!(
 );
 
 #[derive(Clone, Debug)]
-pub enum TypeSystemDirectiveLocation<'a> {
-    Schema(Name<'a>),
-    Scalar(Name<'a>),
-    Object(Name<'a>),
-    FieldDefinition(Name<'a>),
-    ArgumentDefinition(Name<'a>),
-    Interface(Name<'a>),
-    Union(Name<'a>),
-    Enum(Name<'a>),
-    EnumValue(Name<'a>),
-    InputObject(Name<'a>),
-    InputFieldDefinition(Name<'a>),
+pub enum TypeSystemDirectiveLocation<T> {
+    Schema(Name<T>),
+    Scalar(Name<T>),
+    Object(Name<T>),
+    FieldDefinition(Name<T>),
+    ArgumentDefinition(Name<T>),
+    Interface(Name<T>),
+    Union(Name<T>),
+    Enum(Name<T>),
+    EnumValue(Name<T>),
+    InputObject(Name<T>),
+    InputFieldDefinition(Name<T>),
 }
 
 node_enum!(

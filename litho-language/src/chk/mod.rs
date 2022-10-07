@@ -7,19 +7,19 @@ pub use error::Error;
 use crate::ast::{Node, Recoverable, Visit};
 use crate::lex::Token;
 
-pub trait Errors<'a> {
-    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, 'a>>
+pub trait Errors<T> {
+    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, T>>
     where
-        'a: 'ast;
+        T: 'ast;
 }
 
-impl<'a, T> Errors<'a> for T
+impl<T, N> Errors<T> for N
 where
-    T: Node<'a>,
+    N: Node<T>,
 {
-    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, 'a>>
+    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, T>>
     where
-        'a: 'ast,
+        T: 'ast,
     {
         let mut errors = vec![];
         self.traverse(&CollectErrors, &mut errors);
@@ -27,34 +27,30 @@ where
     }
 }
 
-impl<'a, T> Errors<'a> for (T, Vec<Token<'a>>)
+pub fn collect_errors<N, T>(ast: &(N, Vec<Token<T>>)) -> Vec<Error<T>>
 where
-    T: Node<'a>,
+    N: Node<T>,
+    T: Clone,
 {
-    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, 'a>>
-    where
-        'a: 'ast,
-    {
-        let mut errors = vec![];
-        self.0.traverse(&CollectErrors, &mut errors);
-        errors.extend(self.1.iter().map(|&token| Error::UnrecognizedTokens {
-            tokens: vec![token],
-        }));
-        errors
-    }
+    let mut errors = vec![];
+    ast.0.traverse(&CollectErrors, &mut errors);
+    errors.extend(ast.1.iter().map(|token| Error::UnrecognizedTokens {
+        tokens: vec![token.clone()],
+    }));
+    errors
 }
 
 pub struct CollectErrors;
 
-impl<'ast, 'a> Visit<'ast, 'a> for CollectErrors
+impl<'ast, T> Visit<'ast, T> for CollectErrors
 where
-    'a: 'ast,
+    T: 'ast,
 {
-    type Accumulator = Vec<Error<'ast, 'a>>;
+    type Accumulator = Vec<Error<'ast, T>>;
 
-    fn visit_recoverable<T>(
+    fn visit_recoverable<U>(
         &self,
-        node: &'ast Recoverable<T>,
+        node: &'ast Recoverable<U>,
         accumulator: &mut Self::Accumulator,
     ) {
         match node {

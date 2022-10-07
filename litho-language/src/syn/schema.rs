@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use wrom::branch::alt;
 use wrom::combinator::opt;
 use wrom::multi::many0;
@@ -11,18 +13,22 @@ use super::combinators::{keyword, name, punctuator, string_value};
 use super::executable::{default_value, directives, enum_value, named_type, operation_type, ty};
 use super::Error;
 
-pub fn type_system_document<'a, I>() -> impl RecoverableParser<I, TypeSystemDocument<'a>, Error>
+pub fn type_system_document<'a, T, I>(
+) -> impl RecoverableParser<I, TypeSystemDocument<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         many0(type_system_definition()).map(|definitions| TypeSystemDocument { definitions })
     })
 }
 
-pub fn type_system_definition<'a, I>() -> impl RecoverableParser<I, TypeSystemDefinition<'a>, Error>
+pub fn type_system_definition<'a, T, I>(
+) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -33,10 +39,11 @@ where
     })
 }
 
-pub fn type_system_extension_document<'a, I>(
-) -> impl RecoverableParser<I, TypeSystemExtensionDocument<'a>, Error>
+pub fn type_system_extension_document<'a, T, I>(
+) -> impl RecoverableParser<I, TypeSystemExtensionDocument<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         many0(type_system_definition_or_extension())
@@ -44,10 +51,11 @@ where
     })
 }
 
-pub fn type_system_definition_or_extension<'a, I>(
-) -> impl RecoverableParser<I, TypeSystemDefinitionOrExtension<'a>, Error>
+pub fn type_system_definition_or_extension<'a, T, I>(
+) -> impl RecoverableParser<I, TypeSystemDefinitionOrExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -57,9 +65,11 @@ where
     })
 }
 
-pub fn type_system_extension<'a, I>() -> impl RecoverableParser<I, TypeSystemExtension<'a>, Error>
+pub fn type_system_extension<'a, T, I>(
+) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -69,16 +79,18 @@ where
     })
 }
 
-pub fn description<'a, I>() -> impl RecoverableParser<I, Description<'a>, Error>
+pub fn description<'a, T, I>() -> impl RecoverableParser<I, Description<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| string_value().map(Description))
 }
 
-pub fn schema_definition<'a, I>() -> impl RecoverableParser<I, SchemaDefinition<'a>, Error>
+pub fn schema_definition<'a, T, I>() -> impl RecoverableParser<I, SchemaDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -101,10 +113,11 @@ where
     })
 }
 
-pub fn root_operation_type_definitions<'a, I>(
-) -> impl RecoverableParser<I, RootOperationTypeDefinitions<'a>, Error>
+pub fn root_operation_type_definitions<'a, T, I>(
+) -> impl RecoverableParser<I, RootOperationTypeDefinitions<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -124,10 +137,11 @@ where
     })
 }
 
-pub fn root_operation_type_definition<'a, I>(
-) -> impl RecoverableParser<I, RootOperationTypeDefinition<'a>, Error>
+pub fn root_operation_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, RootOperationTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         operation_type()
@@ -144,9 +158,10 @@ where
     })
 }
 
-pub fn schema_extension<'a, I>() -> impl RecoverableParser<I, SchemaExtension<'a>, Error>
+pub fn schema_extension<'a, T, I>() -> impl RecoverableParser<I, SchemaExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -164,9 +179,10 @@ where
     })
 }
 
-pub fn type_definition<'a, I>() -> impl RecoverableParser<I, TypeDefinition<'a>, Error>
+pub fn type_definition<'a, T, I>() -> impl RecoverableParser<I, TypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -180,9 +196,10 @@ where
     })
 }
 
-pub fn type_extension<'a, I>() -> impl RecoverableParser<I, TypeExtension<'a>, Error>
+pub fn type_extension<'a, T, I>() -> impl RecoverableParser<I, TypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -196,9 +213,11 @@ where
     })
 }
 
-pub fn scalar_type_definition<'a, I>() -> impl RecoverableParser<I, ScalarTypeDefinition<'a>, Error>
+pub fn scalar_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, ScalarTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -217,9 +236,11 @@ where
     })
 }
 
-pub fn scalar_type_extension<'a, I>() -> impl RecoverableParser<I, ScalarTypeExtension<'a>, Error>
+pub fn scalar_type_extension<'a, T, I>(
+) -> impl RecoverableParser<I, ScalarTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -235,9 +256,11 @@ where
     })
 }
 
-pub fn object_type_definition<'a, I>() -> impl RecoverableParser<I, ObjectTypeDefinition<'a>, Error>
+pub fn object_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, ObjectTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -262,9 +285,11 @@ where
     })
 }
 
-pub fn implements_interfaces<'a, I>() -> impl RecoverableParser<I, ImplementsInterfaces<'a>, Error>
+pub fn implements_interfaces<'a, T, I>(
+) -> impl RecoverableParser<I, ImplementsInterfaces<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("implements")
@@ -285,9 +310,10 @@ where
     })
 }
 
-pub fn fields_definition<'a, I>() -> impl RecoverableParser<I, FieldsDefinition<'a>, Error>
+pub fn fields_definition<'a, T, I>() -> impl RecoverableParser<I, FieldsDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -307,9 +333,10 @@ where
     })
 }
 
-pub fn field_definition<'a, I>() -> impl RecoverableParser<I, FieldDefinition<'a>, Error>
+pub fn field_definition<'a, T, I>() -> impl RecoverableParser<I, FieldDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -334,9 +361,11 @@ where
     })
 }
 
-pub fn arguments_definition<'a, I>() -> impl RecoverableParser<I, ArgumentsDefinition<'a>, Error>
+pub fn arguments_definition<'a, T, I>(
+) -> impl RecoverableParser<I, ArgumentsDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -356,9 +385,11 @@ where
     })
 }
 
-pub fn input_value_definition<'a, I>() -> impl RecoverableParser<I, InputValueDefinition<'a>, Error>
+pub fn input_value_definition<'a, T, I>(
+) -> impl RecoverableParser<I, InputValueDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -381,9 +412,11 @@ where
     })
 }
 
-pub fn object_type_extension<'a, I>() -> impl RecoverableParser<I, ObjectTypeExtension<'a>, Error>
+pub fn object_type_extension<'a, T, I>(
+) -> impl RecoverableParser<I, ObjectTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -407,10 +440,11 @@ where
     })
 }
 
-pub fn interface_type_definition<'a, I>(
-) -> impl RecoverableParser<I, InterfaceTypeDefinition<'a>, Error>
+pub fn interface_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, InterfaceTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -440,10 +474,11 @@ where
     })
 }
 
-pub fn interface_type_extension<'a, I>(
-) -> impl RecoverableParser<I, InterfaceTypeExtension<'a>, Error>
+pub fn interface_type_extension<'a, T, I>(
+) -> impl RecoverableParser<I, InterfaceTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -474,9 +509,11 @@ where
     })
 }
 
-pub fn union_type_definition<'a, I>() -> impl RecoverableParser<I, UnionTypeDefinition<'a>, Error>
+pub fn union_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, UnionTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -497,9 +534,10 @@ where
     })
 }
 
-pub fn union_member_types<'a, I>() -> impl RecoverableParser<I, UnionMemberTypes<'a>, Error>
+pub fn union_member_types<'a, T, I>() -> impl RecoverableParser<I, UnionMemberTypes<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("=")
@@ -518,9 +556,11 @@ where
     })
 }
 
-pub fn union_type_extension<'a, I>() -> impl RecoverableParser<I, UnionTypeExtension<'a>, Error>
+pub fn union_type_extension<'a, T, I>(
+) -> impl RecoverableParser<I, UnionTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -540,9 +580,11 @@ where
     })
 }
 
-pub fn enum_type_definition<'a, I>() -> impl RecoverableParser<I, EnumTypeDefinition<'a>, Error>
+pub fn enum_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, EnumTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -563,9 +605,11 @@ where
     })
 }
 
-pub fn enum_values_definition<'a, I>() -> impl RecoverableParser<I, EnumValuesDefinition<'a>, Error>
+pub fn enum_values_definition<'a, T, I>(
+) -> impl RecoverableParser<I, EnumValuesDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -585,9 +629,11 @@ where
     })
 }
 
-pub fn enum_value_definition<'a, I>() -> impl RecoverableParser<I, EnumValueDefinition<'a>, Error>
+pub fn enum_value_definition<'a, T, I>(
+) -> impl RecoverableParser<I, EnumValueDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -604,9 +650,10 @@ where
     })
 }
 
-pub fn enum_type_extension<'a, I>() -> impl RecoverableParser<I, EnumTypeExtension<'a>, Error>
+pub fn enum_type_extension<'a, T, I>() -> impl RecoverableParser<I, EnumTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -626,10 +673,11 @@ where
     })
 }
 
-pub fn input_object_type_definition<'a, I>(
-) -> impl RecoverableParser<I, InputObjectTypeDefinition<'a>, Error>
+pub fn input_object_type_definition<'a, T, I>(
+) -> impl RecoverableParser<I, InputObjectTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -652,10 +700,11 @@ where
     })
 }
 
-pub fn input_fields_definition<'a, I>(
-) -> impl RecoverableParser<I, InputFieldsDefinition<'a>, Error>
+pub fn input_fields_definition<'a, T, I>(
+) -> impl RecoverableParser<I, InputFieldsDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -675,10 +724,11 @@ where
     })
 }
 
-pub fn input_object_type_extension<'a, I>(
-) -> impl RecoverableParser<I, InputObjectTypeExtension<'a>, Error>
+pub fn input_object_type_extension<'a, T, I>(
+) -> impl RecoverableParser<I, InputObjectTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("extend")
@@ -698,9 +748,11 @@ where
     })
 }
 
-pub fn directive_definition<'a, I>() -> impl RecoverableParser<I, DirectiveDefinition<'a>, Error>
+pub fn directive_definition<'a, T, I>(
+) -> impl RecoverableParser<I, DirectiveDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         opt(description())
@@ -738,9 +790,11 @@ where
     })
 }
 
-pub fn directive_locations<'a, I>() -> impl RecoverableParser<I, DirectiveLocations<'a>, Error>
+pub fn directive_locations<'a, T, I>(
+) -> impl RecoverableParser<I, DirectiveLocations<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("on")
@@ -759,9 +813,10 @@ where
     })
 }
 
-pub fn directive_location<'a, I>() -> impl RecoverableParser<I, DirectiveLocation<'a>, Error>
+pub fn directive_location<'a, T, I>() -> impl RecoverableParser<I, DirectiveLocation<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -771,10 +826,11 @@ where
     })
 }
 
-pub fn executable_directive_location<'a, I>(
-) -> impl RecoverableParser<I, ExecutableDirectiveLocation<'a>, Error>
+pub fn executable_directive_location<'a, T, I>(
+) -> impl RecoverableParser<I, ExecutableDirectiveLocation<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -789,10 +845,11 @@ where
     })
 }
 
-pub fn type_system_directive_location<'a, I>(
-) -> impl RecoverableParser<I, TypeSystemDirectiveLocation<'a>, Error>
+pub fn type_system_directive_location<'a, T, I>(
+) -> impl RecoverableParser<I, TypeSystemDirectiveLocation<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((

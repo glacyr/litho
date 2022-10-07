@@ -11,3 +11,4 @@ tokio = { version = "1.21.1", features = ["full"] }
 tower-lsp = "0.17.0"
 
 litho-language = { path = "../litho-language" }
+smol_str = "0.1.23"

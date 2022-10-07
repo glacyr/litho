@@ -1,12 +1,15 @@
+use std::borrow::Borrow;
+use std::fmt::Display;
+
 use litho_language::ast::*;
 use tower_lsp::lsp_types::{Hover, HoverContents, MarkedString, Position};
 
 use super::{line_col_to_offset, Document};
 
-pub struct HoverProvider<'ast, 'a>(&'ast Document<'a>);
+pub struct HoverProvider<'ast>(&'ast Document);
 
-impl HoverProvider<'_, '_> {
-    pub fn new<'ast, 'a>(document: &'ast Document<'a>) -> HoverProvider<'ast, 'a> {
+impl HoverProvider<'_> {
+    pub fn new<'ast>(document: &'ast Document) -> HoverProvider<'ast> {
         HoverProvider(document)
     }
 
@@ -22,12 +25,15 @@ impl HoverProvider<'_, '_> {
 
 struct HoverVisitor(usize);
 
-impl<'ast, 'a> Visit<'ast, 'a> for HoverVisitor {
+impl<'ast, T> Visit<'ast, T> for HoverVisitor
+where
+    T: Borrow<str> + Display,
+{
     type Accumulator = Option<Hover>;
 
     fn visit_object_type_definition(
         &self,
-        node: &'ast ObjectTypeDefinition<'a>,
+        node: &'ast ObjectTypeDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if node.ty.span().joined(node.name.span()).contains(self.0) {

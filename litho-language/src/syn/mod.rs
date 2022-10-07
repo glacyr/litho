@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::iter::once;
 
 use nom::combinator::eof;
@@ -32,9 +33,9 @@ pub enum Error {
     Multiple(Vec<Error>),
 }
 
-impl<'a, I> ParseError<I> for Error
+impl<T, I> ParseError<I> for Error
 where
-    I: Iterator<Item = Token<'a>> + Clone,
+    I: Iterator<Item = Token<T>> + Clone,
 {
     fn from_error_kind(_input: I, kind: ErrorKind) -> Self {
         Error::Nom(kind)
@@ -75,16 +76,18 @@ where
     }
 }
 
-pub fn document<'a, I>() -> impl RecoverableParser<I, Document<'a>, Error>
+pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     many0(definition()).map(|definitions| Document { definitions })
 }
 
-pub fn definition<'a, I>() -> impl RecoverableParser<I, Definition<'a>, Error>
+pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     alt((
         executable::executable_definition().map(Definition::ExecutableDefinition),
@@ -93,13 +96,14 @@ where
     ))
 }
 
-pub fn parse_from_str<'a, P, O>(
+pub fn parse_from_str<'a, T, P, O>(
     parser: P,
     source_id: usize,
     input: &'a str,
-) -> Result<(Vec<Token<'a>>, O), Error>
+) -> Result<(Vec<Token<T>>, O), Error>
 where
-    P: RecoverableParser<Stream<'a>, O, Error>,
+    P: RecoverableParser<Stream<T>, O, Error>,
+    T: From<&'a str> + Clone,
 {
     match parser.parse(lexer(source_id, input).exact().into(), terminal(eof)) {
         Ok((input, result)) => Ok((input.into_unexpected(), result)),
@@ -110,8 +114,8 @@ where
 
 macro_rules! parse {
     ($name:ident, $($fn:tt)*) => {
-        impl<'a> Parse<'a> for $name<'a> {
-            fn parse(stream: Stream<'a>) -> Result<(Self, Vec<Token<'a>>), Err<Error>> {
+        impl<T> Parse<T> for $name<T> where T: Borrow<str> + Clone {
+            fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
                 $($fn)*()
                     .parse(stream, terminal(eof))
                     .map(|(input, value)| (value, input.into_unexpected()))

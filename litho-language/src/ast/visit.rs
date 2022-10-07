@@ -4,17 +4,17 @@ use super::types::*;
 
 macro_rules! visit {
     ($name:ident, $ty:ident) => {
-        fn $name(&self, node: &'ast $ty<'a>, accumulator: &mut Self::Accumulator) {}
+        fn $name(&self, node: &'ast $ty<T>, accumulator: &mut Self::Accumulator) {}
     };
 }
 
 #[allow(unused_variables)]
-pub trait Visit<'ast, 'a> {
+pub trait Visit<'ast, T> {
     type Accumulator;
 
-    fn visit_recoverable<T>(
+    fn visit_recoverable<U>(
         &self,
-        node: &'ast Recoverable<T>,
+        node: &'ast Recoverable<U>,
         accumulator: &mut Self::Accumulator,
     ) {
     }

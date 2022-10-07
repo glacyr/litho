@@ -16,7 +16,7 @@ mod tests {
     use ariadne::Source;
 
     use super::chk::{Error, Errors, IntoReport};
-    use super::lex::Span;
+    use super::lex::{Span, Token};
     use super::{Document, Parse};
 
     #[test]
@@ -26,16 +26,14 @@ mod tests {
 
         println!("Result: {:#?} (errors: {:#?})", ast, ast.errors());
 
-        for error in ast
-            .errors()
-            .into_iter()
-            .chain(
-                unrecognized
-                    .into_iter()
-                    .map(|token| Error::UnrecognizedTokens {
+        for error in
+            ast.errors()
+                .into_iter()
+                .chain(unrecognized.into_iter().map(|token: Token<&str>| {
+                    Error::UnrecognizedTokens {
                         tokens: vec![token],
-                    }),
-            )
+                    }
+                }))
         {
             error
                 .into_report::<ariadne::ReportBuilder<Span>>()

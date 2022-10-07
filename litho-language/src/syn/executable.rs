@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use wrom::branch::alt;
 use wrom::combinator::opt;
 use wrom::multi::many0;
@@ -10,18 +12,22 @@ use crate::lex::{Name, Token};
 use super::combinators::{float_value, int_value, keyword, name, punctuator, string_value};
 use super::Error;
 
-pub fn executable_document<'a, I>() -> impl RecoverableParser<I, ExecutableDocument<'a>, Error>
+pub fn executable_document<'a, T, I>(
+) -> impl RecoverableParser<I, ExecutableDocument<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         many0(executable_definition()).map(|definitions| ExecutableDocument { definitions })
     })
 }
 
-pub fn executable_definition<'a, I>() -> impl RecoverableParser<I, ExecutableDefinition<'a>, Error>
+pub fn executable_definition<'a, T, I>(
+) -> impl RecoverableParser<I, ExecutableDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -31,9 +37,11 @@ where
     })
 }
 
-pub fn operation_definition<'a, I>() -> impl RecoverableParser<I, OperationDefinition<'a>, Error>
+pub fn operation_definition<'a, T, I>(
+) -> impl RecoverableParser<I, OperationDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         operation_type()
@@ -54,9 +62,10 @@ where
     })
 }
 
-pub fn operation_type<'a, I>() -> impl RecoverableParser<I, OperationType<'a>, Error>
+pub fn operation_type<'a, T, I>() -> impl RecoverableParser<I, OperationType<T>, Error> + 'a
 where
-    I: Iterator<Item = Token<'a>> + Clone + 'a,
+    I: Iterator<Item = Token<T>> + Clone + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -67,9 +76,10 @@ where
     })
 }
 
-pub fn selection_set<'a, I>() -> impl RecoverableParser<I, SelectionSet<'a>, Error>
+pub fn selection_set<'a, T, I>() -> impl RecoverableParser<I, SelectionSet<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -89,9 +99,10 @@ where
     })
 }
 
-pub fn selection<'a, I>() -> impl RecoverableParser<I, Selection<'a>, Error>
+pub fn selection<'a, T, I>() -> impl RecoverableParser<I, Selection<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -102,9 +113,10 @@ where
     })
 }
 
-pub fn field<'a, I>() -> impl RecoverableParser<I, Field<'a>, Error>
+pub fn field<'a, T, I>() -> impl RecoverableParser<I, Field<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -129,7 +141,7 @@ where
                 .and(opt(selection_set()))
                 .flatten()
                 .map(
-                    |(name, arguments, directives, selection_set): (Name<'a>, _, _, _)| Field {
+                    |(name, arguments, directives, selection_set): (Name<T>, _, _, _)| Field {
                         alias: None,
                         name: name.into(),
                         arguments,
@@ -141,9 +153,10 @@ where
     })
 }
 
-pub fn alias<'a, I>() -> impl RecoverableParser<I, Alias<'a>, Error>
+pub fn alias<'a, T, I>() -> impl RecoverableParser<I, Alias<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         name()
@@ -152,9 +165,10 @@ where
     })
 }
 
-pub fn arguments<'a, I>() -> impl RecoverableParser<I, Arguments<'a>, Error>
+pub fn arguments<'a, T, I>() -> impl RecoverableParser<I, Arguments<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -174,9 +188,10 @@ where
     })
 }
 
-pub fn argument<'a, I>() -> impl RecoverableParser<I, Argument<'a>, Error>
+pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Argument<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         name()
@@ -187,9 +202,10 @@ where
     })
 }
 
-pub fn fragment_spread<'a, I>() -> impl RecoverableParser<I, FragmentSpread<'a>, Error>
+pub fn fragment_spread<'a, T, I>() -> impl RecoverableParser<I, FragmentSpread<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("...")
@@ -204,9 +220,10 @@ where
     })
 }
 
-pub fn inline_fragment<'a, I>() -> impl RecoverableParser<I, InlineFragment<'a>, Error>
+pub fn inline_fragment<'a, T, I>() -> impl RecoverableParser<I, InlineFragment<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("...")
@@ -225,9 +242,11 @@ where
     })
 }
 
-pub fn fragment_definition<'a, I>() -> impl RecoverableParser<I, FragmentDefinition<'a>, Error>
+pub fn fragment_definition<'a, T, I>(
+) -> impl RecoverableParser<I, FragmentDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("fragment")
@@ -256,9 +275,10 @@ where
     })
 }
 
-pub fn type_condition<'a, I>() -> impl RecoverableParser<I, TypeCondition<'a>, Error>
+pub fn type_condition<'a, T, I>() -> impl RecoverableParser<I, TypeCondition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         keyword("on")
@@ -267,9 +287,10 @@ where
     })
 }
 
-pub fn value<'a, I>() -> impl RecoverableParser<I, Value<'a>, Error>
+pub fn value<'a, T, I>() -> impl RecoverableParser<I, Value<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -286,9 +307,10 @@ where
     })
 }
 
-pub fn boolean_value<'a, I>() -> impl RecoverableParser<I, BooleanValue<'a>, Error>
+pub fn boolean_value<'a, T, I>() -> impl RecoverableParser<I, BooleanValue<T>, Error> + 'a
 where
-    I: Iterator<Item = Token<'a>> + Clone + 'a,
+    I: Iterator<Item = Token<T>> + Clone + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -298,23 +320,26 @@ where
     })
 }
 
-pub fn null_value<'a, I>() -> impl RecoverableParser<I, NullValue<'a>, Error>
+pub fn null_value<'a, T, I>() -> impl RecoverableParser<I, NullValue<T>, Error> + 'a
 where
-    I: Iterator<Item = Token<'a>> + Clone + 'a,
+    I: Iterator<Item = Token<T>> + Clone + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| keyword("null").map(NullValue))
 }
 
-pub fn enum_value<'a, I>() -> impl RecoverableParser<I, EnumValue<'a>, Error>
+pub fn enum_value<'a, T, I>() -> impl RecoverableParser<I, EnumValue<T>, Error> + 'a
 where
-    I: Iterator<Item = Token<'a>> + Clone + 'a,
+    I: Iterator<Item = Token<T>> + Clone + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| name().map(EnumValue))
 }
 
-pub fn list_value<'a, I>() -> impl RecoverableParser<I, ListValue<'a>, Error>
+pub fn list_value<'a, T, I>() -> impl RecoverableParser<I, ListValue<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     recursive(|| {
         delimited(
@@ -334,9 +359,10 @@ where
     })
 }
 
-pub fn object_value<'a, I>() -> impl RecoverableParser<I, ObjectValue<'a>, Error>
+pub fn object_value<'a, T, I>() -> impl RecoverableParser<I, ObjectValue<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     recursive(|| {
         delimited(
@@ -356,9 +382,10 @@ where
     })
 }
 
-pub fn object_field<'a, I>() -> impl RecoverableParser<I, ObjectField<'a>, Error>
+pub fn object_field<'a, T, I>() -> impl RecoverableParser<I, ObjectField<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         name()
@@ -369,9 +396,11 @@ where
     })
 }
 
-pub fn variable_definitions<'a, I>() -> impl RecoverableParser<I, VariableDefinitions<'a>, Error>
+pub fn variable_definitions<'a, T, I>(
+) -> impl RecoverableParser<I, VariableDefinitions<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("(")
@@ -392,9 +421,11 @@ where
     })
 }
 
-pub fn variable_definition<'a, I>() -> impl RecoverableParser<I, VariableDefinition<'a>, Error>
+pub fn variable_definition<'a, T, I>(
+) -> impl RecoverableParser<I, VariableDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         variable()
@@ -415,9 +446,10 @@ where
     })
 }
 
-pub fn variable<'a, I>() -> impl RecoverableParser<I, Variable<'a>, Error>
+pub fn variable<'a, T, I>() -> impl RecoverableParser<I, Variable<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("$")
@@ -426,9 +458,10 @@ where
     })
 }
 
-pub fn default_value<'a, I>() -> impl RecoverableParser<I, DefaultValue<'a>, Error>
+pub fn default_value<'a, T, I>() -> impl RecoverableParser<I, DefaultValue<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("=")
@@ -437,9 +470,10 @@ where
     })
 }
 
-pub fn ty<'a, I>() -> impl RecoverableParser<I, Type<'a>, Error>
+pub fn ty<'a, T, I>() -> impl RecoverableParser<I, Type<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -450,16 +484,18 @@ where
     })
 }
 
-pub fn named_type<'a, I>() -> impl RecoverableParser<I, NamedType<'a>, Error>
+pub fn named_type<'a, T, I>() -> impl RecoverableParser<I, NamedType<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| name().map(NamedType))
 }
 
-pub fn list_type<'a, I>() -> impl RecoverableParser<I, ListType<'a>, Error>
+pub fn list_type<'a, T, I>() -> impl RecoverableParser<I, ListType<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         delimited(
@@ -479,9 +515,10 @@ where
     })
 }
 
-pub fn non_null_type<'a, I>() -> impl RecoverableParser<I, NonNullType<'a>, Error>
+pub fn non_null_type<'a, T, I>() -> impl RecoverableParser<I, NonNullType<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
@@ -493,16 +530,18 @@ where
     })
 }
 
-pub fn directives<'a, I>() -> impl RecoverableParser<I, Directives<'a>, Error>
+pub fn directives<'a, T, I>() -> impl RecoverableParser<I, Directives<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| many0(directive()).map(|directives| Directives { directives }))
 }
 
-pub fn directive<'a, I>() -> impl RecoverableParser<I, Directive<'a>, Error>
+pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Directive<T>, Error> + 'a
 where
-    I: Input<Item = Token<'a>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    T: Borrow<str> + Clone + 'a,
 {
     wrom::recursive(|| {
         punctuator("@")

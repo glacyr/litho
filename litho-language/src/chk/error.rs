@@ -7,12 +7,12 @@ use super::diagnostics::{LabelBuilder, ReportBuilder};
 use super::IntoReport;
 
 #[derive(Debug)]
-pub enum Error<'ast, 'a> {
-    UnrecognizedTokens { tokens: Vec<Token<'a>> },
+pub enum Error<'ast, T> {
+    UnrecognizedTokens { tokens: Vec<Token<T>> },
     Recoverable(&'ast MissingToken),
 }
 
-impl<'ast, 'a> IntoReport for Error<'ast, 'a> {
+impl<'ast, T> IntoReport for Error<'ast, T> {
     fn into_report<R>(self) -> R::Report
     where
         R: ReportBuilder,

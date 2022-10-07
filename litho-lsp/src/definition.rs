@@ -1,12 +1,13 @@
 use litho_language::ast::*;
+use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
 use super::{line_col_to_offset, Document};
 
-pub struct DefinitionProvider<'ast, 'a>(&'ast Document<'a>);
+pub struct DefinitionProvider<'ast>(&'ast Document);
 
-impl DefinitionProvider<'_, '_> {
-    pub fn new<'ast, 'a>(document: &'ast Document<'a>) -> DefinitionProvider<'ast, 'a> {
+impl DefinitionProvider<'_> {
+    pub fn new<'ast>(document: &'ast Document) -> DefinitionProvider<'ast> {
         DefinitionProvider(document)
     }
 

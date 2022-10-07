@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::VecDeque;
 
 use logos::Logos;
@@ -8,9 +9,9 @@ use super::raw::{raw_lexer, RawLexer, RawToken};
 use super::{Span, TokenKind};
 
 #[derive(Clone, Copy, Debug)]
-pub struct Error<'a>(RawToken<'a>);
+pub struct Error<T>(RawToken<T>);
 
-impl<'a> Error<'a> {
+impl<T> Error<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
@@ -57,17 +58,20 @@ impl<'a> Error<'a> {
 ///
 /// _Source: [Sec. 2.1.9 Names](https://spec.graphql.org/October2021/#sec-Names)_
 #[derive(Clone, Copy, Debug)]
-pub struct Name<'a>(RawToken<'a>);
+pub struct Name<T>(RawToken<T>);
 
-impl<'a> Name<'a> {
+impl<T> Name<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 }
 
-impl<'a> AsRef<str> for Name<'a> {
+impl<T> AsRef<str> for Name<T>
+where
+    T: Borrow<str>,
+{
     fn as_ref(&self) -> &str {
-        &self.0.source
+        self.0.source.borrow()
     }
 }
 
@@ -87,25 +91,28 @@ impl<'a> AsRef<str> for Name<'a> {
 /// __Implementation note:__ any punctuator that's not part of the grammar
 /// listed above is considered an [Error].
 #[derive(Clone, Copy, Debug)]
-pub struct Punctuator<'a>(RawToken<'a>);
+pub struct Punctuator<T>(RawToken<T>);
 
-impl<'a> Punctuator<'a> {
+impl<T> Punctuator<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 }
 
-impl<'a> AsRef<str> for Punctuator<'a> {
+impl<T> AsRef<str> for Punctuator<T>
+where
+    T: Borrow<str>,
+{
     fn as_ref(&self) -> &str {
-        &self.0.source
+        self.0.source.borrow()
     }
 }
 
 /// Represents an int value (literal) in a GraphQL document.
 #[derive(Clone, Copy, Debug)]
-pub struct IntValue<'a>(RawToken<'a>);
+pub struct IntValue<T>(RawToken<T>);
 
-impl<'a> IntValue<'a> {
+impl<T> IntValue<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
@@ -113,51 +120,58 @@ impl<'a> IntValue<'a> {
 
 /// Represents a float value (literal) in a GraphQL document.
 #[derive(Clone, Copy, Debug)]
-pub struct FloatValue<'a>(RawToken<'a>);
+pub struct FloatValue<T>(RawToken<T>);
 
-impl<'a> FloatValue<'a> {
+impl<T> FloatValue<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct StringValue<'a>(RawToken<'a>);
+pub struct StringValue<T>(RawToken<T>);
 
-impl<'a> StringValue<'a> {
+impl<T> StringValue<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+}
 
-    pub fn to_string(&self) -> String {
-        match self.0.source.starts_with("\"\"\"") {
-            true => unindent(&self.0.source[3..self.0.source.len() - 3]),
-            false => self.0.source[1..self.0.source.len() - 1].replace("\\\"", "\""),
+impl<T> ToString for StringValue<T>
+where
+    T: ToString,
+{
+    fn to_string(&self) -> String {
+        let source = self.0.source.to_string();
+
+        match source.starts_with("\"\"\"") {
+            true => unindent(&source[3..source.len() - 3]),
+            false => source[1..source.len() - 1].replace("\\\"", "\""),
         }
     }
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Token<'a> {
-    Error(Error<'a>),
+pub enum Token<T> {
+    Error(Error<T>),
 
     /// Represents a [Name] in GraphQL.
-    Name(Name<'a>),
+    Name(Name<T>),
 
     /// Represents a [Punctuator] in GraphQL.
-    Punctuator(Punctuator<'a>),
+    Punctuator(Punctuator<T>),
 
     /// Represents an [IntValue] in GraphQL.
-    IntValue(IntValue<'a>),
+    IntValue(IntValue<T>),
 
     /// Represents a [FloatValue] in GraphQL.
-    FloatValue(FloatValue<'a>),
+    FloatValue(FloatValue<T>),
 
     /// Represents a [StringValue] in GraphQL.
-    StringValue(StringValue<'a>),
+    StringValue(StringValue<T>),
 }
 
-impl<'a> Token<'a> {
+impl<T> Token<T> {
     pub fn span(&self) -> Span {
         match self {
             Token::Error(token) => token.0.span,
@@ -170,8 +184,8 @@ impl<'a> Token<'a> {
     }
 }
 
-impl<'a> From<RawToken<'a>> for Token<'a> {
-    fn from(raw: RawToken<'a>) -> Self {
+impl<T> From<RawToken<T>> for Token<T> {
+    fn from(raw: RawToken<T>) -> Self {
         match raw.kind {
             TokenKind::Error => Token::Error(Error(raw)),
             TokenKind::Name => Token::Name(Name(raw)),
@@ -185,12 +199,15 @@ impl<'a> From<RawToken<'a>> for Token<'a> {
 }
 
 #[derive(Clone)]
-pub struct Lexer<'a> {
-    lexer: RawLexer<'a>,
+pub struct Lexer<'a, T> {
+    lexer: RawLexer<'a, T>,
 }
 
-impl<'a> Lexer<'a> {
-    pub fn exact(self) -> ExactLexer<'a> {
+impl<'a, T> Lexer<'a, T>
+where
+    T: From<&'a str>,
+{
+    pub fn exact(self) -> ExactLexer<T> {
         ExactLexer {
             tokens: self.collect(),
             last_span: None,
@@ -198,8 +215,11 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Iterator for Lexer<'a> {
-    type Item = Token<'a>;
+impl<'a, T> Iterator for Lexer<'a, T>
+where
+    T: From<&'a str>,
+{
+    type Item = Token<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.lexer.next()?.into())
@@ -207,12 +227,12 @@ impl<'a> Iterator for Lexer<'a> {
 }
 
 #[derive(Clone)]
-pub struct ExactLexer<'a> {
-    tokens: VecDeque<Token<'a>>,
+pub struct ExactLexer<T> {
+    tokens: VecDeque<Token<T>>,
     last_span: Option<Span>,
 }
 
-impl<'a> ExactLexer<'a> {
+impl<T> ExactLexer<T> {
     pub fn span(&self) -> Span {
         match (self.last_span.as_ref(), self.tokens.get(0)) {
             (Some(&left), Some(right)) => Span::between(left, right.span()),
@@ -223,8 +243,8 @@ impl<'a> ExactLexer<'a> {
     }
 }
 
-impl<'a> Iterator for ExactLexer<'a> {
-    type Item = Token<'a>;
+impl<T> Iterator for ExactLexer<T> {
+    type Item = Token<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let token = self.tokens.pop_front();
@@ -233,13 +253,13 @@ impl<'a> Iterator for ExactLexer<'a> {
     }
 }
 
-impl<'a> InputLength for ExactLexer<'a> {
+impl<T> InputLength for ExactLexer<T> {
     fn input_len(&self) -> usize {
         self.tokens.len()
     }
 }
 
-pub fn lexer(source_id: usize, source: &str) -> Lexer {
+pub fn lexer<T>(source_id: usize, source: &str) -> Lexer<T> {
     let _: <TokenKind as Logos>::Source;
 
     Lexer {
@@ -252,9 +272,12 @@ mod display {
 
     use super::Name;
 
-    impl Display for Name<'_> {
+    impl<T> Display for Name<T>
+    where
+        T: Display,
+    {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            f.write_str(self.as_ref())
+            self.0.source.fmt(f)
         }
     }
 }

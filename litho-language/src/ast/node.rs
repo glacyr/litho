@@ -2,10 +2,10 @@ use crate::lex::Span;
 
 use super::{Recoverable, Visit};
 
-pub trait Node<'a> {
+pub trait Node<T> {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, 'a>;
+        V: Visit<'ast, T>;
 
     fn span(&self) -> Span {
         let mut span = None;
@@ -16,7 +16,7 @@ pub trait Node<'a> {
 
 pub struct SpanCollector;
 
-impl<'ast, 'a> Visit<'ast, 'a> for SpanCollector {
+impl<'ast, T> Visit<'ast, T> for SpanCollector {
     type Accumulator = Option<Span>;
 
     fn visit_span(&self, span: crate::lex::Span, accumulator: &mut Self::Accumulator) {
@@ -24,40 +24,40 @@ impl<'ast, 'a> Visit<'ast, 'a> for SpanCollector {
     }
 }
 
-impl<'a, T> Node<'a> for Vec<T>
+impl<T, N> Node<T> for Vec<N>
 where
-    T: Node<'a>,
+    N: Node<T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, 'a>,
+        V: Visit<'ast, T>,
     {
         self.iter()
             .for_each(|item| item.traverse(visitor, accumulator))
     }
 }
 
-impl<'a, T> Node<'a> for Option<T>
+impl<T, N> Node<T> for Option<N>
 where
-    T: Node<'a>,
+    N: Node<T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, 'a>,
+        V: Visit<'ast, T>,
     {
         self.iter()
             .for_each(|item| item.traverse(visitor, accumulator))
     }
 }
 
-impl<'a, A, B> Node<'a> for (A, B)
+impl<T, A, B> Node<T> for (A, B)
 where
-    A: Node<'a>,
-    B: Node<'a>,
+    A: Node<T>,
+    B: Node<T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, 'a>,
+        V: Visit<'ast, T>,
     {
         let (a, b) = self;
         a.traverse(visitor, accumulator);
@@ -65,13 +65,13 @@ where
     }
 }
 
-impl<'a, T> Node<'a> for Recoverable<T>
+impl<T, N> Node<T> for Recoverable<N>
 where
-    T: Node<'a>,
+    N: Node<T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, 'a>,
+        V: Visit<'ast, T>,
     {
         visitor.visit_recoverable(self, accumulator);
 
@@ -84,10 +84,10 @@ where
 
 macro_rules! node {
     ($ty:ident, $visit:ident, $($fields:ident),*) => {
-        impl<'a> Node<'a> for $ty<'a> {
+        impl<T> Node<T> for $ty<T> {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, 'a>,
+                V: Visit<'ast, T>,
             {
                 visitor.$visit(self, accumulator);
 
@@ -103,10 +103,10 @@ pub(crate) use node;
 
 macro_rules! node_enum {
     ($ty:ident, $visit:ident, $($variants:ident),* $(,)?) => {
-        impl<'a> Node<'a> for $ty<'a> {
+        impl<T> Node<T> for $ty<T> {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, 'a>,
+                V: Visit<'ast, T>,
             {
                 visitor.$visit(self, accumulator);
 
@@ -124,10 +124,10 @@ pub(crate) use node_enum;
 
 macro_rules! node_unit {
     ($ty:ident, $visit:ident) => {
-        impl<'a> Node<'a> for $ty<'a> {
+        impl<T> Node<T> for $ty<T> {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, 'a>,
+                V: Visit<'ast, T>,
             {
                 visitor.$visit(self, accumulator);
 
