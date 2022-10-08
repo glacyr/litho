@@ -1,5 +1,6 @@
 use litho_language::chk::{collect_errors, IntoReport};
 use litho_language::{Document as Ast, Parse};
+use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::{Diagnostic, Url};
 
@@ -12,6 +13,7 @@ pub struct Document {
     text: SmolStr,
     reports: Vec<ReportBuilder>,
     ast: Ast<SmolStr>,
+    database: Database<SmolStr>,
 }
 
 impl Document {
@@ -26,6 +28,7 @@ impl Document {
                 .into_iter()
                 .map(|error| error.into_report::<ReportBuilder>())
                 .collect(),
+            database: Database::new(&result.0),
             ast: result.0,
         }
     }
@@ -44,6 +47,10 @@ impl Document {
 
     pub fn ast(&self) -> &Ast<SmolStr> {
         &self.ast
+    }
+
+    pub fn database(&self) -> &Database<SmolStr> {
+        &self.database
     }
 
     pub fn diagnostics(&self) -> impl Iterator<Item = Diagnostic> + '_ {

@@ -14,6 +14,9 @@ pub trait Parse<T>: Sized {
     where
         T: From<&'a str>,
     {
-        Self::parse(Stream::from(lexer(source_id, input).exact()))
+        let lexer = lexer(source_id, input).exact();
+        let stream = Stream::from(&lexer);
+        eprintln!("Parser is done!");
+        Self::parse(stream)
     }
 }

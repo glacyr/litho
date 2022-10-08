@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::iter::once;
 
 use nom::combinator::eof;
@@ -79,7 +78,7 @@ where
 pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
-    T: Borrow<str> + Clone + 'a,
+    T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     many0(definition()).map(|definitions| Document { definitions })
 }
@@ -87,7 +86,7 @@ where
 pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
-    T: Borrow<str> + Clone + 'a,
+    T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     alt((
         executable::executable_definition().map(Definition::ExecutableDefinition),
@@ -102,10 +101,10 @@ pub fn parse_from_str<'a, T, P, O>(
     input: &'a str,
 ) -> Result<(Vec<Token<T>>, O), Error>
 where
-    P: RecoverableParser<Stream<T>, O, Error>,
+    P: for<'b> RecoverableParser<Stream<'b, T>, O, Error>,
     T: From<&'a str> + Clone,
 {
-    match parser.parse(lexer(source_id, input).exact().into(), terminal(eof)) {
+    match parser.parse((&lexer(source_id, input).exact()).into(), terminal(eof)) {
         Ok((input, result)) => Ok((input.into_unexpected(), result)),
         Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
         Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
@@ -114,7 +113,7 @@ where
 
 macro_rules! parse {
     ($name:ident, $($fn:tt)*) => {
-        impl<T> Parse<T> for $name<T> where T: Borrow<str> + Clone {
+        impl<T> Parse<T> for $name<T> where T: for<'b> PartialEq<&'b str> + Clone {
             fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
                 $($fn)*()
                     .parse(stream, terminal(eof))

@@ -21,7 +21,77 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let source = r#"scalar Example @specifiedBy(url: "https://example.com")"#;
+        let source = r#"type Query {
+            feedbackQuestionCategory(id: ID!): FeedbackQuestionCategory!
+            feedbackQuestionCategories(isArchived: Boolean, before: ID, after: ID, first: Int, last: Int): FeedbackQuestionCategoryConnection!
+        }
+        
+        type Mutation {
+            createFeedbackQuestionCategory(input: CreateFeedbackQuestionCategoryInput!): CreateFeedbackQuestionCategoryResponse!
+            updateFeedbackQuestionCategory(input: UpdateFeedbackQuestionCategoryInput!): UpdateFeedbackQuestionCategoryResponse!
+            reorderFeedbackQuestionCategory(input: ReorderFeedbackQuestionCategoryInput!): ReorderFeedbackQuestionCategoryResponse!
+            archiveFeedbackQuestionCategory(input: ArchiveFeedbackQuestionCategoryInput!): ArchiveFeedbackQuestionCategoryResponse!
+            restoreFeedbackQuestionCategory(input: RestoreFeedbackQuestionCategoryInput!): RestoreFeedbackQuestionCategoryResponse!
+        }
+        
+        type FeedbackQuestionCategoryConnection {
+            edges: [FeedbackQuestionCategoryEdge!]!
+            pageInfo: PageInfo!
+        }
+        
+        type FeedbackQuestionCategoryEdge {
+            node: FeedbackQuestionCategory!
+            cursor: ID!
+        }
+        
+        type FeedbackQuestionCategory {
+            id: ID!
+            name: LocalizedString!
+            order: Float!
+            isArchived: Boolean!
+        }
+        
+        input CreateFeedbackQuestionCategoryInput {
+            name: LocalizedString!
+        }
+        
+        type CreateFeedbackQuestionCategoryResponse {
+            feedbackQuestionCategory: FeedbackQuestionCategory!
+        }
+        
+        input UpdateFeedbackQuestionCategoryInput {
+            id: ID!
+            name: LocalizedString!
+        }
+        
+        type UpdateFeedbackQuestionCategoryResponse {
+            feedbackQuestionCategory: FeedbackQuestionCategory!
+        }
+        
+        input ReorderFeedbackQuestionCategoryInput {
+            id: ID!
+            order: Float!
+        }
+        
+        type ReorderFeedbackQuestionCategoryResponse {
+            feedbackQuestionCategory: FeedbackQuestionCategory!
+        }
+        
+        input ArchiveFeedbackQuestionCategoryInput {
+            id: ID!
+        }
+        
+        type ArchiveFeedbackQuestionCategoryResponse {
+            feedbackQuestionCategory: FeedbackQuestionCategory!
+        }
+        
+        input RestoreFeedbackQuestionCategoryInput {
+            id: ID!
+        }
+        
+        type RestoreFeedbackQuestionCategoryResponse {
+            feedbackQuestionCategory: FeedbackQuestionCategory!
+        }"#;
         let (ast, unrecognized) = Document::parse_from_str(0, source).unwrap();
 
         println!("Result: {:#?} (errors: {:#?})", ast, ast.errors());

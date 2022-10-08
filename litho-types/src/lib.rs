@@ -1,96 +1,131 @@
+use std::borrow::Borrow;
+use std::hash::Hash;
+use std::sync::Arc;
+
 use litho_language::ast::*;
 use multimap::MultiMap;
 
-pub struct Database<'ast, 'a> {
-    operation_definitions_by_name: MultiMap<&'ast str, &'ast OperationDefinition<'a>>,
-    fragment_definitions_by_name: MultiMap<&'ast str, &'ast FragmentDefinition<'a>>,
-    type_definitions_by_name: MultiMap<&'ast str, &'ast TypeDefinition<'a>>,
-    type_extensions_by_name: MultiMap<&'ast str, &'ast TypeExtension<'a>>,
-    field_definitions: MultiMap<&'ast str, &'ast FieldDefinition<'a>>,
+#[derive(Debug)]
+pub struct Database<T>
+where
+    T: Eq + Hash,
+{
+    operation_definitions_by_name: MultiMap<T, Arc<OperationDefinition<T>>>,
+    fragment_definitions_by_name: MultiMap<T, Arc<FragmentDefinition<T>>>,
+    type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
+    type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
+    field_definitions: MultiMap<T, Arc<FieldDefinition<T>>>,
+}
+
+impl<T> Default for Database<T>
+where
+    T: Eq + Hash,
+{
+    fn default() -> Self {
+        Database {
+            operation_definitions_by_name: Default::default(),
+            fragment_definitions_by_name: Default::default(),
+            type_definitions_by_name: Default::default(),
+            type_extensions_by_name: Default::default(),
+            field_definitions: Default::default(),
+        }
+    }
+}
+
+impl<T> Database<T>
+where
+    T: Clone + std::fmt::Debug + Eq + Hash,
+{
+    pub fn new(document: &Document<T>) -> Database<T> {
+        eprintln!("Building database.");
+
+        let mut database = Default::default();
+        document.traverse(&Index, &mut database);
+        database
+    }
+
+    pub fn type_definitions_by_name(&self, name: &T) -> impl Iterator<Item = &TypeDefinition<T>> {
+        self.type_definitions_by_name
+            .get_vec(name)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .iter()
+            .map(AsRef::as_ref)
+    }
 }
 
 pub struct Index;
 
-impl<'ast, 'a> Visit<'ast, 'a> for Index
+impl<'ast, T> Visit<'ast, T> for Index
 where
-    'a: 'ast,
+    T: Clone + std::fmt::Debug + Eq + Hash + 'ast,
 {
-    type Accumulator = Database<'ast, 'a>;
-
-    fn visit_operation_definition(
-        &self,
-        node: &'ast OperationDefinition<'a>,
-        accumulator: &mut Self::Accumulator,
-    ) {
-        if let Some(name) = node.name.ok() {
-            accumulator
-                .operation_definitions_by_name
-                .insert(name.as_ref(), node);
-        }
-    }
-
-    fn visit_fragment_definition(
-        &self,
-        node: &'ast FragmentDefinition<'a>,
-        accumulator: &mut Self::Accumulator,
-    ) {
-        if let Some(name) = node.fragment_name.ok() {
-            accumulator
-                .fragment_definitions_by_name
-                .insert(name.as_ref(), node);
-        }
-    }
+    type Accumulator = Database<T>;
 
     fn visit_type_definition(
         &self,
-        node: &'ast TypeDefinition<'a>,
+        node: &'ast Arc<TypeDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
+        eprintln!("Visiting operation definition.");
+
         if let Some(name) = node.name().ok() {
+            eprintln!("Got a name: {:#?}", name.as_ref());
             accumulator
                 .type_definitions_by_name
-                .insert(name.as_ref(), node);
+                .insert(name.as_ref().clone(), node.clone());
         }
     }
 
-    fn visit_type_extension(
-        &self,
-        node: &'ast TypeExtension<'a>,
-        accumulator: &mut Self::Accumulator,
-    ) {
-        if let Some(name) = node.name().ok() {
-            accumulator
-                .type_extensions_by_name
-                .insert(name.as_ref(), node);
-        }
-    }
+    // fn visit_fragment_definition(
+    //     &self,
+    //     node: &'ast FragmentDefinition<T>,
+    //     accumulator: &mut Self::Accumulator,
+    // ) {
+    //     if let Some(name) = node.fragment_name.ok() {
+    //         accumulator
+    //             .fragment_definitions_by_name
+    //             .insert(name.as_ref().clone(), node.clone());
+    //     }
+    // }
 
-    fn visit_object_type_definition(
-        &self,
-        node: &'ast ObjectTypeDefinition<'a>,
-        accumulator: &mut Self::Accumulator,
-    ) {
-        if let Some(name) = node.name.ok() {
-            for field in node
-                .fields_definition
-                .iter()
-                .flat_map(|definition| definition.definitions.iter())
-            {
-                accumulator.field_definitions.insert(name.as_ref(), field);
-            }
-        }
-    }
-}
+    // fn visit_type_definition(
+    //     &self,
+    //     node: &'ast TypeDefinition<T>,
+    //     accumulator: &mut Self::Accumulator,
+    // ) {
+    //     if let Some(name) = node.name().ok() {
+    //         accumulator
+    //             .type_definitions_by_name
+    //             .insert(name.as_ref().clone(), node.clone());
+    //     }
+    // }
 
-pub trait Query<'ast, 'a> {
-    fn type_definitions_by_name<'b>(&'b self, name: &'b str) -> &'b [&'ast TypeDefinition<'a>];
-}
+    // fn visit_type_extension(
+    //     &self,
+    //     node: &'ast TypeExtension<T>,
+    //     accumulator: &mut Self::Accumulator,
+    // ) {
+    //     if let Some(name) = node.name().ok() {
+    //         accumulator
+    //             .type_extensions_by_name
+    //             .insert(name.as_ref().clone(), node.clone());
+    //     }
+    // }
 
-impl<'ast, 'a> Query<'ast, 'a> for Database<'ast, 'a> {
-    fn type_definitions_by_name<'b>(&'b self, name: &'b str) -> &'b [&'ast TypeDefinition<'a>] {
-        self.type_definitions_by_name
-            .get_vec(&name)
-            .map(Vec::as_slice)
-            .unwrap_or_default()
-    }
+    // fn visit_object_type_definition(
+    //     &self,
+    //     node: &'ast ObjectTypeDefinition<T>,
+    //     accumulator: &mut Self::Accumulator,
+    // ) {
+    //     if let Some(name) = node.name.ok() {
+    //         for field in node
+    //             .fields_definition
+    //             .iter()
+    //             .flat_map(|definition| definition.definitions.iter())
+    //         {
+    //             accumulator.field_definitions.insert(name.as_ref(), field);
+    //         }
+    //     }
+    // }
 }

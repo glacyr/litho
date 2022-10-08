@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
 
 use super::{node, node_enum, node_unit, Node, Visit};
@@ -84,7 +86,7 @@ node!(ExecutableDocument, visit_executable_document, definitions);
 
 #[derive(Clone, Debug)]
 pub enum ExecutableDefinition<T> {
-    OperationDefinition(OperationDefinition<T>),
+    OperationDefinition(Arc<OperationDefinition<T>>),
     FragmentDefinition(FragmentDefinition<T>),
 }
 
@@ -105,7 +107,7 @@ pub struct OperationDefinition<T> {
 }
 
 node!(
-    OperationDefinition,
+    Arc<OperationDefinition>,
     visit_operation_definition,
     ty,
     name,
@@ -444,7 +446,7 @@ node!(TypeSystemDocument, visit_type_system_document, definitions);
 #[derive(Clone, Debug)]
 pub enum TypeSystemDefinition<T> {
     SchemaDefinition(SchemaDefinition<T>),
-    TypeDefinition(TypeDefinition<T>),
+    TypeDefinition(Arc<TypeDefinition<T>>),
     DirectiveDefinition(DirectiveDefinition<T>),
 }
 
@@ -578,7 +580,7 @@ pub enum TypeDefinition<T> {
 }
 
 node_enum!(
-    TypeDefinition,
+    Arc<TypeDefinition>,
     visit_type_definition,
     ScalarTypeDefinition,
     ObjectTypeDefinition,

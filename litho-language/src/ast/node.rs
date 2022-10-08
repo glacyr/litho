@@ -83,8 +83,14 @@ where
 }
 
 macro_rules! node {
+    (Arc<$ty:ident>, $visit:ident, $($fields:ident),*) => {
+        node!(Arc<$ty<T>>, $visit, $($fields),*);
+    };
     ($ty:ident, $visit:ident, $($fields:ident),*) => {
-        impl<T> Node<T> for $ty<T> {
+        node!($ty<T>, $visit, $($fields),*);
+    };
+    ($ty:ty, $visit:ident, $($fields:ident),*) => {
+        impl<T> Node<T> for $ty {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
                 V: Visit<'ast, T>,
@@ -102,6 +108,31 @@ macro_rules! node {
 pub(crate) use node;
 
 macro_rules! node_enum {
+    (Arc<$ty:ident>, $visit:ident, $($variants:ident),* $(,)?) => {
+        impl<T> Node<T> for $ty<T> {
+            fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
+            where
+                V: Visit<'ast, T>,
+            {
+                match self {
+                    $(
+                        Self::$variants(node) => node.traverse(visitor, accumulator),
+                    )*
+                }
+            }
+        }
+
+        impl<T> Node<T> for Arc<$ty<T>> {
+            fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
+            where
+                V: Visit<'ast, T>,
+            {
+                visitor.$visit(self, accumulator);
+
+                self.as_ref().traverse(visitor, accumulator);
+            }
+        }
+    };
     ($ty:ident, $visit:ident, $($variants:ident),* $(,)?) => {
         impl<T> Node<T> for $ty<T> {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)

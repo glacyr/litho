@@ -66,11 +66,8 @@ impl<T> Name<T> {
     }
 }
 
-impl<T> AsRef<str> for Name<T>
-where
-    T: Borrow<str>,
-{
-    fn as_ref(&self) -> &str {
+impl<T> AsRef<T> for Name<T> {
+    fn as_ref(&self) -> &T {
         self.0.source.borrow()
     }
 }
@@ -99,11 +96,8 @@ impl<T> Punctuator<T> {
     }
 }
 
-impl<T> AsRef<str> for Punctuator<T>
-where
-    T: Borrow<str>,
-{
-    fn as_ref(&self) -> &str {
+impl<T> AsRef<T> for Punctuator<T> {
+    fn as_ref(&self) -> &T {
         self.0.source.borrow()
     }
 }
@@ -227,8 +221,58 @@ where
 }
 
 #[derive(Clone)]
+pub struct FastLexer<'a, T> {
+    tokens: &'a [Token<T>],
+    position: usize,
+    last_span: Option<Span>,
+}
+
+impl<'a, T> FastLexer<'a, T> {
+    pub fn new(tokens: &'a [Token<T>]) -> FastLexer<'a, T> {
+        FastLexer {
+            tokens,
+            position: 0,
+            last_span: Default::default(),
+        }
+    }
+
+    pub fn span(&self) -> Span {
+        match (self.last_span.as_ref(), self.tokens.get(self.position)) {
+            (Some(&left), Some(right)) => Span::between(left, right.span()),
+            (Some(&left), None) => left.collapse_to_end(),
+            (None, Some(right)) => right.span().collapse_to_start(),
+            (None, None) => todo!(),
+        }
+    }
+}
+
+impl<'a, T> Iterator for FastLexer<'a, T>
+where
+    T: Clone,
+{
+    type Item = Token<T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.tokens.get(self.position) {
+            Some(token) => {
+                self.position += 1;
+                self.last_span.replace(token.span());
+                Some(token.clone())
+            }
+            None => None,
+        }
+    }
+}
+
+impl<'a, T> InputLength for FastLexer<'a, T> {
+    fn input_len(&self) -> usize {
+        self.tokens.len() - self.position
+    }
+}
+
+#[derive(Clone)]
 pub struct ExactLexer<T> {
-    tokens: VecDeque<Token<T>>,
+    pub tokens: VecDeque<Token<T>>,
     last_span: Option<Span>,
 }
 

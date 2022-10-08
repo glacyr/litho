@@ -1,35 +1,39 @@
 use nom::InputLength;
 use wrom::Input;
 
-use crate::lex::{ExactLexer, Token};
+use crate::lex::{ExactLexer, FastLexer, Token};
 
 use super::{Missing, MissingToken};
 
 #[derive(Clone)]
-pub struct Stream<T> {
-    lexer: ExactLexer<T>,
+pub struct Stream<'a, T> {
+    lexer: FastLexer<'a, T>,
     unexpected: Vec<Token<T>>,
 }
 
-impl<T> Stream<T> {
+impl<'a, T> Stream<'a, T> {
     pub fn into_unexpected<U>(self) -> U
     where
+        T: Clone,
         U: FromIterator<Token<T>>,
     {
         self.lexer.chain(self.unexpected).collect()
     }
 }
 
-impl<T> From<ExactLexer<T>> for Stream<T> {
-    fn from(lexer: ExactLexer<T>) -> Self {
+impl<'a, T> From<&'a ExactLexer<T>> for Stream<'a, T> {
+    fn from(lexer: &'a ExactLexer<T>) -> Self {
         Stream {
-            lexer,
+            lexer: FastLexer::new(lexer.tokens.as_slices().0),
             unexpected: vec![],
         }
     }
 }
 
-impl<T> Iterator for Stream<T> {
+impl<'a, T> Iterator for Stream<'a, T>
+where
+    T: Clone,
+{
     type Item = Token<T>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -37,19 +41,19 @@ impl<T> Iterator for Stream<T> {
     }
 }
 
-impl<T> Extend<Token<T>> for Stream<T> {
+impl<'a, T> Extend<Token<T>> for Stream<'a, T> {
     fn extend<I: IntoIterator<Item = Token<T>>>(&mut self, iter: I) {
         self.unexpected.extend(iter)
     }
 }
 
-impl<T> InputLength for Stream<T> {
+impl<'a, T> InputLength for Stream<'a, T> {
     fn input_len(&self) -> usize {
         self.lexer.input_len()
     }
 }
 
-impl<T> Input for Stream<T>
+impl<'a, T> Input for Stream<'a, T>
 where
     T: Clone,
 {

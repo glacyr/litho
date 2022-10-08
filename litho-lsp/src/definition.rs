@@ -2,7 +2,7 @@ use litho_language::ast::*;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
-use super::{line_col_to_offset, Document};
+use super::{line_col_to_offset, span_to_range, Document};
 
 pub struct DefinitionProvider<'ast>(&'ast Document);
 
@@ -12,73 +12,43 @@ impl DefinitionProvider<'_> {
     }
 
     pub fn goto_definition(&self, position: Position) -> Option<GotoDefinitionResponse> {
-        // let index = line_col_to_offset(self.0.text(), position.line, position.character);
-        // let mut hover = None;
+        let index = line_col_to_offset(self.0.text(), position.line, position.character);
+        let mut definition = None;
 
-        // self.0.ast().traverse(&DefinitionVisitor(index), &mut hover);
+        self.0
+            .ast()
+            .traverse(&DefinitionVisitor(self.0, index), &mut definition);
 
-        // hover
-
-        Some(GotoDefinitionResponse::Scalar(Location {
-            uri: self.0.url().clone(),
-            range: Range {
-                start: Position {
-                    line: 0,
-                    character: 0,
-                },
-                end: Position {
-                    line: 0,
-                    character: 0,
-                },
-            },
-        }))
+        definition
     }
 }
 
-// struct DefinitionVisitor(usize);
+struct DefinitionVisitor<'ast>(&'ast Document, usize);
 
-// impl<'ast, 'a> Visit<'ast, 'a> for DefinitionVisitor {
-//     type Accumulator = Option<Definition>;
+impl<'ast, 'a> Visit<'ast, SmolStr> for DefinitionVisitor<'ast> {
+    type Accumulator = Option<GotoDefinitionResponse>;
 
-//     fn visit_object_type_definition(
-//         &self,
-//         node: &'ast ObjectTypeDefinition<'a>,
-//         accumulator: &mut Self::Accumulator,
-//     ) {
-//         if node.ty.span().joined(node.name.span()).contains(self.0) {
-//             accumulator.replace(Definition {
-//                 contents: DefinitionContents::Scalar(MarkedString::String(format!(
-//                     "```\ntype {}\n```\n\n---\n\n{}",
-//                     node.name,
-//                     node.description
-//                         .as_ref()
-//                         .map(|description| description.to_string())
-//                         .unwrap_or_default()
-//                 ))),
-//                 range: None,
-//             });
-//         } else {
-//             for field in node
-//                 .fields_definition
-//                 .iter()
-//                 .flat_map(|fields| fields.definitions.iter())
-//             {
-//                 if field.name.span().contains(self.0) {
-//                     accumulator.replace(Definition {
-//                         contents: DefinitionContents::Scalar(MarkedString::String(format!(
-//                             "```\ntype {}\n{}: ...\n```\n\n---\n\n{}",
-//                             node.name,
-//                             field.name,
-//                             field
-//                                 .description
-//                                 .as_ref()
-//                                 .map(|description| description.to_string())
-//                                 .unwrap_or_default()
-//                         ))),
-//                         range: None,
-//                     });
-//                 }
-//             }
-//         }
-//     }
-// }
+    fn visit_named_type(
+        &self,
+        node: &'ast NamedType<SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if node.span().contains(self.1) {
+            eprintln!("Searching definition of: {:?}", node.0.as_ref());
+            eprintln!("Database: {:#?}", self.0.database());
+            if let Some(definition) = self
+                .0
+                .database()
+                .type_definitions_by_name(node.0.as_ref())
+                .next()
+            {
+                eprintln!("Found definition: {:#?}", definition);
+
+                accumulator.replace(GotoDefinitionResponse::Scalar(Location {
+                    uri: self.0.url().clone(),
+                    range: span_to_range(self.0.text(), definition.name().span()),
+                }));
+            }
+        }
+    }
+}

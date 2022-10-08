@@ -14,7 +14,7 @@ use definition::DefinitionProvider;
 use document::Document;
 use hover::HoverProvider;
 use store::Store;
-use util::line_col_to_offset;
+use util::{line_col_to_offset, span_to_range};
 
 #[derive(Debug)]
 struct Backend {

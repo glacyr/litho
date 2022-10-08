@@ -1,8 +1,14 @@
+use std::sync::Arc;
+
 use crate::lex::{FloatValue, IntValue, Span, StringValue};
 
 use super::types::*;
 
 macro_rules! visit {
+    ($name:ident, Arc<$ty:ident>) => {
+        fn $name(&self, node: &'ast Arc<$ty<T>>, accumulator: &mut Self::Accumulator) {}
+    };
+
     ($name:ident, $ty:ident) => {
         fn $name(&self, node: &'ast $ty<T>, accumulator: &mut Self::Accumulator) {}
     };
@@ -25,7 +31,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_definition, Definition);
     visit!(visit_executable_document, ExecutableDocument);
     visit!(visit_executable_definition, ExecutableDefinition);
-    visit!(visit_operation_definition, OperationDefinition);
+    visit!(visit_operation_definition, Arc<OperationDefinition>);
     visit!(visit_operation_type, OperationType);
     visit!(visit_selection_set, SelectionSet);
     visit!(visit_selection, Selection);
@@ -76,7 +82,7 @@ pub trait Visit<'ast, T> {
         RootOperationTypeDefinition
     );
     visit!(visit_schema_extension, SchemaExtension);
-    visit!(visit_type_definition, TypeDefinition);
+    visit!(visit_type_definition, Arc<TypeDefinition>);
     visit!(visit_type_extension, TypeExtension);
     visit!(visit_scalar_type_definition, ScalarTypeDefinition);
     visit!(visit_scalar_type_extension, ScalarTypeExtension);

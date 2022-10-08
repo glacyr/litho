@@ -6,5 +6,6 @@ mod token;
 pub use kind::TokenKind;
 pub use span::Span;
 pub use token::{
-    lexer, Error, ExactLexer, FloatValue, IntValue, Lexer, Name, Punctuator, StringValue, Token,
+    lexer, Error, ExactLexer, FastLexer, FloatValue, IntValue, Lexer, Name, Punctuator,
+    StringValue, Token,
 };
