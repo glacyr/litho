@@ -1,5 +1,6 @@
 use litho_language::ast::*;
 use smol_str::SmolStr;
+use std::sync::Arc;
 use tower_lsp::lsp_types::*;
 
 use super::{line_col_to_offset, span_to_range, Document};
@@ -28,22 +29,32 @@ struct DefinitionVisitor<'ast>(&'ast Document, usize);
 impl<'ast, 'a> Visit<'ast, SmolStr> for DefinitionVisitor<'ast> {
     type Accumulator = Option<GotoDefinitionResponse>;
 
+    fn visit_field(&self, node: &'ast Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
+        if let Some(name) = node.name.ok() {
+            if name.span().contains(self.1) {
+                if let Some(definition) = self.0.database().field_definitions_by_field(&node).next()
+                {
+                    accumulator.replace(GotoDefinitionResponse::Scalar(Location {
+                        uri: self.0.url().clone(),
+                        range: span_to_range(self.0.text(), definition.name.span()),
+                    }));
+                }
+            }
+        }
+    }
+
     fn visit_named_type(
         &self,
         node: &'ast NamedType<SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
         if node.span().contains(self.1) {
-            eprintln!("Searching definition of: {:?}", node.0.as_ref());
-            eprintln!("Database: {:#?}", self.0.database());
             if let Some(definition) = self
                 .0
                 .database()
                 .type_definitions_by_name(node.0.as_ref())
                 .next()
             {
-                eprintln!("Found definition: {:#?}", definition);
-
                 accumulator.replace(GotoDefinitionResponse::Scalar(Location {
                     uri: self.0.url().clone(),
                     range: span_to_range(self.0.text(), definition.name().span()),

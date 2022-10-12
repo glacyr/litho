@@ -83,13 +83,13 @@ where
 }
 
 macro_rules! node {
-    (Arc<$ty:ident>, $visit:ident, $($fields:ident),*) => {
-        node!(Arc<$ty<T>>, $visit, $($fields),*);
+    (Arc<$ty:ident>, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
+        node!(Arc<$ty<T>>, $visit $(+ $post)?, $($fields),*);
     };
-    ($ty:ident, $visit:ident, $($fields:ident),*) => {
-        node!($ty<T>, $visit, $($fields),*);
+    ($ty:ident, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
+        node!($ty<T>, $visit $(+ $post)?, $($fields),*);
     };
-    ($ty:ty, $visit:ident, $($fields:ident),*) => {
+    ($ty:ty, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
         impl<T> Node<T> for $ty {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
@@ -100,6 +100,8 @@ macro_rules! node {
                 $(
                     self.$fields.traverse(visitor, accumulator);
                 )*
+
+                $(visitor.$post(self, accumulator);)?
             }
         }
     };

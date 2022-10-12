@@ -16,7 +16,6 @@ pub trait Parse<T>: Sized {
     {
         let lexer = lexer(source_id, input).exact();
         let stream = Stream::from(&lexer);
-        eprintln!("Parser is done!");
         Self::parse(stream)
     }
 }

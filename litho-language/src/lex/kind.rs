@@ -263,10 +263,7 @@ mod tests {
 
     #[test]
     fn test_insignificant_commas() {
-        test_equals(
-            "foo, bar",
-            &[TokenKind::Name, TokenKind::Punctuator, TokenKind::Name],
-        );
+        test_equals("foo, bar", &[TokenKind::Name, TokenKind::Name]);
     }
 
     #[test]

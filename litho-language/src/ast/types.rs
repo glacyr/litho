@@ -103,12 +103,12 @@ pub struct OperationDefinition<T> {
     pub name: Recoverable<Name<T>>,
     pub variable_definitions: Option<VariableDefinitions<T>>,
     pub directives: Option<Directives<T>>,
-    pub selection_set: Recoverable<SelectionSet<T>>,
+    pub selection_set: Recoverable<Arc<SelectionSet<T>>>,
 }
 
 node!(
     Arc<OperationDefinition>,
-    visit_operation_definition,
+    visit_operation_definition + post_visit_operation_definition,
     ty,
     name,
     variable_definitions,
@@ -137,11 +137,11 @@ pub struct SelectionSet<T> {
     pub selections: Vec<Selection<T>>,
 }
 
-node!(SelectionSet, visit_selection_set, braces, selections);
+node!(Arc<SelectionSet>, visit_selection_set, braces, selections);
 
 #[derive(Clone, Debug)]
 pub enum Selection<T> {
-    Field(Field<T>),
+    Field(Arc<Field<T>>),
     FragmentSpread(FragmentSpread<T>),
     InlineFragment(InlineFragment<T>),
 }
@@ -160,12 +160,12 @@ pub struct Field<T> {
     pub name: Recoverable<Name<T>>,
     pub arguments: Option<Arguments<T>>,
     pub directives: Option<Directives<T>>,
-    pub selection_set: Option<SelectionSet<T>>,
+    pub selection_set: Option<Arc<SelectionSet<T>>>,
 }
 
 node!(
-    Field,
-    visit_field,
+    Arc<Field>,
+    visit_field + post_visit_field,
     alias,
     name,
     arguments,
@@ -218,7 +218,7 @@ pub struct InlineFragment<T> {
     pub dots: Punctuator<T>,
     pub type_condition: Option<TypeCondition<T>>,
     pub directives: Option<Directives<T>>,
-    pub selection_set: Recoverable<SelectionSet<T>>,
+    pub selection_set: Recoverable<Arc<SelectionSet<T>>>,
 }
 
 node!(
@@ -236,7 +236,7 @@ pub struct FragmentDefinition<T> {
     pub fragment_name: Recoverable<Name<T>>,
     pub type_condition: Recoverable<TypeCondition<T>>,
     pub directives: Option<Directives<T>>,
-    pub selection_set: Recoverable<SelectionSet<T>>,
+    pub selection_set: Recoverable<Arc<SelectionSet<T>>>,
 }
 
 node!(
@@ -380,6 +380,35 @@ pub enum Type<T> {
     Named(NamedType<T>),
     List(Box<ListType<T>>),
     NonNull(Box<NonNullType<T>>),
+}
+
+impl<T> Type<T> {
+    pub fn name(&self) -> Option<&T> {
+        match self {
+            Type::Named(ty) => Some(ty.0.as_ref()),
+            Type::List(ty) => ty.ty.ok().and_then(Type::name),
+            Type::NonNull(ty) => ty.ty.name(),
+        }
+    }
+}
+
+impl<T> ToString for Type<T>
+where
+    T: ToString,
+{
+    fn to_string(&self) -> String {
+        match self {
+            Type::Named(ty) => ty.0.as_ref().to_string(),
+            Type::List(ty) => format!(
+                "[{}]",
+                ty.ty
+                    .ok()
+                    .map(|ty| ty.to_string())
+                    .unwrap_or("...".to_owned())
+            ),
+            Type::NonNull(ty) => format!("{}!", ty.ty.to_string()),
+        }
+    }
 }
 
 node_enum!(Type, visit_type, Named, List, NonNull);
@@ -591,6 +620,19 @@ node_enum!(
 );
 
 impl<T> TypeDefinition<T> {
+    pub fn description(&self) -> Option<&Description<T>> {
+        match self {
+            TypeDefinition::ScalarTypeDefinition(definition) => definition.description.as_ref(),
+            TypeDefinition::ObjectTypeDefinition(definition) => definition.description.as_ref(),
+            TypeDefinition::InterfaceTypeDefinition(definition) => definition.description.as_ref(),
+            TypeDefinition::UnionTypeDefinition(definition) => definition.description.as_ref(),
+            TypeDefinition::EnumTypeDefinition(definition) => definition.description.as_ref(),
+            TypeDefinition::InputObjectTypeDefinition(definition) => {
+                definition.description.as_ref()
+            }
+        }
+    }
+
     pub fn name(&self) -> &Recoverable<Name<T>> {
         match self {
             TypeDefinition::ScalarTypeDefinition(definition) => &definition.name,
@@ -709,7 +751,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct FieldsDefinition<T> {
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub definitions: Vec<FieldDefinition<T>>,
+    pub definitions: Vec<Arc<FieldDefinition<T>>>,
 }
 
 node!(
@@ -730,7 +772,7 @@ pub struct FieldDefinition<T> {
 }
 
 node!(
-    FieldDefinition,
+    Arc<FieldDefinition>,
     visit_field_definition,
     description,
     name,

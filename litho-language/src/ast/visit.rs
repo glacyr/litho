@@ -32,10 +32,12 @@ pub trait Visit<'ast, T> {
     visit!(visit_executable_document, ExecutableDocument);
     visit!(visit_executable_definition, ExecutableDefinition);
     visit!(visit_operation_definition, Arc<OperationDefinition>);
+    visit!(post_visit_operation_definition, Arc<OperationDefinition>);
     visit!(visit_operation_type, OperationType);
-    visit!(visit_selection_set, SelectionSet);
+    visit!(visit_selection_set, Arc<SelectionSet>);
     visit!(visit_selection, Selection);
-    visit!(visit_field, Field);
+    visit!(visit_field, Arc<Field>);
+    visit!(post_visit_field, Arc<Field>);
     visit!(visit_alias, Alias);
     visit!(visit_arguments, Arguments);
     visit!(visit_argument, Argument);
@@ -89,7 +91,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_object_type_definition, ObjectTypeDefinition);
     visit!(visit_implements_interfaces, ImplementsInterfaces);
     visit!(visit_fields_definition, FieldsDefinition);
-    visit!(visit_field_definition, FieldDefinition);
+    visit!(visit_field_definition, Arc<FieldDefinition>);
     visit!(visit_arguments_definition, ArgumentsDefinition);
     visit!(visit_input_value_definition, InputValueDefinition);
     visit!(visit_object_type_extension, ObjectTypeExtension);

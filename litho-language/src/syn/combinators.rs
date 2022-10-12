@@ -12,7 +12,7 @@ where
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::Name(name)) if name.as_ref() != &"fragment" => Ok((input, name)),
-        Some(token) => Err(Err::Error(Error::ExpectedName)),
+        Some(_) => Err(Err::Error(Error::ExpectedName)),
         None => Err(Err::Error(Error::Incomplete)),
     })
 }
@@ -24,7 +24,7 @@ where
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::Name(name)) if name.as_ref() == &expected => Ok((input, name)),
-        Some(token) => Err(Err::Error(Error::ExpectedKeyword(expected))),
+        Some(_) => Err(Err::Error(Error::ExpectedKeyword(expected))),
         None => Err(Err::Error(Error::Incomplete)),
     })
 }
@@ -36,7 +36,7 @@ where
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::Punctuator(actual)) if actual.as_ref() == &expected => Ok((input, actual)),
-        Some(token) => Err(Err::Error(Error::ExpectedPunctuator(expected))),
+        Some(_) => Err(Err::Error(Error::ExpectedPunctuator(expected))),
         None => Err(Err::Error(Error::Incomplete)),
     })
 }
@@ -48,7 +48,7 @@ where
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::IntValue(int_value)) => Ok((input, int_value)),
-        Some(token) => Err(Err::Error(Error::ExpectedIntValue)),
+        Some(_) => Err(Err::Error(Error::ExpectedIntValue)),
         None => Err(Err::Error(Error::Incomplete)),
     })
 }

@@ -318,7 +318,7 @@ where
     wrom::recursive(|| {
         delimited(
             punctuator("{"),
-            many0(field_definition()),
+            many0(field_definition().map(Into::into)),
             punctuator("}"),
             Missing::delimiter_complaint(
                 "Fields definition is missing `}` delimiter.",

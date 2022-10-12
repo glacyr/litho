@@ -1,0 +1,71 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "GraphQL",
+	"patterns": [
+        {
+            "include": "#comments"
+        },
+        {
+            "include": "#constants"
+        },
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+        {
+            "include": "#support"
+        },
+        {
+            "include": "#variables"
+        }
+	],
+	"repository": {
+        "comments": {
+            "patterns": [{
+                "name": "comment.line.number-sign",
+                "match": "#([^\n]*)"
+            }]
+        },
+        "constants": {
+            "patterns": [{
+                "name": "constant.language.graphql",
+                "match": "\\b(true|false|null)\\b"
+            }]
+        },
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.graphql",
+				"match": "\\b(query|mutation|subscription|fragment|on|extend|schema|scalar|type|implements|interface|union|enum|input|directive)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.graphql",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.graphql",
+					"match": "\\\\."
+				}
+			]
+		},
+        "support": {
+            "patterns": [{
+                "name": "support.type",
+                "match": "\\b(Int|Float|String|Boolean|ID)\\b"
+            }, {
+                "name": "support.constant",
+                "match": "\\b(QUERY|MUTATION|SUBSCRIPTION|FIELD|FRAGMENT_DEFINITION|FRAGMENT_SPREAD|INLINE_FRAGMENT|SCHEMA|SCALAR|OBJECT|FIELD_DEFINITION|ARGUMENT_DEFINITION|INTERFACE|UNION|ENUM|ENUM_VALUE|INPUT_OBJECT|INPUT_FIELD_DEFINITION)\\b"
+            }]
+        },
+        "variables": {
+            "patterns": [{
+                "name": "variable.parameter.graphql",
+                "match": "\\$[A-Za-z][A-Aa-z_0-9]*\\b"
+            }]
+        }
+	},
+	"scopeName": "source.graphql"
+}

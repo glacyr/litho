@@ -48,7 +48,11 @@ where
             .and(name().recover(|| "Missing name of this operation definition.".into()))
             .and(opt(variable_definitions()))
             .and(opt(directives()))
-            .and(selection_set().recover(|| "Operation is missing selection set.".into()))
+            .and(
+                selection_set()
+                    .map(Into::into)
+                    .recover(|| "Operation is missing selection set.".into()),
+            )
             .flatten()
             .map(
                 |(ty, name, variable_definitions, directives, selection_set)| OperationDefinition {
@@ -108,7 +112,7 @@ where
         alt((
             inline_fragment().map(Selection::InlineFragment),
             fragment_spread().map(Selection::FragmentSpread),
-            field().map(Selection::Field),
+            field().map(Into::into).map(Selection::Field),
         ))
     })
 }
@@ -124,7 +128,7 @@ where
                 .and(name().recover(|| "Field should have a name.".into()))
                 .and(opt(arguments()))
                 .and(opt(directives()))
-                .and(opt(selection_set()))
+                .and(opt(selection_set().map(Into::into)))
                 .flatten()
                 .map(
                     |(alias, name, arguments, directives, selection_set)| Field {
@@ -138,7 +142,7 @@ where
             name()
                 .and(opt(arguments()))
                 .and(opt(directives()))
-                .and(opt(selection_set()))
+                .and(opt(selection_set().map(Into::into)))
                 .flatten()
                 .map(
                     |(name, arguments, directives, selection_set): (Name<T>, _, _, _)| Field {
@@ -229,7 +233,11 @@ where
         punctuator("...")
             .and(opt(type_condition()))
             .and(opt(directives()))
-            .and(selection_set().recover(|| "Inline fragment is missing selection set.".into()))
+            .and(
+                selection_set()
+                    .map(Into::into)
+                    .recover(|| "Inline fragment is missing selection set.".into()),
+            )
             .flatten()
             .map(
                 |(dots, type_condition, directives, selection_set)| InlineFragment {
@@ -258,6 +266,7 @@ where
             .and(opt(directives()))
             .and(
                 selection_set()
+                    .map(Into::into)
                     .recover(|| "Fragment definition is missing a selection set.".into()),
             )
             .flatten()
