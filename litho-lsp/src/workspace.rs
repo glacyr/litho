@@ -40,7 +40,16 @@ impl Workspace {
         &self.database
     }
 
-    pub fn populate_inflection(&mut self) -> &Document {
+    pub fn mutate<F, O>(&mut self, mutation: F) -> O
+    where
+        F: FnOnce(&mut Workspace) -> O,
+    {
+        let result = mutation(self);
+        self.rebuild();
+        result
+    }
+
+    pub fn populate_inflection(&mut self) {
         self.populate_file_contents(
             Url::parse("litho://inflection.graphql").unwrap(),
             None,
@@ -126,33 +135,19 @@ impl Workspace {
         Ok(())
     }
 
-    pub fn populate_file_contents(
-        &mut self,
-        url: Url,
-        version: Option<i32>,
-        text: String,
-    ) -> &Document {
+    pub fn populate_file_contents(&mut self, url: Url, version: Option<i32>, text: String) {
         let id = self.source_map.get_or_insert(url.to_owned());
 
         self.store.insert(id, url, version, text);
-        self.rebuild();
-        self.store.get(&id).unwrap()
     }
 
-    pub fn update_file_contents<F>(
-        &mut self,
-        url: Url,
-        version: Option<i32>,
-        update: F,
-    ) -> &Document
+    pub fn update_file_contents<F>(&mut self, url: Url, version: Option<i32>, update: F)
     where
         F: FnOnce(String) -> String,
     {
         let id = self.source_map.get_or_insert(url.to_owned());
 
         self.store.update(id, url, version, update);
-        self.rebuild();
-        self.store.get(&id).unwrap()
     }
 
     pub fn refresh_file(&mut self, url: Url) -> Result<(), ()> {

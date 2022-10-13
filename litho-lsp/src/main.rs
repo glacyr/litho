@@ -66,12 +66,13 @@ impl Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-        let mut workspace = self.workspace.lock().await;
-        workspace.populate_inflection();
+        self.workspace.lock().await.mutate(|workspace| {
+            workspace.populate_inflection();
 
-        if let Some(root_uri) = params.root_uri {
-            let _ = workspace.populate_root(root_uri);
-        }
+            if let Some(root_uri) = params.root_uri {
+                let _ = workspace.populate_root(root_uri);
+            }
+        });
 
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
@@ -116,23 +117,23 @@ impl LanguageServer for Backend {
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let url = params.text_document.uri;
 
-        self.workspace.lock().await.populate_file_contents(
-            url.clone(),
-            Some(params.text_document.version),
-            params.text_document.text.to_owned(),
-        );
+        self.workspace.lock().await.mutate(|workspace| {
+            workspace.populate_file_contents(
+                url.clone(),
+                Some(params.text_document.version),
+                params.text_document.text.to_owned(),
+            )
+        });
 
         self.check_all().await;
     }
 
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
-        {
-            let mut workspace = self.workspace.lock().await;
-
+        self.workspace.lock().await.mutate(|workspace| {
             for change in params.changes {
                 let _ = workspace.refresh_file(change.uri);
             }
-        }
+        });
 
         self.check_all().await;
     }
@@ -140,7 +141,11 @@ impl LanguageServer for Backend {
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let _ = self.workspace.lock().await.refresh_file(url);
+        let _ = self
+            .workspace
+            .lock()
+            .await
+            .mutate(|workspace| workspace.refresh_file(url));
 
         self.check_all().await;
     }
@@ -148,16 +153,14 @@ impl LanguageServer for Backend {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let url = params.text_document.uri;
 
-        self.workspace.lock().await.update_file_contents(
-            url,
-            Some(params.text_document.version),
-            |source| {
+        self.workspace.lock().await.mutate(|workspace| {
+            workspace.update_file_contents(url, Some(params.text_document.version), |source| {
                 params
                     .content_changes
                     .into_iter()
                     .fold(source.to_owned(), |source, change| apply(source, change))
-            },
-        );
+            })
+        });
 
         self.check_all().await;
     }
@@ -185,7 +188,7 @@ impl LanguageServer for Backend {
                 None => return Ok(None),
             };
 
-        Ok(DefinitionProvider::new(document, &*workspace)
+        Ok(DefinitionProvider::new(document, &workspace)
             .goto_definition(params.text_document_position_params.position))
     }
 
@@ -197,7 +200,7 @@ impl LanguageServer for Backend {
         };
 
         Ok(Some(
-            CompletionProvider::new(document, workspace.database())
+            CompletionProvider::new(document, &workspace)
                 .completion(params.text_document_position.position),
         ))
     }
