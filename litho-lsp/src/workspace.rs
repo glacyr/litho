@@ -66,7 +66,7 @@ impl Workspace {
 
         let path = url.to_file_path().map_err(|_| ())?;
         let walk = WalkBuilder::new(path)
-            .types(types.build().unwrap())
+            .types(types.select("GraphQL").build().unwrap())
             .follow_links(false)
             .build();
 
