@@ -246,19 +246,10 @@ mod tests {
 
     #[test]
     fn test_comments() {
-        test_equals(" # Hello World! ", &[TokenKind::Comment]);
-        test_equals(
-            " # Hello World!\rhello ",
-            &[TokenKind::Comment, TokenKind::Name],
-        );
-        test_equals(
-            " # Hello World!\r\nhello ",
-            &[TokenKind::Comment, TokenKind::Name],
-        );
-        test_equals(
-            " # Hello World!\nhello ",
-            &[TokenKind::Comment, TokenKind::Name],
-        );
+        test_equals(" # Hello World! ", &[]);
+        test_equals(" # Hello World!\rhello ", &[TokenKind::Name]);
+        test_equals(" # Hello World!\r\nhello ", &[TokenKind::Name]);
+        test_equals(" # Hello World!\nhello ", &[TokenKind::Name]);
     }
 
     #[test]
