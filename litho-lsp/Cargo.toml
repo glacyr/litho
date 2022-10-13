@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ignore = "0.4.18"
 line-col = "0.2.1"
 lsp-types = { version = "*", features = ["proposed"] }
 serde_json = { version = "*" }
@@ -15,4 +16,3 @@ tower-lsp = "0.17.0"
 
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }
-glob = "0.3.0"

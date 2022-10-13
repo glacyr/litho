@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::io::Read;
 
-use glob::glob;
+use ignore::types::TypesBuilder;
+use ignore::WalkBuilder;
 use litho_language::lex::{SourceMap, Span};
 use litho_types::Database;
 use smol_str::SmolStr;
@@ -60,16 +61,23 @@ impl Workspace {
     }
 
     pub fn populate_root(&mut self, url: Url) -> Result<(), ()> {
+        let mut types = TypesBuilder::new();
+        types.add("GraphQL", "*.graphql").unwrap();
+
         let path = url.to_file_path().map_err(|_| ())?;
-        let pattern = path.join("**/*.graphql").to_str().ok_or(())?.to_owned();
-        eprintln!("Populating all files that match: {:#?}", pattern);
-        let entries = glob(&pattern).map_err(|_| ())?;
+        let walk = WalkBuilder::new(path)
+            .types(types.build().unwrap())
+            .follow_links(false)
+            .build();
 
-        for entry in entries {
-            eprintln!("Matches: {:#?}", entry);
-
+        for entry in walk {
             let entry = entry.map_err(|_| ())?;
-            let url = Url::from_file_path(entry.as_path()).map_err(|_| ())?;
+
+            if entry.path().is_dir() {
+                continue;
+            }
+
+            let url = Url::from_file_path(entry.path()).map_err(|_| ())?;
             self.populate_file(url)?;
         }
 
