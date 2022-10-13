@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: x64
+          #   npm_config_arch: x64
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: ia32
+          #   npm_config_arch: ia32
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: arm64
+          #   npm_config_arch: arm
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: x64
+          #   npm_config_arch: x64
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: arm64
+          #   npm_config_arch: arm64
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: armhf
+          #   npm_config_arch: arm
+          # - os: ubuntu-latest
+          #   platform: alpine
+          #   arch: x64
+          #   npm_config_arch: x64
+          - os: macos-latest
+            platform: darwin
+            arch: x64
+            npm_config_arch: x64
+            target: "x86_64-apple-darwin"
+          - os: macos-latest
+            platform: darwin
+            arch: arm64
+            npm_config_arch: arm64
+            target: "aarch64-apple-darwin"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Format
+      run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
+    - name: Copy LSP into VSCode Extension
+      run: cp target/${{ matrix.target }}/release/litho-lsp litho-vscode
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 14.x
+    - run: yarn install
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        npm_config_arch: ${{ matrix.npm_config_arch }}
+      working-directory: litho-vscode
+    - shell: pwsh
+      run: echo "vs_target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
+      working-directory: litho-vscode
+    - run: npx vsce package --target ${{ env.vs_target }}
+      working-directory: litho-vscode
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.vs_target }}
+        path: "litho-vscode/*.vsix"
