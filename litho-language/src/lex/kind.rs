@@ -74,7 +74,7 @@ pub enum TokenKind {
     /// meaning of a GraphQL Document.
     ///
     /// _Source: [Sec. 2.1.4 Comments](https://spec.graphql.org/October2021/#sec-Comments)_
-    #[regex("#[\u{0009}\u{0020}-\u{ffff}]*")]
+    #[regex("#[\u{0009}\u{0020}-\u{ffff}]*", logos::skip)]
     Comment,
 
     /// Similar to white space and line terminators, commas (`,`) are used to
