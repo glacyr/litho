@@ -45,11 +45,13 @@ impl<T> Database<T>
 where
     T: From<&'static str> + Clone + std::fmt::Debug + Eq + Hash,
 {
-    pub fn new(document: &Document<T>) -> Database<T> {
-        let mut database = Default::default();
-        document.traverse(&Index, &mut database);
-        document.traverse(&Inference, &mut State::new(&mut database));
-        database
+    pub fn new() -> Database<T> {
+        Default::default()
+    }
+
+    pub fn index(&mut self, document: &Document<T>) {
+        document.traverse(&Index, self);
+        document.traverse(&Inference, &mut State::new(self));
     }
 
     pub fn type_definitions_by_name(&self, name: &T) -> impl Iterator<Item = &TypeDefinition<T>> {

@@ -1,40 +1,52 @@
 use std::sync::Arc;
 
 use litho_language::ast::*;
+use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::{Hover, HoverContents, MarkedString, Position};
 
 use super::{line_col_to_offset, Document, Printer};
 
-pub struct HoverProvider<'ast>(&'ast Document);
+pub struct HoverProvider<'a> {
+    document: &'a Document,
+    database: &'a Database<SmolStr>,
+}
 
 impl HoverProvider<'_> {
-    pub fn new<'ast>(document: &'ast Document) -> HoverProvider<'ast> {
-        HoverProvider(document)
+    pub fn new<'a>(document: &'a Document, database: &'a Database<SmolStr>) -> HoverProvider<'a> {
+        HoverProvider { document, database }
     }
 
     pub fn hover(&self, position: Position) -> Option<Hover> {
-        let index = line_col_to_offset(self.0.text(), position.line, position.character);
+        let offset = line_col_to_offset(self.document.text(), position.line, position.character);
         let mut hover = None;
 
-        self.0
-            .ast()
-            .traverse(&HoverVisitor(self.0, index), &mut hover);
+        self.document.ast().traverse(
+            &HoverVisitor {
+                document: self.document,
+                database: self.database,
+                offset,
+            },
+            &mut hover,
+        );
 
         hover
     }
 }
 
-struct HoverVisitor<'a>(&'a Document, usize);
+struct HoverVisitor<'a> {
+    document: &'a Document,
+    database: &'a Database<SmolStr>,
+    offset: usize,
+}
 
-impl<'a, 'ast> Visit<'ast, SmolStr> for HoverVisitor<'a> {
+impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
     type Accumulator = Option<Hover>;
 
-    fn visit_field(&self, node: &'ast Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(&self, node: &'a Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
         if let Some(name) = node.name.ok() {
-            if name.span().contains(self.1) {
-                if let Some(definition) = self.0.database().field_definitions_by_field(&node).next()
-                {
+            if name.span().contains(self.offset) {
+                if let Some(definition) = self.database.field_definitions_by_field(&node).next() {
                     accumulator.replace(Hover {
                         contents: HoverContents::Scalar(MarkedString::String(format!(
                             "```\n{}\n```\n\n---\n\n{}",
@@ -52,18 +64,13 @@ impl<'a, 'ast> Visit<'ast, SmolStr> for HoverVisitor<'a> {
         }
     }
 
-    fn visit_named_type(
-        &self,
-        node: &'ast NamedType<SmolStr>,
-        accumulator: &mut Self::Accumulator,
-    ) {
-        if !node.span().contains(self.1) {
+    fn visit_named_type(&self, node: &'a NamedType<SmolStr>, accumulator: &mut Self::Accumulator) {
+        if !node.span().contains(self.offset) {
             return;
         }
 
         if let Some(definition) = self
-            .0
-            .database()
+            .database
             .type_definitions_by_name(node.0.as_ref())
             .next()
         {
@@ -84,10 +91,15 @@ impl<'a, 'ast> Visit<'ast, SmolStr> for HoverVisitor<'a> {
 
     fn visit_object_type_definition(
         &self,
-        node: &'ast ObjectTypeDefinition<SmolStr>,
+        node: &'a ObjectTypeDefinition<SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
-        if node.ty.span().joined(node.name.span()).contains(self.1) {
+        if node
+            .ty
+            .span()
+            .joined(node.name.span())
+            .contains(self.offset)
+        {
             accumulator.replace(Hover {
                 contents: HoverContents::Scalar(MarkedString::String(format!(
                     "```\ntype {}\n```\n\n---\n\n{}",
@@ -105,7 +117,7 @@ impl<'a, 'ast> Visit<'ast, SmolStr> for HoverVisitor<'a> {
                 .iter()
                 .flat_map(|fields| fields.definitions.iter())
             {
-                if field.name.span().contains(self.1) {
+                if field.name.span().contains(self.offset) {
                     accumulator.replace(Hover {
                         contents: HoverContents::Scalar(MarkedString::String(format!(
                             "```\ntype {}\n{}: ...\n```\n\n---\n\n{}",

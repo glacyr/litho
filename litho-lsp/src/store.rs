@@ -20,7 +20,11 @@ impl Store {
         self.documents.get(url.as_str())
     }
 
-    pub fn insert(&mut self, url: Url, version: i32, text: String) -> &Document {
+    pub fn docs(&self) -> impl Iterator<Item = &Document> {
+        self.documents.values()
+    }
+
+    pub fn insert(&mut self, url: Url, version: Option<i32>, text: String) -> &Document {
         self.documents.insert(
             url.to_string(),
             Document::new(url.clone(), version, text.as_ref()),
@@ -29,7 +33,7 @@ impl Store {
         self.get(&url).unwrap()
     }
 
-    pub fn update<F>(&mut self, url: Url, version: i32, apply: F) -> &Document
+    pub fn update<F>(&mut self, url: Url, version: Option<i32>, apply: F) -> &Document
     where
         F: FnOnce(String) -> String,
     {
@@ -41,5 +45,9 @@ impl Store {
         );
 
         self.get(&url).unwrap()
+    }
+
+    pub fn remove(&mut self, url: &Url) -> Option<Document> {
+        self.documents.remove(url.as_str())
     }
 }

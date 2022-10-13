@@ -13,6 +13,7 @@ mod printer;
 mod report;
 mod store;
 mod util;
+mod workspace;
 
 use completion::CompletionProvider;
 use definition::DefinitionProvider;
@@ -22,10 +23,12 @@ use inlay_hint::InlayHintProvider;
 use printer::Printer;
 use store::Store;
 use util::{index_to_position, line_col_to_offset, span_to_range};
+use workspace::Workspace;
+
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    store: Mutex<Store>,
+    workspace: Mutex<Workspace>,
 }
 
 fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
@@ -47,11 +50,11 @@ impl Backend {
             .publish_diagnostics(
                 document.url().to_owned(),
                 document.diagnostics().collect(),
-                Some(document.version()),
+                document.version(),
             )
             .await;
 
-        let response = self
+        let _ = self
             .client
             .send_request::<InlayHintRefreshRequest>(())
             .await;
@@ -60,7 +63,10 @@ impl Backend {
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        eprintln!("Root: {:#?}", params.root_uri);
+        self.workspace.lock().await.populate_inflection();
+
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -78,7 +84,26 @@ impl LanguageServer for Backend {
         })
     }
 
-    async fn initialized(&self, _: InitializedParams) {}
+    async fn initialized(&self, _: InitializedParams) {
+        eprintln!("Asking to watch files.");
+
+        let _ = self
+            .client
+            .register_capability(vec![Registration {
+                id: "watch-workspace".to_owned(),
+                method: "workspace/didChangeWatchedFiles".to_owned(),
+                register_options: Some(
+                    serde_json::to_value(DidChangeWatchedFilesRegistrationOptions {
+                        watchers: vec![FileSystemWatcher {
+                            kind: None,
+                            glob_pattern: "**/*.graphql".to_owned(),
+                        }],
+                    })
+                    .unwrap(),
+                ),
+            }])
+            .await;
+    }
 
     async fn shutdown(&self) -> Result<()> {
         Ok(())
@@ -87,75 +112,93 @@ impl LanguageServer for Backend {
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let mut store = self.store.lock().await;
-        let document = store.insert(
+        let mut workspace = self.workspace.lock().await;
+        let document = workspace.populate_file_contents(
             url.clone(),
-            params.text_document.version,
+            Some(params.text_document.version),
             params.text_document.text.to_owned(),
         );
 
         self.check(document).await;
     }
 
+    async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
+        eprintln!("Files: {:#?}", params);
+    }
+
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let mut store = self.store.lock().await;
-        let document = store.update(url, params.text_document.version, |source| {
-            params
-                .content_changes
-                .into_iter()
-                .fold(source.to_owned(), |source, change| apply(source, change))
-        });
+        let mut workspace = self.workspace.lock().await;
+        let document =
+            workspace.update_file_contents(url, Some(params.text_document.version), |source| {
+                params
+                    .content_changes
+                    .into_iter()
+                    .fold(source.to_owned(), |source, change| apply(source, change))
+            });
         self.check(document).await;
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
-        let store = self.store.lock().await;
-        let document = match store.get(&params.text_document_position_params.text_document.uri) {
+        let workspace = self.workspace.lock().await;
+        let document = match workspace
+            .store()
+            .get(&params.text_document_position_params.text_document.uri)
+        {
             Some(document) => document,
             None => return Ok(None),
         };
 
-        Ok(HoverProvider::new(document).hover(params.text_document_position_params.position))
+        Ok(HoverProvider::new(document, workspace.database())
+            .hover(params.text_document_position_params.position))
     }
 
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
-        let store = self.store.lock().await;
-        let document = match store.get(&params.text_document_position_params.text_document.uri) {
+        let workspace = self.workspace.lock().await;
+        let document = match workspace
+            .store()
+            .get(&params.text_document_position_params.text_document.uri)
+        {
             Some(document) => document,
             None => return Ok(None),
         };
 
-        Ok(DefinitionProvider::new(document)
+        Ok(DefinitionProvider::new(document, workspace.database())
             .goto_definition(params.text_document_position_params.position))
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
-        let store = self.store.lock().await;
-        let document = match store.get(&params.text_document_position.text_document.uri) {
+        let workspace = self.workspace.lock().await;
+        let document = match workspace
+            .store()
+            .get(&params.text_document_position.text_document.uri)
+        {
             Some(document) => document,
             None => return Ok(None),
         };
 
         Ok(Some(
-            CompletionProvider::new(document).completion(params.text_document_position.position),
+            CompletionProvider::new(document, workspace.database())
+                .completion(params.text_document_position.position),
         ))
     }
 }
 
 impl Backend {
     pub async fn inlay_hint(&self, params: InlayHintParams) -> Result<Vec<InlayHint>> {
-        let store = self.store.lock().await;
-        let document = match store.get(&params.text_document.uri) {
+        let workspace = self.workspace.lock().await;
+        let document = match workspace.store().get(&params.text_document.uri) {
             Some(document) => document,
             None => return Ok(vec![]),
         };
 
-        Ok(InlayHintProvider::new(document).inlay_hints().collect())
+        Ok(InlayHintProvider::new(document, workspace.database())
+            .inlay_hints()
+            .collect())
     }
 }
 
@@ -166,7 +209,7 @@ async fn main() {
 
     let (service, socket) = LspService::build(|client| Backend {
         client,
-        store: Mutex::new(Store::new()),
+        workspace: Mutex::new(Workspace::new()),
     })
     .custom_method("textDocument/inlayHint", Backend::inlay_hint)
     .finish();
