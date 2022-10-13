@@ -7,6 +7,7 @@ use litho_language::lex::{SourceMap, Span};
 use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
+use url_escape::percent_encoding::AsciiSet;
 
 use super::{Document, Store};
 
@@ -77,7 +78,36 @@ impl Workspace {
                 continue;
             }
 
-            let url = Url::from_file_path(entry.path()).map_err(|_| ())?;
+            let mut url = Url::from_file_path(entry.path()).map_err(|_| ())?;
+
+            const ESCAPE: AsciiSet = url_escape::CONTROLS
+                .add(b':')
+                .add(b'/')
+                .add(b'?')
+                .add(b'#')
+                .add(b'[')
+                .add(b']')
+                .add(b'@')
+                .add(b'!')
+                .add(b'$')
+                .add(b'&')
+                .add(b'\'')
+                .add(b'(')
+                .add(b')')
+                .add(b'*')
+                .add(b'+')
+                .add(b',')
+                .add(b';')
+                .add(b'=')
+                .add(b' ');
+
+            url.set_path(
+                &url.path()
+                    .split("/")
+                    .map(|component| url_escape::encode(component, &ESCAPE))
+                    .collect::<Vec<_>>()
+                    .join("/"),
+            );
             self.populate_file(url)?;
         }
 
