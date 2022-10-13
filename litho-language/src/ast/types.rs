@@ -201,7 +201,7 @@ node!(Argument, visit_argument, name, colon, value);
 #[derive(Clone, Debug)]
 pub struct FragmentSpread<T> {
     pub dots: Punctuator<T>,
-    pub fragment_name: Recoverable<Name<T>>,
+    pub fragment_name: Name<T>,
     pub directives: Option<Directives<T>>,
 }
 

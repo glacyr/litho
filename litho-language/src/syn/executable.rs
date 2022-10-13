@@ -110,8 +110,8 @@ where
 {
     wrom::recursive(|| {
         alt((
-            inline_fragment().map(Selection::InlineFragment),
             fragment_spread().map(Selection::FragmentSpread),
+            inline_fragment().map(Selection::InlineFragment),
             field().map(Into::into).map(Selection::Field),
         ))
     })
@@ -213,7 +213,7 @@ where
 {
     wrom::recursive(|| {
         punctuator("...")
-            .and(name().recover(|| "Fragment spread is missing name here.".into()))
+            .and(name())
             .and(opt(directives()))
             .flatten()
             .map(|(dots, fragment_name, directives)| FragmentSpread {
