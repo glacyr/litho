@@ -1,6 +1,8 @@
+use super::SourceId;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Span {
-    pub source_id: usize,
+    pub source_id: SourceId,
     pub start: usize,
     pub end: usize,
 }
@@ -46,7 +48,7 @@ impl Span {
 }
 
 impl ariadne::Span for Span {
-    type SourceId = usize;
+    type SourceId = SourceId;
 
     fn source(&self) -> &Self::SourceId {
         &self.source_id

@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use logos::Lexer;
 
-use super::{Span, TokenKind};
+use super::{SourceId, Span, TokenKind};
 
 #[derive(Clone, Copy, Debug)]
 pub struct RawToken<T> {
@@ -13,7 +13,7 @@ pub struct RawToken<T> {
 
 #[derive(Clone)]
 pub struct RawLexer<'a, T> {
-    source_id: usize,
+    source_id: SourceId,
     lexer: Lexer<'a, TokenKind>,
     ty: PhantomData<T>,
 }
@@ -37,7 +37,7 @@ where
     }
 }
 
-pub fn raw_lexer<'a, T>(source_id: usize, lexer: Lexer<'a, TokenKind>) -> RawLexer<'a, T> {
+pub fn raw_lexer<'a, T>(source_id: SourceId, lexer: Lexer<'a, TokenKind>) -> RawLexer<'a, T> {
     RawLexer {
         source_id,
         lexer,

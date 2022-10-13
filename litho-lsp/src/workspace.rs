@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::Read;
 
 use glob::glob;
+use litho_language::lex::{SourceMap, Span};
 use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
@@ -11,6 +12,7 @@ use super::{Document, Store};
 #[derive(Debug)]
 pub struct Workspace {
     store: Store,
+    source_map: SourceMap<Url>,
     database: Database<SmolStr>,
 }
 
@@ -18,12 +20,18 @@ impl Workspace {
     pub fn new() -> Workspace {
         Workspace {
             store: Store::new(),
+            source_map: SourceMap::new(),
             database: Default::default(),
         }
     }
 
-    pub fn store(&self) -> &Store {
-        &self.store
+    pub fn document(&self, url: &Url) -> Option<&Document> {
+        let id = self.source_map.get(url)?;
+        self.store.get(&id)
+    }
+
+    pub fn documents(&self) -> impl Iterator<Item = &Document> {
+        self.store.docs()
     }
 
     pub fn database(&self) -> &Database<SmolStr> {
@@ -53,10 +61,13 @@ impl Workspace {
 
     pub fn populate_root(&mut self, url: Url) -> Result<(), ()> {
         let path = url.to_file_path().map_err(|_| ())?;
-        let pattern = path.join("/**/*.graphql").to_str().ok_or(())?.to_owned();
+        let pattern = path.join("**/*.graphql").to_str().ok_or(())?.to_owned();
+        eprintln!("Populating all files that match: {:#?}", pattern);
         let entries = glob(&pattern).map_err(|_| ())?;
 
         for entry in entries {
+            eprintln!("Matches: {:#?}", entry);
+
             let entry = entry.map_err(|_| ())?;
             let url = Url::from_file_path(entry.as_path()).map_err(|_| ())?;
             self.populate_file(url)?;
@@ -83,9 +94,11 @@ impl Workspace {
         version: Option<i32>,
         text: String,
     ) -> &Document {
-        self.store.insert(url.to_owned(), version, text);
+        let id = self.source_map.get_or_insert(url.to_owned());
+
+        self.store.insert(id, url, version, text);
         self.rebuild();
-        self.store.get(&url).unwrap()
+        self.store.get(&id).unwrap()
     }
 
     pub fn update_file_contents<F>(
@@ -97,13 +110,17 @@ impl Workspace {
     where
         F: FnOnce(String) -> String,
     {
-        self.store.update(url.to_owned(), version, update);
+        let id = self.source_map.get_or_insert(url.to_owned());
+
+        self.store.update(id, url, version, update);
         self.rebuild();
-        self.store.get(&url).unwrap()
+        self.store.get(&id).unwrap()
     }
 
     pub fn refresh_file(&mut self, url: Url) -> Result<(), ()> {
-        self.store.remove(&url);
+        let id = self.source_map.get_or_insert(url.to_owned());
+
+        self.store.remove(&id);
         self.populate_file(url)?;
 
         Ok(())
@@ -115,5 +132,39 @@ impl Workspace {
         for document in self.store.docs() {
             self.database.index(document.ast());
         }
+    }
+
+    pub fn index_to_position(&self, source: &str, index: usize) -> Position {
+        let mut line = 0;
+        let mut character = 0;
+
+        for char in source[0..index].chars() {
+            if char == '\n' {
+                line += 1;
+                character = 0;
+            } else {
+                character += 1;
+            }
+        }
+
+        Position { line, character }
+    }
+
+    pub fn span_to_range(&self, span: Span) -> Option<Range> {
+        let source = self.store.get(&span.source_id)?.text();
+
+        Some(Range {
+            start: self.index_to_position(source, span.start),
+            end: self.index_to_position(source, span.end),
+        })
+    }
+
+    pub fn span_to_location(&self, span: Span) -> Option<Location> {
+        let uri = self.source_map.get_id(&span.source_id)?.clone();
+
+        Some(Location {
+            uri,
+            range: self.span_to_range(span)?,
+        })
     }
 }

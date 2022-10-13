@@ -1,4 +1,5 @@
 use litho_language::chk::{collect_errors, IntoReport};
+use litho_language::lex::SourceId;
 use litho_language::{Document as Ast, Parse};
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::{Diagnostic, Url};
@@ -15,8 +16,8 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn new(url: Url, version: Option<i32>, text: &str) -> Document {
-        let result = Ast::parse_from_str(0, text).unwrap_or_default();
+    pub fn new(source_id: SourceId, url: Url, version: Option<i32>, text: &str) -> Document {
+        let result = Ast::parse_from_str(source_id, text).unwrap_or_default();
 
         Document {
             url,

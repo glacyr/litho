@@ -92,7 +92,7 @@ mod tests {
         type RestoreFeedbackQuestionCategoryResponse {
             feedbackQuestionCategory: FeedbackQuestionCategory!
         }"#;
-        let (ast, unrecognized) = Document::parse_from_str(0, source).unwrap();
+        let (ast, unrecognized) = Document::parse_from_str(Default::default(), source).unwrap();
 
         println!("Result: {:#?} (errors: {:#?})", ast, ast.errors());
 
@@ -107,7 +107,7 @@ mod tests {
         {
             error
                 .into_report::<ariadne::ReportBuilder<Span>>()
-                .print((0usize, Source::from(source)))
+                .print((Default::default(), Source::from(source)))
                 .unwrap();
         }
     }

@@ -1,6 +1,6 @@
 use nom::Err;
 
-use crate::lex::{lexer, Token};
+use crate::lex::{lexer, SourceId, Token};
 
 use super::{Error, Stream};
 
@@ -8,7 +8,7 @@ pub trait Parse<T>: Sized {
     fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>>;
 
     fn parse_from_str<'a>(
-        source_id: usize,
+        source_id: SourceId,
         input: &'a str,
     ) -> Result<(Self, Vec<Token<T>>), Err<Error>>
     where

@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
+use litho_language::lex::SourceId;
 use tower_lsp::lsp_types::Url;
 
 use super::Document;
 
 #[derive(Debug)]
 pub struct Store {
-    documents: HashMap<String, Document>,
+    documents: HashMap<SourceId, Document>,
 }
 
 impl Store {
@@ -16,38 +17,40 @@ impl Store {
         }
     }
 
-    pub fn get(&self, url: &Url) -> Option<&Document> {
-        self.documents.get(url.as_str())
+    pub fn get(&self, source_id: &SourceId) -> Option<&Document> {
+        self.documents.get(source_id)
     }
 
     pub fn docs(&self) -> impl Iterator<Item = &Document> {
         self.documents.values()
     }
 
-    pub fn insert(&mut self, url: Url, version: Option<i32>, text: String) -> &Document {
-        self.documents.insert(
-            url.to_string(),
-            Document::new(url.clone(), version, text.as_ref()),
-        );
+    pub fn insert(
+        &mut self,
+        id: SourceId,
+        url: Url,
+        version: Option<i32>,
+        text: String,
+    ) -> &Document {
+        self.documents
+            .insert(id, Document::new(id, url, version, text.as_ref()));
 
-        self.get(&url).unwrap()
+        self.get(&id).unwrap()
     }
 
-    pub fn update<F>(&mut self, url: Url, version: Option<i32>, apply: F) -> &Document
+    pub fn update<F>(&mut self, id: SourceId, url: Url, version: Option<i32>, apply: F) -> &Document
     where
         F: FnOnce(String) -> String,
     {
-        let document = self.documents.get(url.as_str()).unwrap();
+        let document = self.documents.get(&id).unwrap();
         let text = apply(document.text().to_owned());
-        self.documents.insert(
-            url.to_string(),
-            Document::new(url.clone(), version, text.as_ref()),
-        );
+        self.documents
+            .insert(id, Document::new(id, url, version, text.as_ref()));
 
-        self.get(&url).unwrap()
+        self.get(&id).unwrap()
     }
 
-    pub fn remove(&mut self, url: &Url) -> Option<Document> {
-        self.documents.remove(url.as_str())
+    pub fn remove(&mut self, id: &SourceId) -> Option<Document> {
+        self.documents.remove(id)
     }
 }

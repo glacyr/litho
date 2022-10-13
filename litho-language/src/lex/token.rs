@@ -6,7 +6,7 @@ use nom::InputLength;
 use unindent::unindent;
 
 use super::raw::{raw_lexer, RawLexer, RawToken};
-use super::{Span, TokenKind};
+use super::{SourceId, Span, TokenKind};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Error<T>(RawToken<T>);
@@ -303,7 +303,7 @@ impl<T> InputLength for ExactLexer<T> {
     }
 }
 
-pub fn lexer<T>(source_id: usize, source: &str) -> Lexer<T> {
+pub fn lexer<T>(source_id: SourceId, source: &str) -> Lexer<T> {
     let _: <TokenKind as Logos>::Source;
 
     Lexer {

@@ -45,14 +45,16 @@ fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
 }
 
 impl Backend {
-    pub async fn check<'a>(&self, document: &Document) {
-        self.client
-            .publish_diagnostics(
-                document.url().to_owned(),
-                document.diagnostics().collect(),
-                document.version(),
-            )
-            .await;
+    pub async fn check_all(&self) {
+        for document in self.workspace.lock().await.documents() {
+            self.client
+                .publish_diagnostics(
+                    document.url().to_owned(),
+                    document.diagnostics().collect(),
+                    document.version(),
+                )
+                .await;
+        }
 
         let _ = self
             .client
@@ -64,8 +66,12 @@ impl Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-        eprintln!("Root: {:#?}", params.root_uri);
-        self.workspace.lock().await.populate_inflection();
+        let mut workspace = self.workspace.lock().await;
+        workspace.populate_inflection();
+
+        if let Some(root_uri) = params.root_uri {
+            let _ = workspace.populate_root(root_uri);
+        }
 
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
@@ -85,8 +91,6 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        eprintln!("Asking to watch files.");
-
         let _ = self
             .client
             .register_capability(vec![Registration {
@@ -112,43 +116,59 @@ impl LanguageServer for Backend {
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let mut workspace = self.workspace.lock().await;
-        let document = workspace.populate_file_contents(
+        self.workspace.lock().await.populate_file_contents(
             url.clone(),
             Some(params.text_document.version),
             params.text_document.text.to_owned(),
         );
 
-        self.check(document).await;
+        self.check_all().await;
     }
 
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
-        eprintln!("Files: {:#?}", params);
+        {
+            let mut workspace = self.workspace.lock().await;
+
+            for change in params.changes {
+                let _ = workspace.refresh_file(change.uri);
+            }
+        }
+
+        self.check_all().await;
+    }
+
+    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        let url = params.text_document.uri;
+
+        let _ = self.workspace.lock().await.refresh_file(url);
+
+        self.check_all().await;
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let url = params.text_document.uri;
 
-        let mut workspace = self.workspace.lock().await;
-        let document =
-            workspace.update_file_contents(url, Some(params.text_document.version), |source| {
+        self.workspace.lock().await.update_file_contents(
+            url,
+            Some(params.text_document.version),
+            |source| {
                 params
                     .content_changes
                     .into_iter()
                     .fold(source.to_owned(), |source, change| apply(source, change))
-            });
-        self.check(document).await;
+            },
+        );
+
+        self.check_all().await;
     }
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace
-            .store()
-            .get(&params.text_document_position_params.text_document.uri)
-        {
-            Some(document) => document,
-            None => return Ok(None),
-        };
+        let document =
+            match workspace.document(&params.text_document_position_params.text_document.uri) {
+                Some(document) => document,
+                None => return Ok(None),
+            };
 
         Ok(HoverProvider::new(document, workspace.database())
             .hover(params.text_document_position_params.position))
@@ -159,24 +179,19 @@ impl LanguageServer for Backend {
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace
-            .store()
-            .get(&params.text_document_position_params.text_document.uri)
-        {
-            Some(document) => document,
-            None => return Ok(None),
-        };
+        let document =
+            match workspace.document(&params.text_document_position_params.text_document.uri) {
+                Some(document) => document,
+                None => return Ok(None),
+            };
 
-        Ok(DefinitionProvider::new(document, workspace.database())
+        Ok(DefinitionProvider::new(document, &*workspace)
             .goto_definition(params.text_document_position_params.position))
     }
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace
-            .store()
-            .get(&params.text_document_position.text_document.uri)
-        {
+        let document = match workspace.document(&params.text_document_position.text_document.uri) {
             Some(document) => document,
             None => return Ok(None),
         };
@@ -191,7 +206,7 @@ impl LanguageServer for Backend {
 impl Backend {
     pub async fn inlay_hint(&self, params: InlayHintParams) -> Result<Vec<InlayHint>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace.store().get(&params.text_document.uri) {
+        let document = match workspace.document(&params.text_document.uri) {
             Some(document) => document,
             None => return Ok(vec![]),
         };

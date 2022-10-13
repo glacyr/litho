@@ -8,7 +8,7 @@ use wrom::multi::many0;
 use wrom::{terminal, Input, RecoverableParser};
 
 use crate::ast::*;
-use crate::lex::{lexer, Token};
+use crate::lex::{lexer, SourceId, Token};
 
 mod combinators;
 pub mod executable;
@@ -97,7 +97,7 @@ where
 
 pub fn parse_from_str<'a, T, P, O>(
     parser: P,
-    source_id: usize,
+    source_id: SourceId,
     input: &'a str,
 ) -> Result<(Vec<Token<T>>, O), Error>
 where
