@@ -12,7 +12,7 @@ impl Printer {
         format!(
             "{}{}: {}",
             definition.name,
-            Printer::pretty_print_arguments_definition(&definition.arguments_definition),
+            Printer::pretty_print_arguments_definition(definition.arguments_definition.as_deref()),
             definition
                 .ty
                 .ok()
@@ -21,8 +21,30 @@ impl Printer {
         )
     }
 
+    pub fn print_arguments_definition<T>(definition: &ArgumentsDefinition<T>) -> String
+    where
+        T: Display,
+    {
+        format!(
+            "({})",
+            definition
+                .definitions
+                .iter()
+                .map(|arg| format!(
+                    "{}: {}",
+                    arg.name,
+                    arg.ty
+                        .ok()
+                        .map(|ty| ty.to_string())
+                        .unwrap_or("...".to_owned())
+                ))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+
     pub fn pretty_print_arguments_definition<T>(
-        arguments_definition: &Option<ArgumentsDefinition<T>>,
+        arguments_definition: Option<&ArgumentsDefinition<T>>,
     ) -> String
     where
         T: Display,
@@ -51,7 +73,7 @@ impl Printer {
     }
 
     pub fn snippy_print_arguments_definition<T>(
-        arguments_definition: &Option<ArgumentsDefinition<T>>,
+        arguments_definition: Option<&ArgumentsDefinition<T>>,
     ) -> String
     where
         T: Display,

@@ -80,6 +80,9 @@ impl LanguageServer for Backend {
                     TextDocumentSyncKind::INCREMENTAL,
                 )),
                 completion_provider: Some(CompletionOptions {
+                    trigger_characters: Some(
+                        " (,\n".chars().into_iter().map(|c| c.to_string()).collect(),
+                    ),
                     ..Default::default()
                 }),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),

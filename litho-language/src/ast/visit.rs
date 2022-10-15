@@ -39,7 +39,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_field, Arc<Field>);
     visit!(post_visit_field, Arc<Field>);
     visit!(visit_alias, Alias);
-    visit!(visit_arguments, Arguments);
+    visit!(visit_arguments, Arc<Arguments>);
     visit!(visit_argument, Argument);
     visit!(visit_fragment_spread, FragmentSpread);
     visit!(visit_inline_fragment, InlineFragment);
@@ -92,7 +92,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_implements_interfaces, ImplementsInterfaces);
     visit!(visit_fields_definition, FieldsDefinition);
     visit!(visit_field_definition, Arc<FieldDefinition>);
-    visit!(visit_arguments_definition, ArgumentsDefinition);
+    visit!(visit_arguments_definition, Arc<ArgumentsDefinition>);
     visit!(visit_input_value_definition, InputValueDefinition);
     visit!(visit_object_type_extension, ObjectTypeExtension);
     visit!(visit_interface_type_definition, InterfaceTypeDefinition);

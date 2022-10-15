@@ -101,6 +101,17 @@ where
             }
 
             accumulator.stack.push(ty);
+
+            if let Some((arguments, definition)) = node
+                .arguments
+                .as_ref()
+                .zip(definition.and_then(|def| def.arguments_definition.to_owned()))
+            {
+                accumulator
+                    .database
+                    .definition_for_arguments
+                    .insert(Arc::as_ptr(arguments) as usize, definition);
+            }
         } else {
             accumulator.stack.push(None);
         }

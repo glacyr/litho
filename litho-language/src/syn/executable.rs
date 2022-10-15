@@ -126,7 +126,7 @@ where
         alt((
             alias()
                 .and(name().recover(|| "Field should have a name.".into()))
-                .and(opt(arguments()))
+                .and(opt(arguments().map(Into::into)))
                 .and(opt(directives()))
                 .and(opt(selection_set().map(Into::into)))
                 .flatten()
@@ -140,7 +140,7 @@ where
                     },
                 ),
             name()
-                .and(opt(arguments()))
+                .and(opt(arguments().map(Into::into)))
                 .and(opt(directives()))
                 .and(opt(selection_set().map(Into::into)))
                 .flatten()
@@ -555,7 +555,7 @@ where
     wrom::recursive(|| {
         punctuator("@")
             .and(name().recover(|| "Expected the name of a directive here.".into()))
-            .and(opt(arguments()))
+            .and(opt(arguments().map(Into::into)))
             .flatten()
             .map(|(at, name, arguments)| Directive {
                 at,

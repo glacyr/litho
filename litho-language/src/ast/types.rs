@@ -158,7 +158,7 @@ node_enum!(
 pub struct Field<T> {
     pub alias: Option<Alias<T>>,
     pub name: Recoverable<Name<T>>,
-    pub arguments: Option<Arguments<T>>,
+    pub arguments: Option<Arc<Arguments<T>>>,
     pub directives: Option<Directives<T>>,
     pub selection_set: Option<Arc<SelectionSet<T>>>,
 }
@@ -187,7 +187,7 @@ pub struct Arguments<T> {
     pub items: Vec<Argument<T>>,
 }
 
-node!(Arguments, visit_arguments, parens, items);
+node!(Arc<Arguments>, visit_arguments, parens, items);
 
 #[derive(Clone, Debug)]
 pub struct Argument<T> {
@@ -445,7 +445,7 @@ node!(Directives, visit_directives, directives);
 pub struct Directive<T> {
     pub at: Punctuator<T>,
     pub name: Recoverable<Name<T>>,
-    pub arguments: Option<Arguments<T>>,
+    pub arguments: Option<Arc<Arguments<T>>>,
 }
 
 node!(Directive, visit_directive, at, name, arguments);
@@ -765,7 +765,7 @@ node!(
 pub struct FieldDefinition<T> {
     pub description: Option<Description<T>>,
     pub name: Name<T>,
-    pub arguments_definition: Option<ArgumentsDefinition<T>>,
+    pub arguments_definition: Option<Arc<ArgumentsDefinition<T>>>,
     pub colon: Recoverable<Punctuator<T>>,
     pub ty: Recoverable<Type<T>>,
     pub directives: Option<Directives<T>>,
@@ -789,7 +789,7 @@ pub struct ArgumentsDefinition<T> {
 }
 
 node!(
-    ArgumentsDefinition,
+    Arc<ArgumentsDefinition>,
     visit_arguments_definition,
     parens,
     definitions
@@ -1046,7 +1046,7 @@ pub struct DirectiveDefinition<T> {
     pub directive: Name<T>,
     pub at: Recoverable<Punctuator<T>>,
     pub name: Recoverable<Name<T>>,
-    pub arguments_definition: Option<ArgumentsDefinition<T>>,
+    pub arguments_definition: Option<Arc<ArgumentsDefinition<T>>>,
     pub repeatable: Option<Name<T>>,
     pub locations: Recoverable<DirectiveLocations<T>>,
 }

@@ -341,7 +341,7 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(name())
-            .and(opt(arguments_definition()))
+            .and(opt(arguments_definition().map(Into::into)))
             .and(punctuator(":").recover(|| "Field is missing a colon here.".into()))
             .and(ty().recover(|| "Field is missing a type here.".into()))
             .and(opt(directives()))
@@ -759,7 +759,7 @@ where
             .and(keyword("directive"))
             .and(punctuator("@").recover(|| "Directive definition is missing a `@` here.".into()))
             .and(name().recover(|| "Directive definition is missing a name here.".into()))
-            .and(opt(arguments_definition()))
+            .and(opt(arguments_definition().map(Into::into)))
             .and(opt(keyword("repeatable")))
             .and(
                 directive_locations()

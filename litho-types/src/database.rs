@@ -21,6 +21,7 @@ where
     pub(crate) field_definitions_by_field: MultiMap<usize, Arc<FieldDefinition<T>>>,
     pub(crate) field_definitions_by_name: HashMap<T, MultiMap<T, Arc<FieldDefinition<T>>>>,
     pub(crate) type_by_selection_set: HashMap<usize, T>,
+    pub(crate) definition_for_arguments: HashMap<usize, Arc<ArgumentsDefinition<T>>>,
 }
 
 impl<T> Default for Database<T>
@@ -37,6 +38,7 @@ where
             field_definitions_by_field: Default::default(),
             field_definitions_by_name: Default::default(),
             type_by_selection_set: Default::default(),
+            definition_for_arguments: Default::default(),
         }
     }
 }
@@ -100,5 +102,14 @@ where
     pub fn type_by_selection_set(&self, selection_set: &Arc<SelectionSet<T>>) -> Option<&T> {
         self.type_by_selection_set
             .get(&(Arc::as_ptr(selection_set) as usize))
+    }
+
+    pub fn definition_for_arguments(
+        &self,
+        arguments: &Arc<Arguments<T>>,
+    ) -> Option<&ArgumentsDefinition<T>> {
+        self.definition_for_arguments
+            .get(&(Arc::as_ptr(arguments) as usize))
+            .map(AsRef::as_ref)
     }
 }
