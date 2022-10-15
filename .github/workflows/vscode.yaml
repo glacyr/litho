@@ -64,7 +64,7 @@ jobs:
     - name: Download target ${{ matrix.target }}
       run: rustup target add ${{ matrix.target }}
     - name: Install GCC ${{ matrix.gcc }}
-      run: apt-get install ${{ matrix.gcc }}
+      run: sudo apt-get install ${{ matrix.gcc }}
       if: ${{ matrix.gcc }}
     - name: Build Litho LSP
       run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
