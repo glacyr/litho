@@ -1,7 +1,9 @@
 {
   "name": "litho-vscode",
+  "publisher": "glacyr",
   "displayName": "Litho",
   "description": "",
+  "icon": "icon.png",
   "repository": {
     "url": "https://github.com/glacyr/litho/tree/main/litho-vscode"
   },
