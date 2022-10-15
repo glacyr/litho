@@ -39,11 +39,13 @@ jobs:
             arch: arm64
             npm_config_arch: arm64
             target: "aarch64-unknown-linux-gnu"
+            gcc: "gcc-aarch64-linux-gnu"
           - os: ubuntu-latest
             platform: linux
             arch: armhf
             npm_config_arch: arm
             target: "arm-unknown-linux-gnueabihf"
+            gcc: "gcc-arm-linux-gnueabihf"
           # - os: macos-latest
           #   platform: darwin
           #   arch: x64
@@ -61,6 +63,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Download target ${{ matrix.target }}
       run: rustup target add ${{ matrix.target }}
+    - name: Install GCC ${{ matrix.gcc }}
+      run: apt-get install ${{ matrix.gcc }}
+      if: ${{ matrix.gcc }}
     - name: Build Litho LSP
       run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
     - name: Copy Litho LSP into VSCode Extension
