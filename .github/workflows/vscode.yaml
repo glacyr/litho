@@ -14,26 +14,26 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            platform: win32
-            arch: x64
-            npm_config_arch: x64
-            target: "x86_64-pc-windows-msvc"
-          - os: windows-latest
-            platform: win32
-            arch: ia32
-            npm_config_arch: ia32
-            target: "i686-pc-windows-msvc"
-          - os: windows-latest
-            platform: win32
-            arch: arm64
-            npm_config_arch: arm
-            target: "aarch64-pc-windows-msvc"
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
-            npm_config_arch: x64
-            target: "x86_64-unknown-linux-gnu"
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: x64
+          #   npm_config_arch: x64
+          #   target: "x86_64-pc-windows-msvc"
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: ia32
+          #   npm_config_arch: ia32
+          #   target: "i686-pc-windows-msvc"
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: arm64
+          #   npm_config_arch: arm
+          #   target: "aarch64-pc-windows-msvc"
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: x64
+          #   npm_config_arch: x64
+          #   target: "x86_64-unknown-linux-gnu"
           - os: ubuntu-latest
             platform: linux
             arch: arm64
@@ -44,16 +44,16 @@ jobs:
             arch: armhf
             npm_config_arch: arm
             target: "arm-unknown-linux-gnueabihf"
-          - os: macos-latest
-            platform: darwin
-            arch: x64
-            npm_config_arch: x64
-            target: "x86_64-apple-darwin"
-          - os: macos-latest
-            platform: darwin
-            arch: arm64
-            npm_config_arch: arm64
-            target: "aarch64-apple-darwin"
+          # - os: macos-latest
+          #   platform: darwin
+          #   arch: x64
+          #   npm_config_arch: x64
+          #   target: "x86_64-apple-darwin"
+          # - os: macos-latest
+          #   platform: darwin
+          #   arch: arm64
+          #   npm_config_arch: arm64
+          #   target: "aarch64-apple-darwin"
 
     runs-on: ${{ matrix.os }}
 
@@ -87,12 +87,12 @@ jobs:
         name: ${{ env.vs_target }}
         path: "litho-vscode/*.vsix"
 
-  publish:
-    runs-on: ubuntu-latest
-    needs: build
-    if: success()
-    steps:
-      - uses: actions/download-artifact@v2
-      - run: npx vsce publish --packagePath $(find . -iname *.vsix)
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+  # publish:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: success()
+  #   steps:
+  #     - uses: actions/download-artifact@v2
+  #     - run: npx vsce publish --packagePath $(find . -iname *.vsix)
+  #       env:
+  #         VSCE_PAT: ${{ secrets.VSCE_PAT }}
