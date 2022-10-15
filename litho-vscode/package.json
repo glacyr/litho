@@ -4,6 +4,7 @@
   "displayName": "Litho",
   "description": "",
   "icon": "icon.png",
+  "preview": true,
   "repository": {
     "url": "https://github.com/glacyr/litho/tree/main/litho-vscode"
   },
