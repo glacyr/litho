@@ -14,10 +14,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: windows-latest
-          #   platform: win32
-          #   arch: x64
-          #   npm_config_arch: x64
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            npm_config_arch: x64
+            target: "x86_64-pc-windows-msvc"
           # - os: windows-latest
           #   platform: win32
           #   arch: ia32
