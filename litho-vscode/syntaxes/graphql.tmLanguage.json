@@ -24,7 +24,7 @@
 	"repository": {
         "comments": {
             "patterns": [{
-                "name": "comment.line.number-sign",
+                "name": "comment.line.number-sign.graphql",
                 "match": "#([^\n]*)"
             }]
         },
@@ -32,6 +32,9 @@
             "patterns": [{
                 "name": "constant.language.graphql",
                 "match": "\\b(true|false|null)\\b"
+            }, {
+                "name": "constant.numeric",
+                "match": "\\b-?(0|[1-9][0-9]*)(\\.[0-9]*)?([eE][\\+\\-]?[0-9]*)?\\b"
             }]
         },
 		"keywords": {
@@ -53,10 +56,10 @@
 		},
         "support": {
             "patterns": [{
-                "name": "support.type",
+                "name": "support.type.graphql",
                 "match": "\\b(Int|Float|String|Boolean|ID)\\b"
             }, {
-                "name": "support.constant",
+                "name": "support.constant.graphql",
                 "match": "\\b(QUERY|MUTATION|SUBSCRIPTION|FIELD|FRAGMENT_DEFINITION|FRAGMENT_SPREAD|INLINE_FRAGMENT|SCHEMA|SCALAR|OBJECT|FIELD_DEFINITION|ARGUMENT_DEFINITION|INTERFACE|UNION|ENUM|ENUM_VALUE|INPUT_OBJECT|INPUT_FIELD_DEFINITION)\\b"
             }]
         },

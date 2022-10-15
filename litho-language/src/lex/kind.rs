@@ -208,7 +208,8 @@ pub enum TokenKind {
 
     /// Any unrecognized token ends up being consumed by this rule.
     #[error]
-    #[regex("-?(0|[1-9][0-9]*)[0-9A-Za-z_]+")]
+    #[regex("-?0[0-9]+")]
+    #[regex("-?(0|[1-9][0-9]*)[A-Za-z_]+")]
     #[regex("-?(0|[1-9][0-9]*)\\.[0-9]+[A-Za-z_][0-9A-Za-z]*", priority = 2)]
     #[regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?[eE][\\+\\-]?[0-9]+[A-Za-z_][0-9A-Za-z]*")]
     Error,
@@ -270,6 +271,7 @@ mod tests {
     fn test_int_value() {
         test_equals(" 01 ", &[TokenKind::Error]);
         test_equals(" 1 ", &[TokenKind::IntValue]);
+        test_equals(" 100 ", &[TokenKind::IntValue]);
         test_equals(" 1L ", &[TokenKind::Error]);
     }
 
