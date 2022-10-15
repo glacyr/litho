@@ -44,10 +44,6 @@ jobs:
             arch: armhf
             npm_config_arch: arm
             target: "arm-unknown-linux-gnueabihf"
-          - os: ubuntu-latest
-            platform: alpine
-            arch: x64
-            npm_config_arch: x64
           - os: macos-latest
             platform: darwin
             arch: x64
