@@ -56,6 +56,13 @@ where
         document.traverse(&Inference, &mut State::new(self));
     }
 
+    pub fn type_definitions(&self) -> impl Iterator<Item = &TypeDefinition<T>> {
+        self.type_definitions_by_name
+            .iter_all()
+            .flat_map(|(_, defs)| defs)
+            .map(AsRef::as_ref)
+    }
+
     pub fn type_definitions_by_name(&self, name: &T) -> impl Iterator<Item = &TypeDefinition<T>> {
         self.type_definitions_by_name
             .get_vec(name)

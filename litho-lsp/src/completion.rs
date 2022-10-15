@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use litho_language::ast::*;
-use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
@@ -20,9 +19,31 @@ impl CompletionProvider<'_> {
         }
     }
 
+    fn keyword(&self, name: &str) -> CompletionItem {
+        CompletionItem {
+            kind: Some(CompletionItemKind::KEYWORD),
+            label: name.to_owned(),
+            insert_text: Some(format!("{} ${{1:...}} {{\n\t${{2:...}}\n}}", name)),
+            insert_text_format: Some(InsertTextFormat::SNIPPET),
+            label_details: Some(CompletionItemLabelDetails {
+                detail: Some(" ... { ... }".to_owned()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+
     pub fn completion(&self, position: Position) -> CompletionResponse {
         let offset = line_col_to_offset(self.document.text(), position.line, position.character);
-        let mut items = vec![];
+        let mut items = vec![
+            self.keyword("query"),
+            self.keyword("mutation"),
+            self.keyword("subscription"),
+            self.keyword("type"),
+            self.keyword("interface"),
+            self.keyword("enum"),
+            self.keyword("input"),
+        ];
 
         self.document.ast().traverse(
             &CompletionVisitor {
@@ -109,10 +130,36 @@ impl<'a> CompletionVisitor<'a> {
             ..Default::default()
         }
     }
+
+    pub fn complete_all_types(&self) -> impl Iterator<Item = CompletionItem> + '_ {
+        self.workspace
+            .database()
+            .type_definitions()
+            .flat_map(|def| {
+                def.name().ok().map(|name| CompletionItem {
+                    kind: Some(match def {
+                        TypeDefinition::EnumTypeDefinition(_)
+                        | TypeDefinition::UnionTypeDefinition(_) => CompletionItemKind::ENUM,
+                        TypeDefinition::InterfaceTypeDefinition(_) => CompletionItemKind::INTERFACE,
+                        TypeDefinition::InputObjectTypeDefinition(_) => CompletionItemKind::STRUCT,
+                        TypeDefinition::ScalarTypeDefinition(_) => CompletionItemKind::UNIT,
+                        TypeDefinition::ObjectTypeDefinition(_) => CompletionItemKind::CLASS,
+                    }),
+                    label: name.to_string(),
+                    ..Default::default()
+                })
+            })
+    }
 }
 
 impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
     type Accumulator = Vec<CompletionItem>;
+
+    fn visit_definition(&self, node: &'a Definition<SmolStr>, accumulator: &mut Self::Accumulator) {
+        if node.span().contains(self.offset) {
+            accumulator.truncate(0);
+        }
+    }
 
     fn visit_selection_set(
         &self,
@@ -148,6 +195,26 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
                         .iter()
                         .map(|def| self.complete_input_value_definition(def)),
                 )
+            }
+        }
+    }
+
+    fn visit_fields_definition(
+        &self,
+        node: &'a FieldsDefinition<SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if !node.span().contains(self.offset) {
+            return;
+        }
+
+        for field in node.definitions.iter() {
+            if field.span().collapse_to_start().before(self.offset) {
+                accumulator.truncate(0);
+
+                if field.colon.ok().is_some() && field.colon.span().before(self.offset) {
+                    accumulator.extend(self.complete_all_types())
+                }
             }
         }
     }
