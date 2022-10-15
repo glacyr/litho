@@ -64,6 +64,10 @@ jobs:
       run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
     - name: Copy Litho LSP into VSCode Extension
       run: cp target/${{ matrix.target }}/release/litho-lsp litho-vscode
+      if: runner.os != 'Windows'
+    - name: Copy Litho LSP into VSCode Extension
+      run: cp target/${{ matrix.target }}/release/litho-lsp.exe litho-vscode
+      if: runner.os == 'Windows'
     - uses: actions/setup-node@v2
       with:
         node-version: 14.x
