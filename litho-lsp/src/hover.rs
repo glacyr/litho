@@ -43,6 +43,63 @@ struct HoverVisitor<'a> {
 impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
     type Accumulator = Option<Hover>;
 
+    fn visit_enum_type_definition(
+        &self,
+        node: &'a EnumTypeDefinition<SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if !node.span().contains(self.offset) {
+            return;
+        }
+
+        if node.name.ok().is_some() && node.name.span().contains(self.offset) {
+            accumulator.replace(Hover {
+                contents: HoverContents::Scalar(MarkedString::String(format!(
+                    "```\nenum {}\n```\n\n---\n\n{}",
+                    node.name
+                        .ok()
+                        .map(ToString::to_string)
+                        .unwrap_or("...".to_owned()),
+                    node.description
+                        .as_ref()
+                        .map(|description| description.to_string())
+                        .unwrap_or_default(),
+                ))),
+                range: None,
+            });
+
+            return;
+        }
+
+        let values = match node.values_definition.as_ref() {
+            Some(values) => values,
+            None => return,
+        };
+
+        for value in values.definitions.iter() {
+            if !value.enum_value.span().contains(self.offset) {
+                continue;
+            }
+
+            accumulator.replace(Hover {
+                contents: HoverContents::Scalar(MarkedString::String(format!(
+                    "```\nenum {}\n{}\n```\n\n---\n\n{}",
+                    node.name
+                        .ok()
+                        .map(ToString::to_string)
+                        .unwrap_or("...".to_owned()),
+                    value.enum_value.0,
+                    value
+                        .description
+                        .as_ref()
+                        .map(|description| description.to_string())
+                        .unwrap_or_default(),
+                ))),
+                range: None,
+            });
+        }
+    }
+
     fn visit_field(&self, node: &'a Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
         if let Some(name) = node.name.ok() {
             if name.span().contains(self.offset) {
