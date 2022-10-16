@@ -43,6 +43,36 @@ struct HoverVisitor<'a> {
 impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
     type Accumulator = Option<Hover>;
 
+    fn visit_arguments_definition(
+        &self,
+        node: &'a Arc<ArgumentsDefinition<SmolStr>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        for argument in node.definitions.iter() {
+            if !argument.name.span().contains(self.offset) {
+                continue;
+            }
+
+            accumulator.replace(Hover {
+                contents: HoverContents::Scalar(MarkedString::String(format!(
+                    "```\n{}: {}\n```\n\n---\n\n{}",
+                    argument.name,
+                    argument
+                        .ty
+                        .ok()
+                        .map(ToString::to_string)
+                        .unwrap_or("...".to_owned()),
+                    argument
+                        .description
+                        .as_ref()
+                        .map(|description| description.to_string())
+                        .unwrap_or_default(),
+                ))),
+                range: None,
+            });
+        }
+    }
+
     fn visit_enum_type_definition(
         &self,
         node: &'a EnumTypeDefinition<SmolStr>,
