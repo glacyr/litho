@@ -83,6 +83,11 @@ where
             .map(AsRef::as_ref)
     }
 
+    pub fn is_input_type(&self, name: &T) -> bool {
+        self.type_definitions_by_name(name)
+            .all(|definition| definition.is_input())
+    }
+
     pub fn is_output_type(&self, name: &T) -> bool {
         self.type_definitions_by_name(name)
             .all(|definition| definition.is_output())
