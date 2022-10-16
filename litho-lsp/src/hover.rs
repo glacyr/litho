@@ -76,8 +76,8 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
         {
             accumulator.replace(Hover {
                 contents: HoverContents::Scalar(MarkedString::String(format!(
-                    "```\ntype {}\n```\n\n---\n\n{}",
-                    definition.name(),
+                    "```\n{}\n```\n\n---\n\n{}",
+                    Printer::short_print_type_definition(definition),
                     definition
                         .description()
                         .as_ref()

@@ -5,6 +5,24 @@ use litho_language::ast::*;
 pub struct Printer;
 
 impl Printer {
+    pub fn short_print_type_definition<T>(definition: &TypeDefinition<T>) -> String
+    where
+        T: Display,
+    {
+        format!(
+            "{} {}",
+            match definition {
+                TypeDefinition::EnumTypeDefinition(_) => "enum",
+                TypeDefinition::InputObjectTypeDefinition(_) => "input",
+                TypeDefinition::InterfaceTypeDefinition(_) => "interface",
+                TypeDefinition::ScalarTypeDefinition(_) => "scalar",
+                TypeDefinition::ObjectTypeDefinition(_) => "type",
+                TypeDefinition::UnionTypeDefinition(_) => "union",
+            },
+            definition.name()
+        )
+    }
+
     pub fn pretty_print_field<T>(definition: &FieldDefinition<T>) -> String
     where
         T: Display,
