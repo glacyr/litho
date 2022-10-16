@@ -64,6 +64,40 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
         }
     }
 
+    fn visit_arguments(
+        &self,
+        node: &'a Arc<Arguments<SmolStr>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if !node.span().contains(self.offset) {
+            return;
+        }
+
+        let definitions = match self.workspace.database().definition_for_arguments(node) {
+            Some(definitions) => definitions,
+            None => return,
+        };
+
+        for argument in node.items.iter() {
+            if !argument.name.span().contains(self.offset) {
+                continue;
+            }
+
+            let definition = match definitions
+                .definitions
+                .iter()
+                .find(|definition| definition.name.as_ref() == argument.name.as_ref())
+            {
+                Some(definition) => definition,
+                None => continue,
+            };
+
+            if let Some(location) = self.workspace.span_to_location(definition.name.span()) {
+                accumulator.replace(GotoDefinitionResponse::Scalar(location));
+            }
+        }
+    }
+
     fn visit_named_type(&self, node: &'a NamedType<SmolStr>, accumulator: &mut Self::Accumulator) {
         if node.span().contains(self.offset) {
             if let Some(definition) = self
