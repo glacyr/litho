@@ -222,4 +222,24 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
             }
         }
     }
+
+    fn visit_input_fields_definition(
+        &self,
+        node: &'a InputFieldsDefinition<SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if !node.span().contains(self.offset) {
+            return;
+        }
+
+        for field in node.definitions.iter() {
+            if field.span().collapse_to_start().before(self.offset) {
+                accumulator.truncate(0);
+
+                if field.colon.ok().is_some() && field.colon.span().before(self.offset) {
+                    accumulator.extend(self.complete_all_types(true))
+                }
+            }
+        }
+    }
 }
