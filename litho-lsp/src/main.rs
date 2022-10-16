@@ -46,11 +46,13 @@ fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
 
 impl Backend {
     pub async fn check_all(&self) {
-        for document in self.workspace.lock().await.documents() {
+        let workspace = self.workspace.lock().await;
+
+        for document in workspace.documents() {
             self.client
                 .publish_diagnostics(
                     document.url().to_owned(),
-                    document.diagnostics().collect(),
+                    document.diagnostics(workspace.database()).collect(),
                     document.version(),
                 )
                 .await;
@@ -68,6 +70,7 @@ impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         self.workspace.lock().await.mutate(|workspace| {
             workspace.populate_inflection();
+            workspace.populate_scalars();
 
             if let Some(root_uri) = params.root_uri {
                 let _ = workspace.populate_root(root_uri);
@@ -124,6 +127,7 @@ impl LanguageServer for Backend {
             workspace.populate_file_contents(
                 url.clone(),
                 Some(params.text_document.version),
+                false,
                 params.text_document.text.to_owned(),
             )
         });

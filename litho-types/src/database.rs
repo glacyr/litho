@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
 
@@ -45,17 +46,27 @@ where
 
 impl<T> Database<T>
 where
-    T: From<&'static str> + Clone + std::fmt::Debug + Eq + Hash,
+    T: Eq + Hash,
 {
     pub fn new() -> Database<T> {
         Default::default()
     }
+}
 
+impl<T> Database<T>
+where
+    T: From<&'static str> + Clone + Debug + Eq + Hash,
+{
     pub fn index(&mut self, document: &Document<T>) {
         document.traverse(&Index, self);
         document.traverse(&Inference, &mut State::new(self));
     }
+}
 
+impl<T> Database<T>
+where
+    T: Eq + Hash,
+{
     pub fn type_definitions(&self) -> impl Iterator<Item = &TypeDefinition<T>> {
         self.type_definitions_by_name
             .iter_all()
@@ -70,6 +81,11 @@ where
             .unwrap_or_default()
             .iter()
             .map(AsRef::as_ref)
+    }
+
+    pub fn is_output_type(&self, name: &T) -> bool {
+        self.type_definitions_by_name(name)
+            .all(|definition| definition.is_output())
     }
 
     pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &FieldDefinition<T>> {

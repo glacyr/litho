@@ -384,10 +384,14 @@ pub enum Type<T> {
 
 impl<T> Type<T> {
     pub fn name(&self) -> Option<&T> {
+        self.named_type().map(|ty| ty.0.as_ref())
+    }
+
+    pub fn named_type(&self) -> Option<&NamedType<T>> {
         match self {
-            Type::Named(ty) => Some(ty.0.as_ref()),
-            Type::List(ty) => ty.ty.ok().and_then(Type::name),
-            Type::NonNull(ty) => ty.ty.name(),
+            Type::Named(ty) => Some(ty),
+            Type::List(ty) => ty.ty.ok().and_then(Type::named_type),
+            Type::NonNull(ty) => ty.ty.named_type(),
         }
     }
 }

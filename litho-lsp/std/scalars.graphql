@@ -1,0 +1,39 @@
+"""
+The Int scalar type represents a signed 32-bit numeric non-fractional value.
+Response formats that support a 32-bit integer or a number type should use that
+type to represent this scalar.
+"""
+scalar Int
+
+"""
+The Float scalar type represents signed double-precision finite values as
+specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).
+Response formats that support an appropriate double-precision number type should
+use that type to represent this scalar.
+"""
+scalar Float
+
+"""
+The String scalar type represents textual data, represented as a sequence of
+Unicode code points. The String type is most often used by GraphQL to represent
+free-form human-readable text. How the String is encoded internally (for example
+UTF-8) is left to the service implementation. All response serialization formats
+must support a string representation (for example, JSON Unicode strings), and
+that representation must be used to serialize this type.
+"""
+scalar String
+
+"""
+The Boolean scalar type represents `true` or `false`. Response formats should
+use a built-in boolean type if supported; otherwise, they should use their
+representation of the integers `1` and `0`.
+"""
+scalar Boolean
+
+"""
+The ID scalar type represents a unique identifier, often used to refetch an
+object or as the key for a cache. The ID type is serialized in the same way as a
+`String`; however, it is not intended to be human-readable. While it is often
+numeric, it should always serialize as a `String`.
+"""
+scalar ID

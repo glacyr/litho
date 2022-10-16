@@ -33,7 +33,7 @@ impl Workspace {
     }
 
     pub fn documents(&self) -> impl Iterator<Item = &Document> {
-        self.store.docs()
+        self.store.docs().filter(|doc| !doc.is_internal())
     }
 
     pub fn database(&self) -> &Database<SmolStr> {
@@ -53,6 +53,7 @@ impl Workspace {
         self.populate_file_contents(
             Url::parse("litho://inflection.graphql").unwrap(),
             None,
+            true,
             r#"
         type Query {
             __schema: __Schema!
@@ -68,6 +69,15 @@ impl Workspace {
         "#
             .to_owned(),
         )
+    }
+
+    pub fn populate_scalars(&mut self) {
+        self.populate_file_contents(
+            Url::parse("litho://scalars.graphql").unwrap(),
+            None,
+            true,
+            include_str!("../std/scalars.graphql").to_owned(),
+        );
     }
 
     pub fn populate_root(&mut self, url: Url) -> Result<(), ()> {
@@ -130,15 +140,21 @@ impl Workspace {
 
         file.read_to_string(&mut text).map_err(|_| ())?;
 
-        self.populate_file_contents(url, None, text);
+        self.populate_file_contents(url, None, false, text);
 
         Ok(())
     }
 
-    pub fn populate_file_contents(&mut self, url: Url, version: Option<i32>, text: String) {
+    pub fn populate_file_contents(
+        &mut self,
+        url: Url,
+        version: Option<i32>,
+        internal: bool,
+        text: String,
+    ) {
         let id = self.source_map.get_or_insert(url.to_owned());
 
-        self.store.insert(id, url, version, text);
+        self.store.insert(id, url, version, internal, text);
     }
 
     pub fn update_file_contents<F>(&mut self, url: Url, version: Option<i32>, update: F)

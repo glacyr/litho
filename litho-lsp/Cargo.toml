@@ -17,3 +17,4 @@ url-escape = "0.1.1"
 
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }
+litho-validation = { path = "../litho-validation" }

@@ -30,10 +30,11 @@ impl Store {
         id: SourceId,
         url: Url,
         version: Option<i32>,
+        internal: bool,
         text: String,
     ) -> &Document {
         self.documents
-            .insert(id, Document::new(id, url, version, text.as_ref()));
+            .insert(id, Document::new(id, url, version, internal, text.as_ref()));
 
         self.get(&id).unwrap()
     }
@@ -44,8 +45,10 @@ impl Store {
     {
         let document = self.documents.get(&id).unwrap();
         let text = apply(document.text().to_owned());
-        self.documents
-            .insert(id, Document::new(id, url, version, text.as_ref()));
+        self.documents.insert(
+            id,
+            Document::new(id, url, version, document.is_internal(), text.as_ref()),
+        );
 
         self.get(&id).unwrap()
     }
