@@ -55,10 +55,10 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
                     .field_definitions_by_field(&node)
                     .next()
                 {
-                    accumulator.replace(GotoDefinitionResponse::Scalar(Location {
-                        uri: self.document.url().clone(),
-                        range: span_to_range(self.document.text(), definition.name.span()),
-                    }));
+                    if let Some(location) = self.workspace.span_to_location(definition.name.span())
+                    {
+                        accumulator.replace(GotoDefinitionResponse::Scalar(location));
+                    }
                 }
             }
         }
