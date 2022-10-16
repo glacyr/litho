@@ -643,6 +643,28 @@ impl<T> TypeDefinition<T> {
             TypeDefinition::InputObjectTypeDefinition(definition) => &definition.name,
         }
     }
+
+    pub fn is_input(&self) -> bool {
+        match self {
+            TypeDefinition::EnumTypeDefinition(_)
+            | TypeDefinition::InputObjectTypeDefinition(_)
+            | TypeDefinition::ScalarTypeDefinition(_) => true,
+            TypeDefinition::InterfaceTypeDefinition(_)
+            | TypeDefinition::ObjectTypeDefinition(_)
+            | TypeDefinition::UnionTypeDefinition(_) => false,
+        }
+    }
+
+    pub fn is_output(&self) -> bool {
+        match self {
+            TypeDefinition::InputObjectTypeDefinition(_) => false,
+            TypeDefinition::EnumTypeDefinition(_)
+            | TypeDefinition::InterfaceTypeDefinition(_)
+            | TypeDefinition::ObjectTypeDefinition(_)
+            | TypeDefinition::ScalarTypeDefinition(_)
+            | TypeDefinition::UnionTypeDefinition(_) => true,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

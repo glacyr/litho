@@ -131,10 +131,14 @@ impl<'a> CompletionVisitor<'a> {
         }
     }
 
-    pub fn complete_all_types(&self) -> impl Iterator<Item = CompletionItem> + '_ {
+    pub fn complete_all_types(&self, input: bool) -> impl Iterator<Item = CompletionItem> + '_ {
         self.workspace
             .database()
             .type_definitions()
+            .filter(move |def| match input {
+                true => def.is_input(),
+                false => def.is_output(),
+            })
             .flat_map(|def| {
                 def.name().ok().map(|name| CompletionItem {
                     kind: Some(match def {
@@ -213,7 +217,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
                 accumulator.truncate(0);
 
                 if field.colon.ok().is_some() && field.colon.span().before(self.offset) {
-                    accumulator.extend(self.complete_all_types())
+                    accumulator.extend(self.complete_all_types(false))
                 }
             }
         }
