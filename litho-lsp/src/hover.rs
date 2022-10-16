@@ -120,14 +120,22 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
                 if field.name.span().contains(self.offset) {
                     accumulator.replace(Hover {
                         contents: HoverContents::Scalar(MarkedString::String(format!(
-                            "```\ntype {}\n{}: ...\n```\n\n---\n\n{}",
+                            "```\ntype {}\n{}{}: {}\n```\n\n---\n\n{}",
                             node.name,
                             field.name,
+                            Printer::pretty_print_arguments_definition(
+                                field.arguments_definition.as_deref()
+                            ),
+                            field
+                                .ty
+                                .ok()
+                                .map(ToString::to_string)
+                                .unwrap_or("...".to_owned()),
                             field
                                 .description
                                 .as_ref()
                                 .map(|description| description.to_string())
-                                .unwrap_or_default()
+                                .unwrap_or_default(),
                         ))),
                         range: None,
                     });
