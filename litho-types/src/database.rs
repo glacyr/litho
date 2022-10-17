@@ -85,12 +85,27 @@ where
 
     pub fn is_input_type(&self, name: &T) -> bool {
         self.type_definitions_by_name(name)
-            .all(|definition| definition.is_input())
+            .any(|definition| definition.is_input())
     }
 
     pub fn is_output_type(&self, name: &T) -> bool {
         self.type_definitions_by_name(name)
-            .all(|definition| definition.is_output())
+            .any(|definition| definition.is_output())
+    }
+
+    pub fn is_union_member(&self, ty: &T, name: &T) -> bool {
+        self.type_definitions_by_name(name).any(|def| match def {
+            TypeDefinition::UnionTypeDefinition(def) if def.includes_member_type(ty) => true,
+            _ => false,
+        })
+    }
+
+    pub fn implements_interface(&self, ty: &T, name: &T) -> bool {
+        self.type_definitions_by_name(ty).any(|def| match def {
+            TypeDefinition::InterfaceTypeDefinition(def) if def.implements_interface(name) => true,
+            TypeDefinition::ObjectTypeDefinition(def) if def.implements_interface(name) => true,
+            _ => false,
+        })
     }
 
     pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &FieldDefinition<T>> {

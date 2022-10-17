@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
 use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
@@ -394,23 +395,46 @@ impl<T> Type<T> {
             Type::NonNull(ty) => ty.ty.named_type(),
         }
     }
+
+    pub fn is_required(&self) -> bool {
+        matches!(self, Type::NonNull(_))
+    }
 }
 
-impl<T> ToString for Type<T>
+impl<T> Type<T>
+where
+    T: Eq,
+{
+    pub fn is_invariant(&self, other: &Type<T>) -> bool {
+        match (self, other) {
+            (Type::Named(lhs), Type::Named(rhs)) => lhs.0.as_ref() == rhs.0.as_ref(),
+            (Type::List(lhs), Type::List(rhs)) => lhs
+                .ty
+                .ok()
+                .zip(rhs.ty.ok())
+                .map(|(lhs, rhs)| lhs.is_invariant(rhs))
+                .unwrap_or_default(),
+            (Type::NonNull(lhs), Type::NonNull(rhs)) => lhs.ty.is_invariant(&rhs.ty),
+            (_, _) => false,
+        }
+    }
+}
+
+impl<T> Display for Type<T>
 where
     T: ToString,
 {
-    fn to_string(&self) -> String {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
-            Type::Named(ty) => ty.0.as_ref().to_string(),
-            Type::List(ty) => format!(
+            Type::Named(ty) => f.write_str(&ty.0.as_ref().to_string()),
+            Type::List(ty) => f.write_fmt(format_args!(
                 "[{}]",
                 ty.ty
                     .ok()
                     .map(|ty| ty.to_string())
                     .unwrap_or("...".to_owned())
-            ),
-            Type::NonNull(ty) => format!("{}!", ty.ty.to_string()),
+            )),
+            Type::NonNull(ty) => f.write_fmt(format_args!("{}!", ty.ty.to_string())),
         }
     }
 }
@@ -746,6 +770,18 @@ pub struct ObjectTypeDefinition<T> {
     pub fields_definition: Option<FieldsDefinition<T>>,
 }
 
+impl<T> ObjectTypeDefinition<T>
+where
+    T: Eq,
+{
+    pub fn implements_interface(&self, name: &T) -> bool {
+        self.implements_interfaces
+            .as_ref()
+            .map(|interfaces| interfaces.implements_interface(name))
+            .unwrap_or_default()
+    }
+}
+
 node!(
     ObjectTypeDefinition,
     visit_object_type_definition,
@@ -765,6 +801,28 @@ pub struct ImplementsInterfaces<T> {
     pub types: Vec<(Punctuator<T>, Recoverable<NamedType<T>>)>,
 }
 
+impl<T> ImplementsInterfaces<T> {
+    pub fn named_types(&self) -> impl Iterator<Item = &NamedType<T>> {
+        self.first
+            .ok()
+            .into_iter()
+            .chain(self.types.iter().flat_map(|(_, ty)| ty.ok()))
+    }
+
+    pub fn types(&self) -> impl Iterator<Item = &T> {
+        self.named_types().map(|ty| ty.0.as_ref())
+    }
+}
+
+impl<T> ImplementsInterfaces<T>
+where
+    T: Eq,
+{
+    pub fn implements_interface(&self, name: &T) -> bool {
+        self.types().any(|ty| ty == name)
+    }
+}
+
 node!(
     ImplementsInterfaces,
     visit_implements_interfaces,
@@ -778,6 +836,18 @@ node!(
 pub struct FieldsDefinition<T> {
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub definitions: Vec<Arc<FieldDefinition<T>>>,
+}
+
+impl<T> FieldsDefinition<T>
+where
+    T: Eq,
+{
+    pub fn field(&self, name: &T) -> Option<&FieldDefinition<T>> {
+        self.definitions
+            .iter()
+            .find(|field| field.name.as_ref() == name)
+            .map(AsRef::as_ref)
+    }
 }
 
 node!(
@@ -812,6 +882,17 @@ node!(
 pub struct ArgumentsDefinition<T> {
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub definitions: Vec<InputValueDefinition<T>>,
+}
+
+impl<T> ArgumentsDefinition<T>
+where
+    T: Eq,
+{
+    pub fn argument(&self, name: &T) -> Option<&InputValueDefinition<T>> {
+        self.definitions
+            .iter()
+            .find(|def| def.name.as_ref() == name)
+    }
 }
 
 node!(
@@ -871,6 +952,18 @@ pub struct InterfaceTypeDefinition<T> {
     pub fields_definition: Option<FieldsDefinition<T>>,
 }
 
+impl<T> InterfaceTypeDefinition<T>
+where
+    T: Eq,
+{
+    pub fn implements_interface(&self, name: &T) -> bool {
+        self.implements_interfaces
+            .as_ref()
+            .map(|interfaces| interfaces.implements_interface(name))
+            .unwrap_or_default()
+    }
+}
+
 node!(
     InterfaceTypeDefinition,
     visit_interface_type_definition,
@@ -910,6 +1003,18 @@ pub struct UnionTypeDefinition<T> {
     pub member_types: Option<UnionMemberTypes<T>>,
 }
 
+impl<T> UnionTypeDefinition<T>
+where
+    T: Eq,
+{
+    pub fn includes_member_type(&self, name: &T) -> bool {
+        self.member_types
+            .as_ref()
+            .map(|types| types.includes_member_type(name))
+            .unwrap_or_default()
+    }
+}
+
 node!(
     UnionTypeDefinition,
     visit_union_type_definition,
@@ -926,6 +1031,28 @@ pub struct UnionMemberTypes<T> {
     pub pipe: Option<Punctuator<T>>,
     pub first: Recoverable<NamedType<T>>,
     pub types: Vec<(Punctuator<T>, Recoverable<NamedType<T>>)>,
+}
+
+impl<T> UnionMemberTypes<T> {
+    pub fn named_types(&self) -> impl Iterator<Item = &NamedType<T>> {
+        self.first
+            .ok()
+            .into_iter()
+            .chain(self.types.iter().flat_map(|(_, ty)| ty.ok()))
+    }
+
+    pub fn types(&self) -> impl Iterator<Item = &T> {
+        self.named_types().map(|ty| ty.0.as_ref())
+    }
+}
+
+impl<T> UnionMemberTypes<T>
+where
+    T: Eq,
+{
+    pub fn includes_member_type(&self, name: &T) -> bool {
+        self.types().any(|ty| ty == name)
+    }
 }
 
 node!(

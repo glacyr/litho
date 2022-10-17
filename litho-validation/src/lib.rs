@@ -57,6 +57,55 @@ pub enum Error<'a, T> {
         first: Span,
         second: Span,
     },
+    ImplementsNonInterfaceType {
+        name: &'a T,
+        interface: &'a T,
+        span: Span,
+    },
+    MissingInheritedInterface {
+        name: &'a T,
+        interface: &'a T,
+        inherited: &'a T,
+        span: Span,
+    },
+    MissingInterfaceField {
+        name: &'a T,
+        interface: &'a T,
+        field: &'a T,
+        span: Span,
+    },
+    MissingInterfaceFieldArgument {
+        name: &'a T,
+        interface: &'a T,
+        field: &'a T,
+        argument: &'a T,
+        span: Span,
+    },
+    InvalidInterfaceFieldArgumentType {
+        name: &'a T,
+        interface: &'a T,
+        field: &'a T,
+        argument: &'a T,
+        expected: &'a Type<T>,
+        ty: &'a Type<T>,
+        span: Span,
+    },
+    UnexpectedNonNullInterfaceFieldArgument {
+        name: &'a T,
+        interface: &'a T,
+        field: &'a T,
+        argument: &'a T,
+        ty: &'a Type<T>,
+        span: Span,
+    },
+    NonCovariantInterfaceField {
+        name: &'a T,
+        interface: &'a T,
+        field: &'a T,
+        expected: &'a Type<T>,
+        ty: &'a Type<T>,
+        span: Span,
+    },
 }
 
 impl<'a, T> IntoReport for Error<'a, T>
@@ -167,6 +216,104 @@ where
                 .with_label(
                     B::LabelBuilder::new(second)
                         .with_message(format!("... and later again here.",)),
+                )
+                .finish(),
+            Error::ImplementsNonInterfaceType {
+                name,
+                interface,
+                span,
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0110")
+                .with_message("Type implements non-interface type.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which isn't an interface.")),
+                )
+                .finish(),
+            Error::MissingInheritedInterface {
+                name,
+                interface,
+                inherited,
+                span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0111")
+                .with_message("Type implements interface that requires missing interface.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which requires that interface `{inherited}` is also implemented, but `{inherited}` is not implemented for type `{name}`.")),
+                )
+                .finish(),
+            Error::MissingInterfaceField {
+                name,
+                interface,
+                field,
+                span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0112")
+                .with_message("Type implements interface that requires missing field.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which defines field `{field}` but `{field}` is not defined for `{name}`.")),
+                )
+                .finish(),
+            Error::MissingInterfaceFieldArgument {
+                name,
+                interface,
+                field,
+                argument,
+                span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0113")
+                .with_message("Type implements interface that requires field with missing argument.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which defines field `{field}` with argument `{argument}` but `{field}` does not define argument `{argument}` for `{name}`.")),
+                )
+                .finish(),
+            Error::InvalidInterfaceFieldArgumentType {
+                name,
+                interface,
+                field,
+                argument,
+                expected,
+                ty,
+                span,
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0114")
+                .with_message("Type implements interface that requires field with argument of invalid type.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which defines field `{field}` with argument `{argument}` of type `{expected}` but `{field}` defines argument `{argument}` as type `{ty}` for `{name}`.")),
+                )
+                .finish(),
+            Error::UnexpectedNonNullInterfaceFieldArgument {
+                name,
+                interface,
+                field,
+                argument,
+                ty,
+                span,
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0114")
+                .with_message("Type defines non-null argument that does not appear in interface field.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which defines field `{field}` with argument `{argument}` of type `{ty}` but this type may not be non-null since field `{field}` does not define an argument `{argument}` for interface `{interface}`.")),
+                )
+                .finish(),
+            Error::NonCovariantInterfaceField {
+                name,
+                interface,
+                field,
+                expected,
+                ty,
+                span,
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0115")
+                .with_message("Type defines field with type that is not compatible with interface field's type.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` implements `{interface}` here, which defines field `{field}` type `{ty}` but this type is not compatible with expected type `{expected}` of field `{field}` interface `{interface}`.")),
                 )
                 .finish(),
         }
