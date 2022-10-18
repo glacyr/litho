@@ -9,6 +9,7 @@ use litho_language::lex::Span;
 use litho_types::Database;
 
 mod arguments;
+mod enums;
 mod fields;
 mod interfaces;
 mod names;
@@ -124,6 +125,15 @@ pub enum Error<'a, T> {
     NonObjectUnionMember {
         name: &'a T,
         span: Span,
+    },
+    MissingEnumValues {
+        name: &'a T,
+        span: Span,
+    },
+    DuplicateEnumValue {
+        name: &'a T,
+        first: Span,
+        second: Span,
     },
 }
 
@@ -381,6 +391,32 @@ where
                         .with_message(format!("Union type refers to `{name}` here, but `{name}` cannot be used as an union member type because it is not an object type.")),
                 )
                 .finish(),
+            Error::MissingEnumValues {
+                name, span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0120")
+                .with_message("Enum type must define at least one value.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Enum type `{name}` does not define any values here.")),
+                )
+                .finish(),
+            Error::DuplicateEnumValue {
+                name,
+                first,
+                second,
+            } => B::new(ReportKind::Error, second)
+                .with_code("E0121")
+                .with_message("Enum type defines same value twice.")
+                .with_label(
+                    B::LabelBuilder::new(first)
+                        .with_message(format!("Enum type first defines value `{name}` here ...")),
+                )
+                .with_label(
+                    B::LabelBuilder::new(second)
+                        .with_message(format!("... and later again here.")),
+                )
+                .finish(),
         }
     }
 }
@@ -395,9 +431,10 @@ where
     let mut errors = vec![];
     document.traverse(&arguments::ArgumentNameUniqueness(database), &mut errors);
     document.traverse(&arguments::ArgumentsAreInputTypes(database), &mut errors);
-    document.traverse(&fields::HasFields(database), &mut errors);
+    document.traverse(&enums::EnumValues(database), &mut errors);
     document.traverse(&fields::FieldNameUniqueness(database), &mut errors);
     document.traverse(&fields::FieldsAreOutputTypes(database), &mut errors);
+    document.traverse(&fields::HasFields(database), &mut errors);
     document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
     document.traverse(&names::ReservedNames(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
