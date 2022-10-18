@@ -17,21 +17,19 @@ where
 {
     fn check_inherited_implementations(
         &self,
-        interface_definition: &'a InterfaceTypeDefinition<T>,
         interface_named_type: &'a NamedType<T>,
         name: &'a T,
         implements_interfaces: &ImplementsInterfaces<T>,
     ) -> Option<Error<'a, T>> {
-        for inherited in interface_definition
-            .implements_interfaces
-            .iter()
-            .flat_map(|implements| implements.types())
+        for inherited in self
+            .0
+            .implemented_interfaces(interface_named_type.0.as_ref())
         {
-            if !implements_interfaces.implements_interface(inherited) {
+            if !implements_interfaces.implements_interface(inherited.0.as_ref()) {
                 return Some(Error::MissingInheritedInterface {
                     name,
                     interface: interface_named_type.0.as_ref(),
-                    inherited,
+                    inherited: inherited.0.as_ref(),
                     span: interface_named_type.span(),
                 });
             }
@@ -43,24 +41,15 @@ where
     fn check_valid_implementation(
         &self,
         interface_name: &'a NamedType<T>,
-        interface: &'a InterfaceTypeDefinition<T>,
         concrete_name: &'a T,
-        concrete: &'a TypeDefinition<T>,
+        concrete_fields: &'a FieldsDefinition<T>,
     ) -> Vec<Error<'a, T>> {
-        let interface_fields = match interface.fields_definition.as_ref() {
-            Some(interface_fields) => interface_fields,
-            None => return vec![],
-        };
-
-        let implementation_fields = match concrete.fields_definition() {
-            Some(implementation_fields) => implementation_fields,
-            None => return vec![],
-        };
+        let interface_fields = self.0.field_definitions(interface_name.0.as_ref());
 
         let mut errors = vec![];
 
-        for field in interface_fields.definitions.iter() {
-            let implemented_field = match implementation_fields.field(field.name.as_ref()) {
+        for field in interface_fields {
+            let implemented_field = match concrete_fields.field(field.name.as_ref()) {
                 Some(field) => field,
                 None => {
                     errors.push(Error::MissingInterfaceField {
@@ -192,17 +181,17 @@ where
     pub fn check_interface(
         &self,
         name: &'a T,
-        type_definition: &'a TypeDefinition<T>,
+        concrete_fields: &'a FieldsDefinition<T>,
         implements_interfaces: &ImplementsInterfaces<T>,
         interface_named_type: &'a NamedType<T>,
     ) -> Vec<Error<'a, T>> {
-        let interface_definition = match self
+        match self
             .0
             .type_definitions_by_name(interface_named_type.0.as_ref())
             .next()
             .map(AsRef::as_ref)
         {
-            Some(&TypeDefinition::InterfaceTypeDefinition(ref definition)) => definition,
+            Some(&TypeDefinition::InterfaceTypeDefinition(_)) | None => {}
             Some(_) => {
                 return vec![Error::ImplementsNonInterfaceType {
                     name,
@@ -210,24 +199,17 @@ where
                     span: interface_named_type.span(),
                 }]
             }
-            None => return vec![],
         };
 
         let mut errors = vec![];
 
         errors.extend(self.check_inherited_implementations(
-            interface_definition,
             interface_named_type,
             name,
             implements_interfaces,
         ));
 
-        errors.extend(self.check_valid_implementation(
-            interface_named_type,
-            interface_definition,
-            name,
-            type_definition,
-        ));
+        errors.extend(self.check_valid_implementation(interface_named_type, name, concrete_fields));
 
         errors
     }
@@ -235,7 +217,7 @@ where
     pub fn check_type(
         &self,
         name: &'a T,
-        type_definition: &'a TypeDefinition<T>,
+        concrete_fields: &'a FieldsDefinition<T>,
         implements_interfaces: &'a ImplementsInterfaces<T>,
     ) -> Vec<Error<'a, T>> {
         let mut errors = vec![];
@@ -267,7 +249,7 @@ where
 
             errors.extend(self.check_interface(
                 name,
-                type_definition,
+                concrete_fields,
                 implements_interfaces,
                 interface,
             ));
@@ -298,6 +280,34 @@ where
             None => return,
         };
 
-        accumulator.extend(self.check_type(ty.as_ref(), node.as_ref(), implements_interfaces))
+        let concrete_fields = match node.fields_definition() {
+            Some(fields) => fields,
+            None => return,
+        };
+
+        accumulator.extend(self.check_type(ty.as_ref(), concrete_fields, implements_interfaces))
+    }
+
+    fn visit_type_extension(
+        &self,
+        node: &'a Arc<TypeExtension<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let ty = match node.name().ok() {
+            Some(ty) => ty,
+            None => return,
+        };
+
+        let implements_interfaces = match node.implements_interfaces() {
+            Some(interfaces) => interfaces,
+            None => return,
+        };
+
+        let concrete_fields = match node.fields_definition() {
+            Some(fields) => fields,
+            None => return,
+        };
+
+        accumulator.extend(self.check_type(ty.as_ref(), concrete_fields, implements_interfaces))
     }
 }

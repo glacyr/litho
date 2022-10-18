@@ -58,4 +58,36 @@ where
             }
         }
     }
+
+    fn visit_object_type_extension(
+        &self,
+        node: &'a ObjectTypeExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let name = match node.name.ok() {
+            Some(name) => name,
+            None => return,
+        };
+
+        for field in node
+            .fields_definition
+            .iter()
+            .flat_map(|def| def.definitions.iter())
+        {
+            match self
+                .0
+                .field_definitions_by_name(name.as_ref(), field.name.as_ref())
+                .next()
+            {
+                Some(first) if !Arc::ptr_eq(first, field) => {
+                    accumulator.push(Error::DuplicateFieldName {
+                        name: field.name.as_ref(),
+                        first: first.name.span(),
+                        second: field.name.span(),
+                    })
+                }
+                _ => {}
+            }
+        }
+    }
 }

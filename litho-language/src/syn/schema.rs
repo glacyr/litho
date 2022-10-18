@@ -76,7 +76,9 @@ where
     wrom::recursive(|| {
         alt((
             schema_extension().map(TypeSystemExtension::SchemaExtension),
-            type_extension().map(TypeSystemExtension::TypeExtension),
+            type_extension()
+                .map(Into::into)
+                .map(TypeSystemExtension::TypeExtension),
         ))
     })
 }

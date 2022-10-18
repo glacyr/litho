@@ -542,7 +542,7 @@ node_enum!(
 #[derive(Clone, Debug)]
 pub enum TypeSystemExtension<T> {
     SchemaExtension(SchemaExtension<T>),
-    TypeExtension(TypeExtension<T>),
+    TypeExtension(Arc<TypeExtension<T>>),
 }
 
 node_enum!(
@@ -734,7 +734,7 @@ pub enum TypeExtension<T> {
 }
 
 node_enum!(
-    TypeExtension,
+    Arc<TypeExtension>,
     visit_type_extension,
     ScalarTypeExtension,
     ObjectTypeExtension,
@@ -753,6 +753,28 @@ impl<T> TypeExtension<T> {
             TypeExtension::UnionTypeExtension(extension) => &extension.name,
             TypeExtension::EnumTypeExtension(extension) => &extension.name,
             TypeExtension::InputObjectTypeExtension(extension) => &extension.name,
+        }
+    }
+
+    pub fn implements_interfaces(&self) -> Option<&ImplementsInterfaces<T>> {
+        match self {
+            TypeExtension::InterfaceTypeExtension(extension) => {
+                extension.implements_interfaces.as_ref()
+            }
+            TypeExtension::ObjectTypeExtension(extension) => {
+                extension.implements_interfaces.as_ref()
+            }
+            _ => None,
+        }
+    }
+
+    pub fn fields_definition(&self) -> Option<&FieldsDefinition<T>> {
+        match self {
+            TypeExtension::InterfaceTypeExtension(extension) => {
+                extension.fields_definition.as_ref()
+            }
+            TypeExtension::ObjectTypeExtension(extension) => extension.fields_definition.as_ref(),
+            _ => None,
         }
     }
 }

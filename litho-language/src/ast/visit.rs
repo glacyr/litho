@@ -85,7 +85,7 @@ pub trait Visit<'ast, T> {
     );
     visit!(visit_schema_extension, SchemaExtension);
     visit!(visit_type_definition, Arc<TypeDefinition>);
-    visit!(visit_type_extension, TypeExtension);
+    visit!(visit_type_extension, Arc<TypeExtension>);
     visit!(visit_scalar_type_definition, ScalarTypeDefinition);
     visit!(visit_scalar_type_extension, ScalarTypeExtension);
     visit!(visit_object_type_definition, ObjectTypeDefinition);

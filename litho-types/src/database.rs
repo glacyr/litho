@@ -89,6 +89,17 @@ where
             .iter()
     }
 
+    pub fn type_extensions_by_name(
+        &self,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<TypeExtension<T>>> {
+        self.type_extensions_by_name
+            .get_vec(name)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .iter()
+    }
+
     pub fn directive_definitions_by_name(
         &self,
         name: &T,
@@ -192,5 +203,18 @@ where
         self.definition_for_arguments
             .get(&(Arc::as_ptr(arguments) as usize))
             .map(AsRef::as_ref)
+    }
+
+    pub fn implemented_interfaces(&self, ty: &T) -> impl Iterator<Item = &NamedType<T>> {
+        let definitions = self
+            .type_definitions_by_name(ty)
+            .flat_map(|def| def.implements_interfaces());
+        let extensions = self
+            .type_extensions_by_name(ty)
+            .flat_map(|def| def.implements_interfaces());
+
+        definitions
+            .chain(extensions)
+            .flat_map(|def| def.named_types())
     }
 }
