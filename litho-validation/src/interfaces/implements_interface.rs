@@ -1,67 +1,58 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use std::iter::once;
+use std::sync::Arc;
 
 use litho_language::ast::*;
 use litho_types::Database;
 
 use crate::Error;
 
-pub struct ObjectImplementsInterfaces<'a, T>(pub &'a Database<T>)
+pub struct ImplementsInterface<'a, T>(pub &'a Database<T>)
 where
     T: Eq + Hash;
 
-impl<'a, T> ObjectImplementsInterfaces<'a, T>
+impl<'a, T> ImplementsInterface<'a, T>
 where
     T: Eq + Hash,
 {
-    fn is_valid_implementation(
+    fn check_inherited_implementations(
         &self,
+        interface_definition: &'a InterfaceTypeDefinition<T>,
         interface_named_type: &'a NamedType<T>,
-        implementation: &'a ObjectTypeDefinition<T>,
-    ) -> Vec<Error<'a, T>> {
-        let implementation_name = match implementation.name.ok() {
-            Some(name) => name,
-            None => return vec![],
-        };
-
-        let interface = match self
-            .0
-            .type_definitions_by_name(interface_named_type.0.as_ref())
-            .next()
-        {
-            Some(&TypeDefinition::InterfaceTypeDefinition(ref definition)) => definition,
-            Some(_) => {
-                return vec![Error::ImplementsNonInterfaceType {
-                    name: implementation_name.as_ref(),
-                    interface: interface_named_type.0.as_ref(),
-                    span: interface_named_type.span(),
-                }]
-            }
-            None => return vec![],
-        };
-
-        for inherited in interface
+        name: &'a T,
+        implements_interfaces: &ImplementsInterfaces<T>,
+    ) -> Option<Error<'a, T>> {
+        for inherited in interface_definition
             .implements_interfaces
             .iter()
             .flat_map(|implements| implements.types())
         {
-            if !implementation.implements_interface(inherited) {
-                return vec![Error::MissingInheritedInterface {
-                    name: implementation_name.as_ref(),
+            if !implements_interfaces.implements_interface(inherited) {
+                return Some(Error::MissingInheritedInterface {
+                    name,
                     interface: interface_named_type.0.as_ref(),
                     inherited,
                     span: interface_named_type.span(),
-                }];
+                });
             }
         }
 
+        None
+    }
+
+    fn check_valid_implementation(
+        &self,
+        interface_name: &'a NamedType<T>,
+        interface: &'a InterfaceTypeDefinition<T>,
+        concrete_name: &'a T,
+        concrete: &'a TypeDefinition<T>,
+    ) -> Vec<Error<'a, T>> {
         let interface_fields = match interface.fields_definition.as_ref() {
             Some(interface_fields) => interface_fields,
             None => return vec![],
         };
 
-        let implementation_fields = match implementation.fields_definition.as_ref() {
+        let implementation_fields = match concrete.fields_definition() {
             Some(implementation_fields) => implementation_fields,
             None => return vec![],
         };
@@ -73,10 +64,10 @@ where
                 Some(field) => field,
                 None => {
                     errors.push(Error::MissingInterfaceField {
-                        name: implementation_name.as_ref(),
-                        interface: interface_named_type.0.as_ref(),
+                        name: concrete_name,
+                        interface: interface_name.0.as_ref(),
                         field: field.name.as_ref(),
-                        span: interface_named_type.span(),
+                        span: interface_name.span(),
                     });
 
                     continue;
@@ -101,8 +92,8 @@ where
                         match argument.ty.ok().zip(implemented_argument.ty.ok()) {
                             Some((expected, ty)) if !expected.is_invariant(ty) => {
                                 errors.push(Error::InvalidInterfaceFieldArgumentType {
-                                    name: implementation_name.as_ref(),
-                                    interface: interface_named_type.0.as_ref(),
+                                    name: concrete_name,
+                                    interface: interface_name.0.as_ref(),
                                     field: field.name.as_ref(),
                                     argument: argument.name.as_ref(),
                                     expected,
@@ -114,8 +105,8 @@ where
                         }
                     }
                     None => errors.push(Error::MissingInterfaceFieldArgument {
-                        name: implementation_name.as_ref(),
-                        interface: interface_named_type.0.as_ref(),
+                        name: concrete_name,
+                        interface: interface_name.0.as_ref(),
                         field: field.name.as_ref(),
                         argument: argument.name.as_ref(),
                         span: implemented_field.name.span(),
@@ -135,8 +126,8 @@ where
                 match implemented_argument.ty.ok() {
                     Some(ty) if ty.is_required() => {
                         errors.push(Error::UnexpectedNonNullInterfaceFieldArgument {
-                            name: implementation_name.as_ref(),
-                            interface: interface_named_type.0.as_ref(),
+                            name: concrete_name,
+                            interface: interface_name.0.as_ref(),
                             field: field.name.as_ref(),
                             argument: implemented_argument.name.as_ref(),
                             ty,
@@ -153,8 +144,8 @@ where
                         .is_valid_implementation_field_type(implemented_field_type, field_type) =>
                 {
                     errors.push(Error::NonCovariantInterfaceField {
-                        name: implementation_name.as_ref(),
-                        interface: interface_named_type.0.as_ref(),
+                        name: concrete_name,
+                        interface: interface_name.0.as_ref(),
                         field: field.name.as_ref(),
                         expected: &field_type,
                         ty: &implemented_field_type,
@@ -197,37 +188,71 @@ where
             _ => false,
         }
     }
-}
 
-impl<'a, T> Visit<'a, T> for ObjectImplementsInterfaces<'a, T>
-where
-    T: Eq + Hash,
-{
-    type Accumulator = Vec<Error<'a, T>>;
-
-    fn visit_object_type_definition(
+    pub fn check_interface(
         &self,
-        node: &'a ObjectTypeDefinition<T>,
-        accumulator: &mut Self::Accumulator,
-    ) {
-        let interfaces = match node.implements_interfaces.as_ref() {
-            Some(interfaces) => interfaces,
-            None => return,
+        name: &'a T,
+        type_definition: &'a TypeDefinition<T>,
+        implements_interfaces: &ImplementsInterfaces<T>,
+        interface_named_type: &'a NamedType<T>,
+    ) -> Vec<Error<'a, T>> {
+        let interface_definition = match self
+            .0
+            .type_definitions_by_name(interface_named_type.0.as_ref())
+            .next()
+        {
+            Some(&TypeDefinition::InterfaceTypeDefinition(ref definition)) => definition,
+            Some(_) => {
+                return vec![Error::ImplementsNonInterfaceType {
+                    name,
+                    interface: interface_named_type.0.as_ref(),
+                    span: interface_named_type.span(),
+                }]
+            }
+            None => return vec![],
         };
 
+        let mut errors = vec![];
+
+        errors.extend(self.check_inherited_implementations(
+            interface_definition,
+            interface_named_type,
+            name,
+            implements_interfaces,
+        ));
+
+        errors.extend(self.check_valid_implementation(
+            interface_named_type,
+            interface_definition,
+            name,
+            type_definition,
+        ));
+
+        errors
+    }
+
+    pub fn check_type(
+        &self,
+        name: &'a T,
+        type_definition: &'a TypeDefinition<T>,
+        implements_interfaces: &'a ImplementsInterfaces<T>,
+    ) -> Vec<Error<'a, T>> {
+        let mut errors = vec![];
         let mut visited = HashMap::<&T, &NamedType<T>>::new();
 
-        for interface in
-            once(&interfaces.first).chain(interfaces.types.iter().map(|(_, interface)| interface))
-        {
-            let interface = match interface.ok() {
-                Some(interface) => interface,
-                _ => continue,
-            };
+        for interface in implements_interfaces.named_types() {
+            if interface.0.as_ref() == name {
+                errors.push(Error::SelfReferentialInterface {
+                    name: interface.0.as_ref(),
+                    span: interface.span(),
+                });
+
+                continue;
+            }
 
             match visited.get(&interface.0.as_ref()) {
                 Some(exists) => {
-                    accumulator.push(Error::DuplicateImplementsInterface {
+                    errors.push(Error::DuplicateImplementsInterface {
                         name: interface.0.as_ref(),
                         first: exists.span(),
                         second: interface.span(),
@@ -239,7 +264,39 @@ where
 
             visited.insert(interface.0.as_ref(), interface);
 
-            accumulator.extend(self.is_valid_implementation(interface, node));
+            errors.extend(self.check_interface(
+                name,
+                type_definition,
+                implements_interfaces,
+                interface,
+            ));
         }
+
+        errors
+    }
+}
+
+impl<'a, T> Visit<'a, T> for ImplementsInterface<'a, T>
+where
+    T: Eq + Hash,
+{
+    type Accumulator = Vec<Error<'a, T>>;
+
+    fn visit_type_definition(
+        &self,
+        node: &'a Arc<TypeDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let ty = match node.name().ok() {
+            Some(ty) => ty,
+            None => return,
+        };
+
+        let implements_interfaces = match node.implements_interfaces() {
+            Some(interfaces) => interfaces,
+            None => return,
+        };
+
+        accumulator.extend(self.check_type(ty.as_ref(), node.as_ref(), implements_interfaces))
     }
 }

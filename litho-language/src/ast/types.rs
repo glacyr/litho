@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
-use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
+pub use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
 
 use super::{node, node_enum, node_unit, Node, Visit};
 
@@ -691,6 +691,30 @@ impl<T> TypeDefinition<T> {
             | TypeDefinition::ObjectTypeDefinition(_)
             | TypeDefinition::ScalarTypeDefinition(_)
             | TypeDefinition::UnionTypeDefinition(_) => true,
+        }
+    }
+
+    pub fn implements_interfaces(&self) -> Option<&ImplementsInterfaces<T>> {
+        match self {
+            TypeDefinition::InterfaceTypeDefinition(definition) => {
+                definition.implements_interfaces.as_ref()
+            }
+            TypeDefinition::ObjectTypeDefinition(definition) => {
+                definition.implements_interfaces.as_ref()
+            }
+            _ => None,
+        }
+    }
+
+    pub fn fields_definition(&self) -> Option<&FieldsDefinition<T>> {
+        match self {
+            TypeDefinition::InterfaceTypeDefinition(definition) => {
+                definition.fields_definition.as_ref()
+            }
+            TypeDefinition::ObjectTypeDefinition(definition) => {
+                definition.fields_definition.as_ref()
+            }
+            _ => None,
         }
     }
 }

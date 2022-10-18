@@ -9,8 +9,9 @@ use litho_language::lex::Span;
 use litho_types::Database;
 
 mod arguments;
+mod fields;
+mod interfaces;
 mod names;
-mod objects;
 mod types;
 
 pub enum Error<'a, T> {
@@ -18,7 +19,7 @@ pub enum Error<'a, T> {
         name: &'a T,
         span: Span,
     },
-    EmptyObjectType {
+    EmptyType {
         name: &'a T,
         span: Span,
     },
@@ -106,6 +107,10 @@ pub enum Error<'a, T> {
         ty: &'a Type<T>,
         span: Span,
     },
+    SelfReferentialInterface {
+        name: &'a T,
+        span: Span,
+    },
 }
 
 impl<'a, T> IntoReport for Error<'a, T>
@@ -125,11 +130,11 @@ where
                         .with_message(format!("Type `{}` does not exist.", name)),
                 )
                 .finish(),
-            Error::EmptyObjectType { name, span } => B::new(ReportKind::Error, span)
+            Error::EmptyType { name, span } => B::new(ReportKind::Error, span)
                 .with_code("E0101")
-                .with_message("Object type must define one or more fields.")
+                .with_message("Type must define one or more fields.")
                 .with_label(B::LabelBuilder::new(span).with_message(format!(
-                    "Object type `{}` here doesn't define any fields.",
+                    "Type `{}` here doesn't define any fields.",
                     name
                 )))
                 .finish(),
@@ -316,6 +321,16 @@ where
                         .with_message(format!("Type `{name}` implements `{interface}` here, which defines field `{field}` type `{ty}` but this type is not compatible with expected type `{expected}` of field `{field}` interface `{interface}`.")),
                 )
                 .finish(),
+            Error::SelfReferentialInterface {
+                name, span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0116")
+                .with_message("Type may not implement its own interface.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Type `{name}` attempts to implement self-referential interface here, which is not allowed.")),
+                )
+                .finish(),
         }
     }
 }
@@ -330,11 +345,11 @@ where
     let mut errors = vec![];
     document.traverse(&arguments::ArgumentNameUniqueness(database), &mut errors);
     document.traverse(&arguments::ArgumentsAreInputTypes(database), &mut errors);
+    document.traverse(&fields::HasFields(database), &mut errors);
+    document.traverse(&fields::FieldNameUniqueness(database), &mut errors);
+    document.traverse(&fields::FieldsAreOutputTypes(database), &mut errors);
+    document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
     document.traverse(&names::ReservedNames(database), &mut errors);
-    document.traverse(&objects::ObjectHasFields(database), &mut errors);
-    document.traverse(&objects::FieldNameUniqueness(database), &mut errors);
-    document.traverse(&objects::FieldsAreOutputTypes(database), &mut errors);
-    document.traverse(&objects::ObjectImplementsInterfaces(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
     errors
 }
