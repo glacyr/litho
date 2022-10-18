@@ -17,6 +17,27 @@ where
 {
     type Accumulator = Vec<Error<'a, T>>;
 
+    fn visit_input_fields_definition(
+        &self,
+        node: &'a InputFieldsDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let mut existing = HashMap::<&T, &InputValueDefinition<T>>::new();
+
+        for field in node.definitions.iter() {
+            match existing.get(&field.name.as_ref()) {
+                Some(first) => accumulator.push(Error::DuplicateFieldName {
+                    name: field.name.as_ref(),
+                    first: first.name.span(),
+                    second: field.name.span(),
+                }),
+                None => {
+                    existing.insert(field.name.as_ref(), field);
+                }
+            }
+        }
+    }
+
     fn visit_fields_definition(
         &self,
         node: &'a FieldsDefinition<T>,

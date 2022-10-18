@@ -370,7 +370,7 @@ where
     wrom::recursive(|| {
         delimited(
             punctuator("("),
-            many0(input_value_definition()),
+            many0(input_value_definition().map(Into::into)),
             punctuator(")"),
             Missing::delimiter_complaint(
                 "Arguments are missing `)` delimiter.",
@@ -709,7 +709,7 @@ where
     wrom::recursive(|| {
         delimited(
             punctuator("{"),
-            many0(input_value_definition()),
+            many0(input_value_definition().map(Into::into)),
             punctuator("}"),
             Missing::delimiter_complaint(
                 "Input fields are missing `}` delimiter.",

@@ -909,14 +909,14 @@ node!(
 #[derive(Clone, Debug)]
 pub struct ArgumentsDefinition<T> {
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub definitions: Vec<InputValueDefinition<T>>,
+    pub definitions: Vec<Arc<InputValueDefinition<T>>>,
 }
 
 impl<T> ArgumentsDefinition<T>
 where
     T: Eq,
 {
-    pub fn argument(&self, name: &T) -> Option<&InputValueDefinition<T>> {
+    pub fn argument(&self, name: &T) -> Option<&Arc<InputValueDefinition<T>>> {
         self.definitions
             .iter()
             .find(|def| def.name.as_ref() == name)
@@ -941,7 +941,7 @@ pub struct InputValueDefinition<T> {
 }
 
 node!(
-    InputValueDefinition,
+    Arc<InputValueDefinition>,
     visit_input_value_definition,
     description,
     name,
@@ -1194,7 +1194,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct InputFieldsDefinition<T> {
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub definitions: Vec<InputValueDefinition<T>>,
+    pub definitions: Vec<Arc<InputValueDefinition<T>>>,
 }
 
 node!(

@@ -43,4 +43,18 @@ where
             }
         }
     }
+
+    fn visit_input_object_type_definition(
+        &self,
+        node: &'ast InputObjectTypeDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
+            for field in fields.definitions.iter() {
+                accumulator
+                    .input_field_definitions
+                    .insert(name.as_ref().clone(), field.clone());
+            }
+        }
+    }
 }

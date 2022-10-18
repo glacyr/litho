@@ -11,6 +11,7 @@ use litho_types::Database;
 mod arguments;
 mod enums;
 mod fields;
+mod inputs;
 mod interfaces;
 mod names;
 mod types;
@@ -134,6 +135,12 @@ pub enum Error<'a, T> {
         name: &'a T,
         first: Span,
         second: Span,
+    },
+    SelfReferentialInputType {
+        name: &'a T,
+        field: &'a T,
+        ty: &'a T,
+        span: Span,
     },
 }
 
@@ -417,6 +424,19 @@ where
                         .with_message(format!("... and later again here.")),
                 )
                 .finish(),
+            Error::SelfReferentialInputType {
+                name,
+                field,
+                ty,
+                span,
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0122")
+                .with_message("Self-referential input type.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Input type `{name}` defines field `{field}` of non-nullable type `{ty}` that (in)directly refers to type `{name}` again.")),
+                )
+                .finish(),
         }
     }
 }
@@ -436,8 +456,10 @@ where
     document.traverse(&fields::FieldsAreOutputTypes(database), &mut errors);
     document.traverse(&fields::HasFields(database), &mut errors);
     document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
+    document.traverse(&inputs::SelfReferentialInputs(database), &mut errors);
     document.traverse(&names::ReservedNames(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
     document.traverse(&unions::UnionMemberTypes(database), &mut errors);
+    document.traverse(&inputs::SelfReferentialInputs(database), &mut errors);
     errors
 }

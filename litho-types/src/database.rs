@@ -21,6 +21,7 @@ where
     pub(crate) field_definitions: MultiMap<T, Arc<FieldDefinition<T>>>,
     pub(crate) field_definitions_by_field: MultiMap<usize, Arc<FieldDefinition<T>>>,
     pub(crate) field_definitions_by_name: HashMap<T, MultiMap<T, Arc<FieldDefinition<T>>>>,
+    pub(crate) input_field_definitions: MultiMap<T, Arc<InputValueDefinition<T>>>,
     pub(crate) type_by_selection_set: HashMap<usize, T>,
     pub(crate) definition_for_arguments: HashMap<usize, Arc<ArgumentsDefinition<T>>>,
 }
@@ -38,6 +39,7 @@ where
             field_definitions: Default::default(),
             field_definitions_by_field: Default::default(),
             field_definitions_by_name: Default::default(),
+            input_field_definitions: Default::default(),
             type_by_selection_set: Default::default(),
             definition_for_arguments: Default::default(),
         }
@@ -111,6 +113,18 @@ where
             TypeDefinition::ObjectTypeDefinition(def) if def.implements_interface(name) => true,
             _ => false,
         })
+    }
+
+    pub fn input_field_definitions(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &InputValueDefinition<T>> {
+        self.input_field_definitions
+            .get_vec(ty)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .iter()
+            .map(AsRef::as_ref)
     }
 
     pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &FieldDefinition<T>> {
