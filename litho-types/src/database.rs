@@ -93,6 +93,11 @@ where
             .any(|definition| definition.is_output())
     }
 
+    pub fn is_object_type(&self, name: &T) -> bool {
+        self.type_definitions_by_name(name)
+            .any(|definition| definition.is_object_type())
+    }
+
     pub fn is_union_member(&self, ty: &T, name: &T) -> bool {
         self.type_definitions_by_name(name).any(|def| match def {
             TypeDefinition::UnionTypeDefinition(def) if def.includes_member_type(ty) => true,

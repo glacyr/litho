@@ -694,6 +694,10 @@ impl<T> TypeDefinition<T> {
         }
     }
 
+    pub fn is_object_type(&self) -> bool {
+        matches!(self, TypeDefinition::ObjectTypeDefinition(_))
+    }
+
     pub fn implements_interfaces(&self) -> Option<&ImplementsInterfaces<T>> {
         match self {
             TypeDefinition::InterfaceTypeDefinition(definition) => {

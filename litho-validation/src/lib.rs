@@ -13,6 +13,7 @@ mod fields;
 mod interfaces;
 mod names;
 mod types;
+mod unions;
 
 pub enum Error<'a, T> {
     UnknownNamedType {
@@ -108,6 +109,19 @@ pub enum Error<'a, T> {
         span: Span,
     },
     SelfReferentialInterface {
+        name: &'a T,
+        span: Span,
+    },
+    MissingUnionMembers {
+        name: &'a T,
+        span: Span,
+    },
+    DuplicateUnionMember {
+        name: &'a T,
+        first: Span,
+        second: Span,
+    },
+    NonObjectUnionMember {
         name: &'a T,
         span: Span,
     },
@@ -331,6 +345,42 @@ where
                         .with_message(format!("Type `{name}` attempts to implement self-referential interface here, which is not allowed.")),
                 )
                 .finish(),
+            Error::MissingUnionMembers {
+                name, span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0117")
+                .with_message("Union type must reference at least one member type.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Union type `{name}` does not define any member types here.")),
+                )
+                .finish(),
+            Error::DuplicateUnionMember {
+                name,
+                first,
+                second,
+            } => B::new(ReportKind::Error, second)
+                .with_code("E0118")
+                .with_message("Union type defines same member type twice.")
+                .with_label(
+                    B::LabelBuilder::new(first)
+                        .with_message(format!("Union type first refers to `{name}` here ...")),
+                )
+                .with_label(
+                    B::LabelBuilder::new(second)
+                        .with_message(format!("... and later again here.")),
+                )
+                .finish(),
+            Error::NonObjectUnionMember {
+                name, span
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0119")
+                .with_message("Union type can only reference object types.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Union type refers to `{name}` here, but `{name}` cannot be used as an union member type because it is not an object type.")),
+                )
+                .finish(),
         }
     }
 }
@@ -351,5 +401,6 @@ where
     document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
     document.traverse(&names::ReservedNames(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
+    document.traverse(&unions::UnionMemberTypes(database), &mut errors);
     errors
 }
