@@ -16,6 +16,7 @@ where
 {
     pub(crate) operation_definitions_by_name: MultiMap<T, Arc<OperationDefinition<T>>>,
     pub(crate) fragment_definitions_by_name: MultiMap<T, Arc<FragmentDefinition<T>>>,
+    pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
     pub(crate) field_definitions: MultiMap<T, Arc<FieldDefinition<T>>>,
@@ -34,6 +35,7 @@ where
         Database {
             operation_definitions_by_name: Default::default(),
             fragment_definitions_by_name: Default::default(),
+            directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
             field_definitions: Default::default(),
@@ -78,6 +80,18 @@ where
 
     pub fn type_definitions_by_name(&self, name: &T) -> impl Iterator<Item = &TypeDefinition<T>> {
         self.type_definitions_by_name
+            .get_vec(name)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .iter()
+            .map(AsRef::as_ref)
+    }
+
+    pub fn directive_definitions_by_name(
+        &self,
+        name: &T,
+    ) -> impl Iterator<Item = &DirectiveDefinition<T>> {
+        self.directive_definitions_by_name
             .get_vec(name)
             .map(Vec::as_slice)
             .unwrap_or_default()

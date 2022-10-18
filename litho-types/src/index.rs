@@ -13,6 +13,18 @@ where
 {
     type Accumulator = Database<T>;
 
+    fn visit_directive_definition(
+        &self,
+        node: &'ast Arc<DirectiveDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some(name) = node.name.ok() {
+            accumulator
+                .directive_definitions_by_name
+                .insert(name.as_ref().clone(), node.clone());
+        }
+    }
+
     fn visit_type_definition(
         &self,
         node: &'ast Arc<TypeDefinition<T>>,

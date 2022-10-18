@@ -9,6 +9,7 @@ use litho_language::lex::Span;
 use litho_types::Database;
 
 mod arguments;
+mod directives;
 mod enums;
 mod fields;
 mod inputs;
@@ -140,6 +141,15 @@ pub enum Error<'a, T> {
         name: &'a T,
         field: &'a T,
         ty: &'a T,
+        span: Span,
+    },
+    ReservedDirectiveName {
+        name: &'a T,
+        span: Span,
+    },
+    SelfReferentialDirective {
+        name: &'a T,
+        directive: &'a T,
         span: Span,
     },
 }
@@ -437,6 +447,25 @@ where
                         .with_message(format!("Input type `{name}` defines field `{field}` of non-nullable type `{ty}` that (in)directly refers to type `{name}` again.")),
                 )
                 .finish(),
+            Error::ReservedDirectiveName { name, span } => B::new(ReportKind::Error, span)
+                .with_code("E0123")
+                .with_message("Reserved directive name.")
+                .with_label(B::LabelBuilder::new(span).with_message(format!(
+                    "Directive `@{name}` is defined here but names starting with `__` are reserved.",
+                )))
+                .finish(),
+            Error::SelfReferentialDirective {
+                name,
+                directive,
+                span,
+            } => B::new(ReportKind::Error, span)
+                .with_code("E0124")
+                .with_message("Self-referential directive.")
+                .with_label(
+                    B::LabelBuilder::new(span)
+                        .with_message(format!("Directive `{name}` (in)directly refers to itself by referring to `{directive}` here.")),
+                )
+                .finish(),
         }
     }
 }
@@ -451,15 +480,18 @@ where
     let mut errors = vec![];
     document.traverse(&arguments::ArgumentNameUniqueness(database), &mut errors);
     document.traverse(&arguments::ArgumentsAreInputTypes(database), &mut errors);
+    document.traverse(
+        &directives::SelfReferentialDirectives(database),
+        &mut errors,
+    );
     document.traverse(&enums::EnumValues(database), &mut errors);
     document.traverse(&fields::FieldNameUniqueness(database), &mut errors);
     document.traverse(&fields::FieldsAreOutputTypes(database), &mut errors);
     document.traverse(&fields::HasFields(database), &mut errors);
-    document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
     document.traverse(&inputs::SelfReferentialInputs(database), &mut errors);
+    document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
     document.traverse(&names::ReservedNames(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
     document.traverse(&unions::UnionMemberTypes(database), &mut errors);
-    document.traverse(&inputs::SelfReferentialInputs(database), &mut errors);
     errors
 }

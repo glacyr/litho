@@ -110,7 +110,7 @@ pub trait Visit<'ast, T> {
     );
     visit!(visit_input_fields_definition, InputFieldsDefinition);
     visit!(visit_input_object_type_extension, InputObjectTypeExtension);
-    visit!(visit_directive_definition, DirectiveDefinition);
+    visit!(visit_directive_definition, Arc<DirectiveDefinition>);
     visit!(visit_directive_locations, DirectiveLocations);
     visit!(visit_directive_location, DirectiveLocation);
     visit!(

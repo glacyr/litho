@@ -34,7 +34,9 @@ where
             type_definition()
                 .map(Into::into)
                 .map(TypeSystemDefinition::TypeDefinition),
-            directive_definition().map(TypeSystemDefinition::DirectiveDefinition),
+            directive_definition()
+                .map(Into::into)
+                .map(TypeSystemDefinition::DirectiveDefinition),
         ))
     })
 }

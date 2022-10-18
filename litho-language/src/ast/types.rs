@@ -504,7 +504,7 @@ node!(TypeSystemDocument, visit_type_system_document, definitions);
 pub enum TypeSystemDefinition<T> {
     SchemaDefinition(SchemaDefinition<T>),
     TypeDefinition(Arc<TypeDefinition<T>>),
-    DirectiveDefinition(DirectiveDefinition<T>),
+    DirectiveDefinition(Arc<DirectiveDefinition<T>>),
 }
 
 node_enum!(
@@ -1233,7 +1233,7 @@ pub struct DirectiveDefinition<T> {
 }
 
 node!(
-    DirectiveDefinition,
+    Arc<DirectiveDefinition>,
     visit_directive_definition,
     description,
     directive,

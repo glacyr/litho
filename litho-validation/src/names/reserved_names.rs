@@ -42,4 +42,20 @@ where
             })
         }
     }
+
+    fn visit_directive_definition(
+        &self,
+        node: &'a Arc<DirectiveDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        match node.name.ok() {
+            Some(name) if name.as_ref().borrow().starts_with("__") => {
+                accumulator.push(Error::ReservedDirectiveName {
+                    name: name.as_ref(),
+                    span: node.name.span(),
+                })
+            }
+            _ => {}
+        }
+    }
 }
