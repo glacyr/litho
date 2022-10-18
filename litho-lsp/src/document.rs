@@ -1,11 +1,10 @@
 use litho_language::chk::{collect_errors, IntoReport};
 use litho_language::lex::SourceId;
 use litho_language::{Document as Ast, Parse};
-use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::{Diagnostic, Url};
 
-use super::report::ReportBuilder;
+use super::{ReportBuilder, Workspace};
 
 #[derive(Debug)]
 pub struct Document {
@@ -62,16 +61,16 @@ impl Document {
 
     pub fn diagnostics<'a>(
         &'a self,
-        database: &'a Database<SmolStr>,
+        workspace: &'a Workspace,
     ) -> impl Iterator<Item = Diagnostic> + 'a {
         self.reports
             .iter()
             .cloned()
             .chain(
-                litho_validation::check(self.ast(), database)
+                litho_validation::check(self.ast(), workspace.database())
                     .into_iter()
                     .map(IntoReport::into_report::<ReportBuilder>),
             )
-            .map(|report| report.into_diagnostic(self.url.clone(), self.text.as_ref()))
+            .map(|report| report.into_diagnostic(workspace))
     }
 }

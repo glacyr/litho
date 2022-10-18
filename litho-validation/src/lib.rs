@@ -152,6 +152,16 @@ pub enum Error<'a, T> {
         directive: &'a T,
         span: Span,
     },
+    DuplicateTypeName {
+        name: &'a T,
+        first: Span,
+        second: Span,
+    },
+    DuplicateDirectiveName {
+        name: &'a T,
+        first: Span,
+        second: Span,
+    },
 }
 
 impl<'a, T> IntoReport for Error<'a, T>
@@ -466,6 +476,38 @@ where
                         .with_message(format!("Directive `{name}` (in)directly refers to itself by referring to `{directive}` here.")),
                 )
                 .finish(),
+            Error::DuplicateTypeName {
+                name,
+                first,
+                second,
+            } => B::new(ReportKind::Error, second)
+                .with_code("E0125")
+                .with_message("Type must have a unique name.")
+                .with_label(
+                    B::LabelBuilder::new(first)
+                        .with_message(format!("Type with name `{name}` is first defined here ...")),
+                )
+                .with_label(
+                    B::LabelBuilder::new(second)
+                        .with_message(format!("... and later again here.")),
+                )
+                .finish(),
+            Error::DuplicateDirectiveName {
+                name,
+                first,
+                second,
+            } => B::new(ReportKind::Error, second)
+                .with_code("E0126")
+                .with_message("Directive must have a unique name.")
+                .with_label(
+                    B::LabelBuilder::new(first)
+                        .with_message(format!("Directive with name `@{name}` is first defined here ...")),
+                )
+                .with_label(
+                    B::LabelBuilder::new(second)
+                        .with_message(format!("... and later again here.")),
+                )
+                .finish(),
         }
     }
 }
@@ -491,6 +533,7 @@ where
     document.traverse(&inputs::SelfReferentialInputs(database), &mut errors);
     document.traverse(&interfaces::ImplementsInterface(database), &mut errors);
     document.traverse(&names::ReservedNames(database), &mut errors);
+    document.traverse(&names::UniqueNames(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
     document.traverse(&unions::UnionMemberTypes(database), &mut errors);
     errors

@@ -1,6 +1,7 @@
-use line_col::LineColLookup;
 use litho_language::lex::Span;
 use tower_lsp::lsp_types::*;
+
+use super::Workspace;
 
 #[derive(Clone, Debug)]
 pub struct LabelBuilder {
@@ -44,36 +45,22 @@ pub struct ReportBuilder {
 }
 
 impl ReportBuilder {
-    pub fn into_diagnostic(self, url: Url, source: &str) -> Diagnostic {
-        let index = LineColLookup::new(source);
-        let start = index.get(self.span.start);
-        let end = index.get(self.span.end);
-
+    pub fn into_diagnostic(self, workspace: &Workspace) -> Diagnostic {
         Diagnostic {
             source: Some("litho".to_owned()),
             code: self.code.map(NumberOrString::String),
             message: self.message.unwrap_or_default(),
-            range: Range::new(
-                Position::new(start.0 as u32 - 1, start.1 as u32 - 1),
-                Position::new(end.0 as u32 - 1, end.1 as u32 - 1),
-            ),
+            range: workspace.span_to_range(self.span).unwrap_or_default(),
             related_information: Some(
                 self.labels
                     .into_iter()
-                    .map(|label| {
-                        let start = index.get(label.span.start);
-                        let end = index.get(label.span.end);
-
-                        DiagnosticRelatedInformation {
-                            location: Location {
-                                uri: url.clone(),
-                                range: Range::new(
-                                    Position::new(start.0 as u32 - 1, start.1 as u32 - 1),
-                                    Position::new(end.0 as u32 - 1, end.1 as u32 - 1),
-                                ),
-                            },
-                            message: label.message.unwrap_or_default(),
-                        }
+                    .flat_map(|label| {
+                        workspace.span_to_location(label.span).map(|location| {
+                            DiagnosticRelatedInformation {
+                                location,
+                                message: label.message.unwrap_or_default(),
+                            }
+                        })
                     })
                     .collect(),
             ),

@@ -200,6 +200,7 @@ where
             .0
             .type_definitions_by_name(interface_named_type.0.as_ref())
             .next()
+            .map(AsRef::as_ref)
         {
             Some(&TypeDefinition::InterfaceTypeDefinition(ref definition)) => definition,
             Some(_) => {

@@ -78,25 +78,26 @@ where
             .map(AsRef::as_ref)
     }
 
-    pub fn type_definitions_by_name(&self, name: &T) -> impl Iterator<Item = &TypeDefinition<T>> {
+    pub fn type_definitions_by_name(
+        &self,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<TypeDefinition<T>>> {
         self.type_definitions_by_name
             .get_vec(name)
             .map(Vec::as_slice)
             .unwrap_or_default()
             .iter()
-            .map(AsRef::as_ref)
     }
 
     pub fn directive_definitions_by_name(
         &self,
         name: &T,
-    ) -> impl Iterator<Item = &DirectiveDefinition<T>> {
+    ) -> impl Iterator<Item = &Arc<DirectiveDefinition<T>>> {
         self.directive_definitions_by_name
             .get_vec(name)
             .map(Vec::as_slice)
             .unwrap_or_default()
             .iter()
-            .map(AsRef::as_ref)
     }
 
     pub fn is_input_type(&self, name: &T) -> bool {
@@ -115,18 +116,22 @@ where
     }
 
     pub fn is_union_member(&self, ty: &T, name: &T) -> bool {
-        self.type_definitions_by_name(name).any(|def| match def {
-            TypeDefinition::UnionTypeDefinition(def) if def.includes_member_type(ty) => true,
-            _ => false,
-        })
+        self.type_definitions_by_name(name)
+            .any(|def| match def.as_ref() {
+                TypeDefinition::UnionTypeDefinition(def) if def.includes_member_type(ty) => true,
+                _ => false,
+            })
     }
 
     pub fn implements_interface(&self, ty: &T, name: &T) -> bool {
-        self.type_definitions_by_name(ty).any(|def| match def {
-            TypeDefinition::InterfaceTypeDefinition(def) if def.implements_interface(name) => true,
-            TypeDefinition::ObjectTypeDefinition(def) if def.implements_interface(name) => true,
-            _ => false,
-        })
+        self.type_definitions_by_name(ty)
+            .any(|def| match def.as_ref() {
+                TypeDefinition::InterfaceTypeDefinition(def) if def.implements_interface(name) => {
+                    true
+                }
+                TypeDefinition::ObjectTypeDefinition(def) if def.implements_interface(name) => true,
+                _ => false,
+            })
     }
 
     pub fn input_field_definitions(

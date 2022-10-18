@@ -21,6 +21,7 @@ use document::Document;
 use hover::HoverProvider;
 use inlay_hint::InlayHintProvider;
 use printer::Printer;
+use report::ReportBuilder;
 use store::Store;
 use util::{index_to_position, line_col_to_offset, span_to_range};
 use workspace::Workspace;
@@ -52,7 +53,7 @@ impl Backend {
             self.client
                 .publish_diagnostics(
                     document.url().to_owned(),
-                    document.diagnostics(workspace.database()).collect(),
+                    document.diagnostics(&workspace).collect(),
                     document.version(),
                 )
                 .await;
