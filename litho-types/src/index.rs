@@ -57,9 +57,11 @@ where
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
                 accumulator
-                    .field_definitions
+                    .definitions
+                    .field_definitions_by_type
                     .insert(name.as_ref().clone(), field.clone());
                 accumulator
+                    .definitions
                     .field_definitions_by_name
                     .entry(name.as_ref().clone())
                     .or_default()
@@ -76,9 +78,11 @@ where
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
                 accumulator
-                    .field_definitions
+                    .extensions
+                    .field_definitions_by_type
                     .insert(name.as_ref().clone(), field.clone());
                 accumulator
+                    .extensions
                     .field_definitions_by_name
                     .entry(name.as_ref().clone())
                     .or_default()
@@ -95,9 +99,11 @@ where
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
                 accumulator
-                    .field_definitions
+                    .definitions
+                    .field_definitions_by_type
                     .insert(name.as_ref().clone(), field.clone());
                 accumulator
+                    .definitions
                     .field_definitions_by_name
                     .entry(name.as_ref().clone())
                     .or_default()
@@ -114,9 +120,11 @@ where
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
                 accumulator
-                    .field_definitions
+                    .extensions
+                    .field_definitions_by_type
                     .insert(name.as_ref().clone(), field.clone());
                 accumulator
+                    .extensions
                     .field_definitions_by_name
                     .entry(name.as_ref().clone())
                     .or_default()

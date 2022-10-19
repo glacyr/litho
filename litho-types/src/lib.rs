@@ -1,3 +1,4 @@
+mod bindings;
 mod database;
 mod index;
 mod inference;

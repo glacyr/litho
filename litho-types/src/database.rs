@@ -6,6 +6,7 @@ use std::sync::Arc;
 use litho_language::ast::*;
 use multimap::MultiMap;
 
+use super::bindings::Bindings;
 use super::index::Index;
 use super::inference::{Inference, State};
 
@@ -14,14 +15,15 @@ pub struct Database<T>
 where
     T: Eq + Hash,
 {
+    pub definitions: Bindings<T>,
+    pub extensions: Bindings<T>,
+    // pub inference: Inference<T>,
     pub(crate) operation_definitions_by_name: MultiMap<T, Arc<OperationDefinition<T>>>,
     pub(crate) fragment_definitions_by_name: MultiMap<T, Arc<FragmentDefinition<T>>>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
-    pub(crate) field_definitions: MultiMap<T, Arc<FieldDefinition<T>>>,
     pub(crate) field_definitions_by_field: MultiMap<usize, Arc<FieldDefinition<T>>>,
-    pub(crate) field_definitions_by_name: HashMap<T, MultiMap<T, Arc<FieldDefinition<T>>>>,
     pub(crate) input_field_definitions: MultiMap<T, Arc<InputValueDefinition<T>>>,
     pub(crate) type_by_selection_set: HashMap<usize, T>,
     pub(crate) definition_for_arguments: HashMap<usize, Arc<ArgumentsDefinition<T>>>,
@@ -33,14 +35,14 @@ where
 {
     fn default() -> Self {
         Database {
+            definitions: Default::default(),
+            extensions: Default::default(),
             operation_definitions_by_name: Default::default(),
             fragment_definitions_by_name: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
-            field_definitions: Default::default(),
             field_definitions_by_field: Default::default(),
-            field_definitions_by_name: Default::default(),
             input_field_definitions: Default::default(),
             type_by_selection_set: Default::default(),
             definition_for_arguments: Default::default(),
@@ -157,13 +159,13 @@ where
             .map(AsRef::as_ref)
     }
 
-    pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &FieldDefinition<T>> {
-        self.field_definitions
-            .get_vec(ty)
-            .map(Vec::as_slice)
-            .unwrap_or_default()
-            .iter()
-            .map(AsRef::as_ref)
+    pub fn field_definitions_by_type(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
+        self.definitions
+            .field_definitions_by_type(ty)
+            .chain(self.extensions.field_definitions_by_type(ty))
     }
 
     pub fn field_definitions_by_field(
@@ -183,12 +185,9 @@ where
         ty: &T,
         name: &T,
     ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
-        self.field_definitions_by_name
-            .get(ty)
-            .and_then(|ty| ty.get_vec(name))
-            .map(Vec::as_slice)
-            .unwrap_or_default()
-            .iter()
+        self.definitions
+            .field_definitions_by_name(ty, name)
+            .chain(self.extensions.field_definitions_by_name(ty, name))
     }
 
     pub fn type_by_selection_set(&self, selection_set: &Arc<SelectionSet<T>>) -> Option<&T> {

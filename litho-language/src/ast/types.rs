@@ -648,6 +648,17 @@ node_enum!(
 );
 
 impl<T> TypeDefinition<T> {
+    pub fn keyword(&self) -> &Name<T> {
+        match self {
+            TypeDefinition::ScalarTypeDefinition(definition) => &definition.scalar,
+            TypeDefinition::ObjectTypeDefinition(definition) => &definition.ty,
+            TypeDefinition::InterfaceTypeDefinition(definition) => &definition.interface,
+            TypeDefinition::UnionTypeDefinition(definition) => &definition.union_kw,
+            TypeDefinition::EnumTypeDefinition(definition) => &definition.enum_kw,
+            TypeDefinition::InputObjectTypeDefinition(definition) => &definition.input,
+        }
+    }
+
     pub fn description(&self) -> Option<&Description<T>> {
         match self {
             TypeDefinition::ScalarTypeDefinition(definition) => definition.description.as_ref(),
@@ -745,6 +756,17 @@ node_enum!(
 );
 
 impl<T> TypeExtension<T> {
+    pub fn keyword(&self) -> &Name<T> {
+        match self {
+            TypeExtension::ScalarTypeExtension(extension) => &extension.extend_scalar.1,
+            TypeExtension::ObjectTypeExtension(extension) => &extension.extend_type.1,
+            TypeExtension::InterfaceTypeExtension(extension) => &extension.extend_interface.1,
+            TypeExtension::UnionTypeExtension(extension) => &extension.extend_union.1,
+            TypeExtension::EnumTypeExtension(extension) => &extension.extend_enum.1,
+            TypeExtension::InputObjectTypeExtension(extension) => &extension.extend_input.1,
+        }
+    }
+
     pub fn name(&self) -> &Recoverable<Name<T>> {
         match self {
             TypeExtension::ScalarTypeExtension(extension) => &extension.name,

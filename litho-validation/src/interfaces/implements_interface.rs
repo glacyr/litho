@@ -42,14 +42,18 @@ where
         &self,
         interface_name: &'a NamedType<T>,
         concrete_name: &'a T,
-        concrete_fields: &'a FieldsDefinition<T>,
     ) -> Vec<Error<'a, T>> {
-        let interface_fields = self.0.field_definitions(interface_name.0.as_ref());
+        let interface_fields = self.0.field_definitions_by_type(interface_name.0.as_ref());
 
         let mut errors = vec![];
 
         for field in interface_fields {
-            let implemented_field = match concrete_fields.field(field.name.as_ref()) {
+            let implemented_field = self
+                .0
+                .field_definitions_by_name(concrete_name, field.name.as_ref())
+                .next();
+
+            let implemented_field = match implemented_field {
                 Some(field) => field,
                 None => {
                     errors.push(Error::MissingInterfaceField {
@@ -181,7 +185,6 @@ where
     pub fn check_interface(
         &self,
         name: &'a T,
-        concrete_fields: &'a FieldsDefinition<T>,
         implements_interfaces: &ImplementsInterfaces<T>,
         interface_named_type: &'a NamedType<T>,
     ) -> Vec<Error<'a, T>> {
@@ -209,7 +212,7 @@ where
             implements_interfaces,
         ));
 
-        errors.extend(self.check_valid_implementation(interface_named_type, name, concrete_fields));
+        errors.extend(self.check_valid_implementation(interface_named_type, name));
 
         errors
     }
@@ -217,7 +220,6 @@ where
     pub fn check_type(
         &self,
         name: &'a T,
-        concrete_fields: &'a FieldsDefinition<T>,
         implements_interfaces: &'a ImplementsInterfaces<T>,
     ) -> Vec<Error<'a, T>> {
         let mut errors = vec![];
@@ -247,12 +249,7 @@ where
 
             visited.insert(interface.0.as_ref(), interface);
 
-            errors.extend(self.check_interface(
-                name,
-                concrete_fields,
-                implements_interfaces,
-                interface,
-            ));
+            errors.extend(self.check_interface(name, implements_interfaces, interface));
         }
 
         errors
@@ -280,12 +277,7 @@ where
             None => return,
         };
 
-        let concrete_fields = match node.fields_definition() {
-            Some(fields) => fields,
-            None => return,
-        };
-
-        accumulator.extend(self.check_type(ty.as_ref(), concrete_fields, implements_interfaces))
+        accumulator.extend(self.check_type(ty.as_ref(), implements_interfaces))
     }
 
     fn visit_type_extension(
@@ -303,11 +295,6 @@ where
             None => return,
         };
 
-        let concrete_fields = match node.fields_definition() {
-            Some(fields) => fields,
-            None => return,
-        };
-
-        accumulator.extend(self.check_type(ty.as_ref(), concrete_fields, implements_interfaces))
+        accumulator.extend(self.check_type(ty.as_ref(), implements_interfaces))
     }
 }

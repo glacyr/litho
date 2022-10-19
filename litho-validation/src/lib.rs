@@ -11,6 +11,7 @@ use litho_types::Database;
 mod arguments;
 mod directives;
 mod enums;
+mod extensions;
 mod fields;
 mod inputs;
 mod interfaces;
@@ -161,6 +162,13 @@ pub enum Error<'a, T> {
         name: &'a T,
         first: Span,
         second: Span,
+    },
+    DifferentExtensionType {
+        name: &'a T,
+        first: Span,
+        first_type: &'a T,
+        second: Span,
+        second_type: &'a T,
     },
 }
 
@@ -508,6 +516,24 @@ where
                         .with_message(format!("... and later again here.")),
                 )
                 .finish(),
+            Error::DifferentExtensionType {
+                name,
+                first,
+                first_type,
+                second,
+                second_type,
+            } => B::new(ReportKind::Error, second)
+                .with_code("E0127")
+                .with_message("Type extension must extend same kind of type.")
+                .with_label(
+                    B::LabelBuilder::new(first)
+                        .with_message(format!("Type `{name}` is {first_type} here ...")),
+                )
+                .with_label(
+                    B::LabelBuilder::new(second)
+                        .with_message(format!("... but later extended as {second_type} here.")),
+                )
+                .finish(),
         }
     }
 }
@@ -527,6 +553,7 @@ where
         &mut errors,
     );
     document.traverse(&enums::EnumValues(database), &mut errors);
+    document.traverse(&extensions::SameTypeExtensions(database), &mut errors);
     document.traverse(&fields::FieldNameUniqueness(database), &mut errors);
     document.traverse(&fields::FieldsAreOutputTypes(database), &mut errors);
     document.traverse(&fields::HasFields(database), &mut errors);
