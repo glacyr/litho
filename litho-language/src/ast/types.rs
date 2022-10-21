@@ -767,7 +767,7 @@ impl<T> TypeExtension<T> {
         }
     }
 
-    pub fn name(&self) -> &Recoverable<Name<T>> {
+    pub fn name(&self) -> Option<&T> {
         match self {
             TypeExtension::ScalarTypeExtension(extension) => &extension.name,
             TypeExtension::ObjectTypeExtension(extension) => &extension.name,
@@ -776,6 +776,8 @@ impl<T> TypeExtension<T> {
             TypeExtension::EnumTypeExtension(extension) => &extension.name,
             TypeExtension::InputObjectTypeExtension(extension) => &extension.name,
         }
+        .ok()
+        .map(|name| name.0.as_ref())
     }
 
     pub fn implements_interfaces(&self) -> Option<&ImplementsInterfaces<T>> {
@@ -820,7 +822,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct ScalarTypeExtension<T> {
     pub extend_scalar: (Name<T>, Name<T>),
-    pub name: Recoverable<Name<T>>,
+    pub name: Recoverable<NamedType<T>>,
     pub directives: Recoverable<Directives<T>>,
 }
 
@@ -998,7 +1000,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct ObjectTypeExtension<T> {
     pub extend_type: (Name<T>, Name<T>),
-    pub name: Recoverable<Name<T>>,
+    pub name: Recoverable<NamedType<T>>,
     pub implements_interfaces: Option<ImplementsInterfaces<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<FieldsDefinition<T>>,
@@ -1050,7 +1052,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct InterfaceTypeExtension<T> {
     pub extend_interface: (Name<T>, Name<T>),
-    pub name: Recoverable<Name<T>>,
+    pub name: Recoverable<NamedType<T>>,
     pub implements_interfaces: Option<ImplementsInterfaces<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<FieldsDefinition<T>>,
@@ -1139,7 +1141,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct UnionTypeExtension<T> {
     pub extend_union: (Name<T>, Name<T>),
-    pub name: Recoverable<Name<T>>,
+    pub name: Recoverable<NamedType<T>>,
     pub directives: Option<Directives<T>>,
     pub member_types: Option<UnionMemberTypes<T>>,
 }
@@ -1203,7 +1205,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct EnumTypeExtension<T> {
     pub extend_enum: (Name<T>, Name<T>),
-    pub name: Recoverable<Name<T>>,
+    pub name: Recoverable<NamedType<T>>,
     pub directives: Option<Directives<T>>,
     pub values_definition: Option<EnumValuesDefinition<T>>,
 }
@@ -1251,7 +1253,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct InputObjectTypeExtension<T> {
     pub extend_input: (Name<T>, Name<T>),
-    pub name: Recoverable<Name<T>>,
+    pub name: Recoverable<NamedType<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<InputFieldsDefinition<T>>,
 }

@@ -21,12 +21,12 @@ where
         node: &'a Arc<TypeExtension<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name().ok() {
+        let name = match node.name() {
             Some(name) => name,
             None => return,
         };
 
-        let first = match self.0.type_definitions_by_name(name.as_ref()).next() {
+        let first = match self.0.type_definitions_by_name(name).next() {
             Some(first) => first.keyword(),
             None => return,
         };
@@ -35,7 +35,7 @@ where
 
         if first.as_ref() != second.as_ref() {
             accumulator.push(Error::DifferentExtensionType {
-                name: name.as_ref(),
+                name,
                 first: first.span(),
                 first_type: first.as_ref(),
                 second: second.span(),

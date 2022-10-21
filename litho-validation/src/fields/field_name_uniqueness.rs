@@ -76,7 +76,7 @@ where
         {
             match self
                 .0
-                .field_definitions_by_name(name.as_ref(), field.name.as_ref())
+                .field_definitions_by_name(name.0.as_ref(), field.name.as_ref())
                 .next()
             {
                 Some(first) if !Arc::ptr_eq(first, field) => {

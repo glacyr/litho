@@ -54,20 +54,7 @@ impl Workspace {
             Url::parse("litho://inflection.graphql").unwrap(),
             None,
             true,
-            r#"
-        type Query {
-            __schema: __Schema!
-        }
-
-        type __Schema {
-            queryType: __Type!
-        }
-
-        type __Type {
-            name: String
-        }
-        "#
-            .to_owned(),
+            include_str!("../std/introspection.graphql").to_owned(),
         )
     }
 

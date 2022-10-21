@@ -285,7 +285,7 @@ where
         node: &'a Arc<TypeExtension<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let ty = match node.name().ok() {
+        let ty = match node.name() {
             Some(ty) => ty,
             None => return,
         };
@@ -295,6 +295,6 @@ where
             None => return,
         };
 
-        accumulator.extend(self.check_type(ty.as_ref(), implements_interfaces))
+        accumulator.extend(self.check_type(ty, implements_interfaces))
     }
 }

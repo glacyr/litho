@@ -249,7 +249,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("scalar"))
-            .and(name().recover(|| "Scalar extension is missing name.".into()))
+            .and(named_type().recover(|| "Scalar extension is missing name.".into()))
             .and(directives().recover(|| "Scalar extension is missing directives.".into()))
             .flatten()
             .map(|(extend, scalar, name, directives)| ScalarTypeExtension {
@@ -425,7 +425,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("type"))
-            .and(name().recover(|| "Object type extension is missing a name here.".into()))
+            .and(named_type().recover(|| "Object type extension is missing a name here.".into()))
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
@@ -487,7 +487,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("interface"))
-            .and(name().recover(|| "Interface extension is missing a name.".into()))
+            .and(named_type().recover(|| "Interface extension is missing a name.".into()))
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
@@ -569,7 +569,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("union"))
-            .and(name().recover(|| "Union extension is missing a name.".into()))
+            .and(named_type().recover(|| "Union extension is missing a name.".into()))
             .and(opt(directives()))
             .and(opt(union_member_types()))
             .flatten()
@@ -662,7 +662,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("enum"))
-            .and(name().recover(|| "Enum extension is missing a name.".into()))
+            .and(named_type().recover(|| "Enum extension is missing a name.".into()))
             .and(opt(directives()))
             .and(opt(enum_values_definition()))
             .flatten()
@@ -737,7 +737,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("input"))
-            .and(name().recover(|| "Input extension is missing a name.".into()))
+            .and(named_type().recover(|| "Input extension is missing a name.".into()))
             .and(opt(directives()))
             .and(opt(input_fields_definition()))
             .flatten()

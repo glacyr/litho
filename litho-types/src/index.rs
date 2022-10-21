@@ -42,10 +42,10 @@ where
         node: &'ast Arc<TypeExtension<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        if let Some(name) = node.name().ok() {
+        if let Some(name) = node.name() {
             accumulator
                 .type_extensions_by_name
-                .insert(name.as_ref().clone(), node.clone());
+                .insert(name.clone(), node.clone());
         }
     }
 
@@ -80,11 +80,11 @@ where
                 accumulator
                     .extensions
                     .field_definitions_by_type
-                    .insert(name.as_ref().clone(), field.clone());
+                    .insert(name.0.as_ref().clone(), field.clone());
                 accumulator
                     .extensions
                     .field_definitions_by_name
-                    .entry(name.as_ref().clone())
+                    .entry(name.0.as_ref().clone())
                     .or_default()
                     .insert(field.name.as_ref().clone(), field.clone());
             }
@@ -122,11 +122,11 @@ where
                 accumulator
                     .extensions
                     .field_definitions_by_type
-                    .insert(name.as_ref().clone(), field.clone());
+                    .insert(name.0.as_ref().clone(), field.clone());
                 accumulator
                     .extensions
                     .field_definitions_by_name
-                    .entry(name.as_ref().clone())
+                    .entry(name.0.as_ref().clone())
                     .or_default()
                     .insert(field.name.as_ref().clone(), field.clone());
             }
