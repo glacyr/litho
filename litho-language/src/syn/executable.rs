@@ -1,3 +1,4 @@
+use litho_diagnostics::Diagnostic;
 use wrom::branch::alt;
 use wrom::combinator::opt;
 use wrom::multi::many0;
@@ -45,14 +46,14 @@ where
 {
     wrom::recursive(|| {
         operation_type()
-            .and(name().recover(|| "Missing name of this operation definition.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_operation_definition_name,
+            )))
             .and(opt(variable_definitions()))
             .and(opt(directives()))
-            .and(
-                selection_set()
-                    .map(Into::into)
-                    .recover(|| "Operation is missing selection set.".into()),
-            )
+            .and(selection_set().map(Into::into).recover(Missing::unary(
+                Diagnostic::missing_operation_definition_selection_set,
+            )))
             .flatten()
             .map(
                 |(ty, name, variable_definitions, directives, selection_set)| OperationDefinition {
@@ -90,11 +91,7 @@ where
             punctuator("{"),
             many0(selection()),
             punctuator("}"),
-            Missing::delimiter_complaint(
-                "Unlimited selection set.",
-                "This `{` here ...",
-                "... should have a corresponding `}` here.",
-            ),
+            Missing::binary(Diagnostic::missing_selection_set_closing_brace),
         )
         .map(|(brace_left, selections, brace_right)| SelectionSet {
             braces: (brace_left, brace_right),
@@ -125,7 +122,7 @@ where
     wrom::recursive(|| {
         alt((
             alias()
-                .and(name().recover(|| "Field should have a name.".into()))
+                .and(name().recover(Missing::unary(Diagnostic::missing_field_name)))
                 .and(opt(arguments().map(Into::into)))
                 .and(opt(directives()))
                 .and(opt(selection_set().map(Into::into)))
@@ -179,11 +176,7 @@ where
             punctuator("("),
             many0(argument()),
             punctuator(")"),
-            Missing::delimiter_complaint(
-                "Arguments are missing closing parenthesis.",
-                "This `(` here ...",
-                "... should have a corresponding `)` here.",
-            ),
+            Missing::binary(Diagnostic::missing_arguments_closing_parentheses),
         )
         .map(|(left, items, right)| Arguments {
             parens: (left, right),
@@ -199,8 +192,8 @@ where
 {
     wrom::recursive(|| {
         name()
-            .and(punctuator(":").recover(|| "Missing colon here.".into()))
-            .and(value().recover(|| "Missing value here.".into()))
+            .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_argument_colon)))
+            .and(value().recover(Missing::unary(Diagnostic::missing_argument_value)))
             .flatten()
             .map(|(name, colon, value)| Argument { name, colon, value })
     })
@@ -233,11 +226,9 @@ where
         punctuator("...")
             .and(opt(type_condition()))
             .and(opt(directives()))
-            .and(
-                selection_set()
-                    .map(Into::into)
-                    .recover(|| "Inline fragment is missing selection set.".into()),
-            )
+            .and(selection_set().map(Into::into).recover(Missing::unary(
+                Diagnostic::missing_inline_fragment_selection_set,
+            )))
             .flatten()
             .map(
                 |(dots, type_condition, directives, selection_set)| InlineFragment {
@@ -258,16 +249,16 @@ where
 {
     wrom::recursive(|| {
         keyword("fragment")
-            .and(name().recover(|| "Fragment definition is missing a name.".into()))
+            .and(name().recover(Missing::unary(Diagnostic::missing_fragment_name)))
             .and(
                 type_condition()
-                    .recover(|| "Fragment definition is missing a type condition.".into()),
+                    .recover(Missing::unary(Diagnostic::missing_fragment_type_condition)),
             )
             .and(opt(directives()))
             .and(
                 selection_set()
                     .map(Into::into)
-                    .recover(|| "Fragment definition is missing a selection set.".into()),
+                    .recover(Missing::Unary(Diagnostic::missing_fragment_selection_set)),
             )
             .flatten()
             .map(
@@ -291,7 +282,9 @@ where
 {
     wrom::recursive(|| {
         keyword("on")
-            .and(name().recover(|| "Type condition is missing name of type.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_type_condition_named_type,
+            )))
             .map(|(on, named_type)| TypeCondition { on, named_type })
     })
 }
@@ -355,11 +348,7 @@ where
             punctuator("["),
             many0(value()),
             punctuator("]"),
-            Missing::delimiter_complaint(
-                "List value is missing closing `]` delimiter.",
-                "This `[` here ...",
-                "... should have a corresponding `]` here.",
-            ),
+            Missing::binary(Diagnostic::missing_list_value_closing_bracket),
         )
         .map(|(left, values, right)| ListValue {
             brackets: (left, right),
@@ -378,11 +367,7 @@ where
             punctuator("{"),
             many0(object_field()),
             punctuator("}"),
-            Missing::delimiter_complaint(
-                "Object value is missing closing `}` delimiter.",
-                "This `{` here ...",
-                "... should have a corresponding `}` here.",
-            ),
+            Missing::binary(Diagnostic::missing_object_value_closing_brace),
         )
         .map(|(left, object_fields, right)| ObjectValue {
             braces: (left, right),
@@ -398,8 +383,8 @@ where
 {
     wrom::recursive(|| {
         name()
-            .and(punctuator(":").recover(|| "Missing colon here.".into()))
-            .and(value().recover(|| "Missing value here.".into()))
+            .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_object_field_colon)))
+            .and(value().recover(Missing::unary(Diagnostic::missing_object_field_value)))
             .flatten()
             .map(|(name, colon, value)| ObjectField { name, colon, value })
     })
@@ -415,12 +400,7 @@ where
         punctuator("(")
             .and(many0(variable_definition()))
             .and_recover(punctuator(")"), |(left, _)| {
-                Missing::Delimiter(
-                    "Undelimited variable definitions.",
-                    "Expected this ( here ...",
-                    left.span(),
-                    "... to match a ) here.",
-                )
+                Missing::binary(Diagnostic::missing_variable_definitions_closing_parenthesis)(left)
             })
             .flatten()
             .map(|(left, variable_definitions, right)| VariableDefinitions {
@@ -438,8 +418,10 @@ where
 {
     wrom::recursive(|| {
         variable()
-            .and(punctuator(":").recover(|| "Expected a `:` here.".into()))
-            .and(ty().recover(|| "Expected a type here.".into()))
+            .and(punctuator(":").recover(Missing::unary(
+                Diagnostic::missing_variable_definition_colon,
+            )))
+            .and(ty().recover(Missing::unary(Diagnostic::missing_variable_definition_type)))
             .and(opt(default_value()))
             .and(opt(directives()))
             .flatten()
@@ -474,7 +456,7 @@ where
 {
     wrom::recursive(|| {
         punctuator("=")
-            .and(value().recover(|| "Expected a value here.".into()))
+            .and(value().recover(Missing::unary(Diagnostic::missing_default_value)))
             .map(|(eq, value)| DefaultValue { eq, value })
     })
 }
@@ -509,13 +491,9 @@ where
     wrom::recursive(|| {
         delimited(
             punctuator("["),
-            ty().recover(|| "Expected a type here.".into()),
+            ty().recover(Missing::unary(Diagnostic::missing_list_type_wrapped_type)),
             punctuator("]"),
-            Missing::delimiter_complaint(
-                "List type is missing closing delimiter.",
-                "This `[` here ...",
-                "... should have a corresponding `]` here.",
-            ),
+            Missing::binary(Diagnostic::missing_list_type_closing_bracket),
         )
         .map(|(left, ty, right)| ListType {
             brackets: (left, right),
@@ -554,7 +532,7 @@ where
 {
     wrom::recursive(|| {
         punctuator("@")
-            .and(name().recover(|| "Expected the name of a directive here.".into()))
+            .and(name().recover(Missing::unary(Diagnostic::missing_directive_name)))
             .and(opt(arguments().map(Into::into)))
             .flatten()
             .map(|(at, name, arguments)| Directive {

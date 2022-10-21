@@ -1,0 +1,7 @@
+[E0001] Error: Syntax error.
+   ╭─[graphql:1:1]
+   │
+ 1 │ ! + $ @
+   · ───┬───  
+   ·    ╰───── Couldn't recognize these tokens here.
+───╯

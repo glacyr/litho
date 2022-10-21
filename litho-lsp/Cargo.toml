@@ -15,6 +15,7 @@ tokio = { version = "1.21.1", features = ["full"] }
 tower-lsp = "0.17.0"
 url-escape = "0.1.1"
 
+litho-diagnostics = { path = "../litho-diagnostics" }
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }
 litho-validation = { path = "../litho-validation" }

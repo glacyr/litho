@@ -1,9 +1,8 @@
 use std::hash::Hash;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct HasFields<'a, T>(pub &'a Database<T>)
 where
@@ -11,35 +10,31 @@ where
 
 impl<'a, T> HasFields<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
     pub fn check_fields_definition(
         &self,
         name: &'a Name<T>,
         definition: Option<&FieldsDefinition<T>>,
-    ) -> Option<Error<'a, T>> {
-        match definition.as_ref() {
-            Some(def) if def.definitions.is_empty() => Some(Error::EmptyType {
-                name: name.as_ref(),
-                span: definition
+    ) -> Option<Diagnostic<Span>> {
+        match self.0.field_definitions_by_type(name.as_ref()).next() {
+            Some(_) => None,
+            None => Some(Diagnostic::empty_type(
+                name.as_ref().to_string(),
+                definition
                     .as_ref()
                     .map(|def| def.braces.span())
                     .unwrap_or(name.span()),
-            }),
-            Some(_) => None,
-            None => Some(Error::MissingFieldsDefinition {
-                name: name.as_ref(),
-                span: name.span(),
-            }),
+            )),
         }
     }
 }
 
 impl<'a, T> Visit<'a, T> for HasFields<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_interface_type_definition(
         &self,

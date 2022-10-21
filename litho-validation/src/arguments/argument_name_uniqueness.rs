@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct ArgumentNameUniqueness<'a, T>(pub &'a Database<T>)
 where
@@ -13,9 +12,9 @@ where
 
 impl<'a, T> Visit<'a, T> for ArgumentNameUniqueness<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_arguments_definition(
         &self,
@@ -26,11 +25,11 @@ where
 
         for field in node.definitions.iter() {
             match existing.get(&field.name.as_ref()) {
-                Some(first) => accumulator.push(Error::DuplicateArgumentName {
-                    name: field.name.as_ref(),
-                    first: first.name.span(),
-                    second: field.name.span(),
-                }),
+                Some(first) => accumulator.push(Diagnostic::duplicate_argument_name(
+                    field.name.as_ref().to_string(),
+                    first.name.span(),
+                    field.name.span(),
+                )),
                 None => {
                     existing.insert(field.name.as_ref(), field);
                 }

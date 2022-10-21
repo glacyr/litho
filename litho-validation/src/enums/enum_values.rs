@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct EnumValues<'a, T>(pub &'a Database<T>)
 where
@@ -12,9 +11,9 @@ where
 
 impl<'a, T> Visit<'a, T> for EnumValues<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_enum_type_definition(
         &self,
@@ -35,11 +34,11 @@ where
         {
             match visited.get(&value.enum_value.0.as_ref()) {
                 Some(first) => {
-                    accumulator.push(Error::DuplicateEnumValue {
-                        name: value.enum_value.0.as_ref(),
-                        first: first.span(),
-                        second: value.enum_value.span(),
-                    });
+                    accumulator.push(Diagnostic::duplicate_enum_value(
+                        value.enum_value.0.as_ref().to_string(),
+                        first.span(),
+                        value.enum_value.span(),
+                    ));
                     continue;
                 }
                 None => {}
@@ -49,14 +48,13 @@ where
         }
 
         if visited.is_empty() {
-            accumulator.push(Error::MissingEnumValues {
-                name: name.as_ref(),
-                span: node
-                    .values_definition
+            accumulator.push(Diagnostic::missing_enum_values(
+                name.as_ref().to_string(),
+                node.values_definition
                     .as_ref()
                     .map(|def| def.span())
                     .unwrap_or(name.span()),
-            })
+            ));
         }
     }
 }

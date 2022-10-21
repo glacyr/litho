@@ -1,10 +1,12 @@
-use litho_language::chk::{collect_errors, IntoReport};
-use litho_language::lex::SourceId;
+use litho_language::chk::collect_errors;
+use litho_language::lex::{SourceId, Span};
 use litho_language::{Document as Ast, Parse};
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::{Diagnostic, Url};
 
-use super::{ReportBuilder, Workspace};
+use crate::diagnostic::serialize_diagnostic;
+
+use super::Workspace;
 
 #[derive(Debug)]
 pub struct Document {
@@ -12,7 +14,7 @@ pub struct Document {
     version: Option<i32>,
     internal: bool,
     text: SmolStr,
-    reports: Vec<ReportBuilder>,
+    diagnostics: Vec<litho_diagnostics::Diagnostic<Span>>,
     ast: Ast<SmolStr>,
 }
 
@@ -31,10 +33,7 @@ impl Document {
             version,
             internal,
             text: text.into(),
-            reports: collect_errors(&result)
-                .into_iter()
-                .map(IntoReport::into_report::<ReportBuilder>)
-                .collect(),
+            diagnostics: collect_errors(&result),
             ast: result.0,
         }
     }
@@ -63,14 +62,10 @@ impl Document {
         &'a self,
         workspace: &'a Workspace,
     ) -> impl Iterator<Item = Diagnostic> + 'a {
-        self.reports
+        self.diagnostics
             .iter()
             .cloned()
-            .chain(
-                litho_validation::check(self.ast(), workspace.database())
-                    .into_iter()
-                    .map(IntoReport::into_report::<ReportBuilder>),
-            )
-            .map(|report| report.into_diagnostic(workspace))
+            .chain(litho_validation::check(self.ast(), workspace.database()).into_iter())
+            .map(|diagnostic| serialize_diagnostic(diagnostic, workspace))
     }
 }

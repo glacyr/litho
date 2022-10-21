@@ -1,11 +1,15 @@
 [package]
-name = "litho-validation"
+name = "litho-tests"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ariadne = "0.1.5"
+
 litho-diagnostics = { path = "../litho-diagnostics" }
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }
+litho-validation = { path = "../litho-validation" }
+strip-ansi-escapes = "0.1.1"

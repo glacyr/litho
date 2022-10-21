@@ -40,8 +40,10 @@ members = [
 	"kono-introspection",
 	"kono-macros",
 	"kono-schema",
+    "litho-diagnostics",
     "litho-language",
     "litho-lsp",
+    "litho-tests",
     "litho-types",
 	"litho-validation",
 ]

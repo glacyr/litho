@@ -1,39 +1,35 @@
 use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
+
 pub use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
 
 use super::{node, node_enum, node_unit, Node, Visit};
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub enum Missing {
     Unknown,
-    Simple(&'static str, &'static str),
-    Delimiter(&'static str, &'static str, Span, &'static str),
+    Unary(fn(Span) -> Diagnostic<Span>),
+    Binary(fn(Span, Span) -> Diagnostic<Span>, Span),
 }
 
 impl Missing {
-    pub fn delimiter_complaint<N, T>(
-        message: &'static str,
-        first_label: &'static str,
-        second_label: &'static str,
-    ) -> impl Fn(&N) -> Missing
+    pub fn unary(factory: fn(Span) -> Diagnostic<Span>) -> Missing {
+        Missing::Unary(factory)
+    }
+
+    pub fn binary<N, T>(factory: fn(Span, Span) -> Diagnostic<Span>) -> impl Fn(&N) -> Missing
     where
         N: Node<T>,
     {
-        move |left| Missing::Delimiter(message, first_label, left.span(), second_label)
+        move |left| Missing::Binary(factory, left.span())
     }
 }
 
 impl Default for Missing {
     fn default() -> Self {
         Missing::Unknown
-    }
-}
-
-impl From<&'static str> for Missing {
-    fn from(title: &'static str) -> Self {
-        Missing::Simple(title, title)
     }
 }
 
@@ -45,6 +41,16 @@ impl wrom::Missing for Missing {
 pub struct MissingToken {
     pub span: Span,
     pub missing: Missing,
+}
+
+impl MissingToken {
+    pub fn to_diagnostic(&self) -> Diagnostic<Span> {
+        match self.missing {
+            Missing::Unknown => unreachable!(),
+            Missing::Unary(factory) => factory(self.span),
+            Missing::Binary(factory, span) => factory(span, self.span),
+        }
+    }
 }
 
 pub type Recoverable<T> = wrom::Recoverable<T, Missing>;

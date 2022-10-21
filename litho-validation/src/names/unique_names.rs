@@ -1,10 +1,9 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct UniqueNames<'a, T>(pub &'a Database<T>)
 where
@@ -12,9 +11,9 @@ where
 
 impl<'a, T> Visit<'a, T> for UniqueNames<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_directive_definition(
         &self,
@@ -35,11 +34,11 @@ where
             return;
         }
 
-        accumulator.push(Error::DuplicateDirectiveName {
-            name: name.as_ref(),
-            first: first.name.span(),
-            second: node.name.span(),
-        })
+        accumulator.push(Diagnostic::duplicate_directive_name(
+            name.as_ref().to_string(),
+            first.name.span(),
+            node.name.span(),
+        ));
     }
 
     fn visit_type_definition(
@@ -61,10 +60,10 @@ where
             return;
         }
 
-        accumulator.push(Error::DuplicateTypeName {
-            name: name.as_ref(),
-            first: first.name().span(),
-            second: node.name().span(),
-        })
+        accumulator.push(Diagnostic::duplicate_type_name(
+            name.as_ref().to_string(),
+            first.name().span(),
+            node.name().span(),
+        ));
     }
 }

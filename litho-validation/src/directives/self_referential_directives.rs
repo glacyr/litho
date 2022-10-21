@@ -1,10 +1,9 @@
 use std::hash::Hash;
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct SelfReferentialDirectives<'a, T>(pub &'a Database<T>)
 where
@@ -55,9 +54,9 @@ where
 
 impl<'a, T> Visit<'a, T> for SelfReferentialDirectives<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_directive_definition(
         &self,
@@ -83,11 +82,11 @@ where
             {
                 match directive.name.ok() {
                     Some(dir) if self.is_recursive(&mut visited, name.as_ref(), dir.as_ref()) => {
-                        accumulator.push(Error::SelfReferentialDirective {
-                            name: name.as_ref(),
-                            directive: dir.as_ref(),
-                            span: directive.span(),
-                        })
+                        accumulator.push(Diagnostic::self_referential_directive(
+                            name.as_ref().to_string(),
+                            dir.as_ref().to_string(),
+                            directive.span(),
+                        ));
                     }
                     _ => {}
                 }

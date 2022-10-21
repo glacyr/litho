@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct FieldNameUniqueness<'a, T>(pub &'a Database<T>)
 where
@@ -13,9 +12,9 @@ where
 
 impl<'a, T> Visit<'a, T> for FieldNameUniqueness<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_fields_definition(
         &self,
@@ -26,11 +25,11 @@ where
 
         for field in node.definitions.iter() {
             match existing.get(&field.name.as_ref()) {
-                Some(first) => accumulator.push(Error::DuplicateFieldName {
-                    name: field.name.as_ref(),
-                    first: first.name.span(),
-                    second: field.name.span(),
-                }),
+                Some(first) => accumulator.push(Diagnostic::duplicate_field(
+                    field.name.as_ref().to_string(),
+                    first.name.span(),
+                    field.name.span(),
+                )),
                 None => {
                     existing.insert(field.name.as_ref(), field);
                 }
@@ -47,11 +46,11 @@ where
 
         for field in node.definitions.iter() {
             match existing.get(&field.name.as_ref()) {
-                Some(first) => accumulator.push(Error::DuplicateFieldName {
-                    name: field.name.as_ref(),
-                    first: first.name.span(),
-                    second: field.name.span(),
-                }),
+                Some(first) => accumulator.push(Diagnostic::duplicate_field(
+                    field.name.as_ref().to_string(),
+                    first.name.span(),
+                    field.name.span(),
+                )),
                 None => {
                     existing.insert(field.name.as_ref(), field);
                 }
@@ -80,11 +79,11 @@ where
                 .next()
             {
                 Some(first) if !Arc::ptr_eq(first, field) => {
-                    accumulator.push(Error::DuplicateFieldName {
-                        name: field.name.as_ref(),
-                        first: first.name.span(),
-                        second: field.name.span(),
-                    })
+                    accumulator.push(Diagnostic::duplicate_field(
+                        field.name.as_ref().to_string(),
+                        first.name.span(),
+                        field.name.span(),
+                    ))
                 }
                 _ => {}
             }

@@ -2,10 +2,9 @@ use std::borrow::Borrow;
 use std::hash::Hash;
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct ReservedNames<'a, T>(pub &'a Database<T>)
 where
@@ -13,9 +12,9 @@ where
 
 impl<'a, T> Visit<'a, T> for ReservedNames<'a, T>
 where
-    T: Eq + Hash + Borrow<str>,
+    T: Eq + Hash + Borrow<str> + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_value_definition(
         &self,
@@ -23,10 +22,10 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         if node.name.as_ref().borrow().starts_with("__") {
-            accumulator.push(Error::ReservedInputValueName {
-                name: node.name.as_ref(),
-                span: node.name.span(),
-            })
+            accumulator.push(Diagnostic::reserved_input_value_name(
+                node.name.as_ref().to_string(),
+                node.name.span(),
+            ))
         }
     }
 
@@ -36,10 +35,10 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         if node.name.as_ref().borrow().starts_with("__") {
-            accumulator.push(Error::ReservedFieldName {
-                name: node.name.as_ref(),
-                span: node.name.span(),
-            })
+            accumulator.push(Diagnostic::reserved_field_name(
+                node.name.as_ref().to_string(),
+                node.name.span(),
+            ));
         }
     }
 
@@ -49,12 +48,9 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         match node.name.ok() {
-            Some(name) if name.as_ref().borrow().starts_with("__") => {
-                accumulator.push(Error::ReservedDirectiveName {
-                    name: name.as_ref(),
-                    span: node.name.span(),
-                })
-            }
+            Some(name) if name.as_ref().borrow().starts_with("__") => accumulator.push(
+                Diagnostic::reserved_directive_name(name.as_ref().to_string(), node.name.span()),
+            ),
             _ => {}
         }
     }

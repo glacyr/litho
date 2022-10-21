@@ -1,42 +1,36 @@
-mod diagnostics;
-mod error;
-
-pub use diagnostics::{IntoReport, LabelBuilder, ReportBuilder};
-pub use error::Error;
+use litho_diagnostics::Diagnostic;
 
 use crate::ast::{Node, Recoverable, Visit};
-use crate::lex::Token;
+use crate::lex::{Span, Token};
 
 pub trait Errors<T> {
-    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, T>>
-    where
-        T: 'ast;
+    fn errors(&self) -> Vec<Diagnostic<Span>>;
 }
 
 impl<T, N> Errors<T> for N
 where
     N: Node<T>,
 {
-    fn errors<'ast>(&'ast self) -> Vec<Error<'ast, T>>
-    where
-        T: 'ast,
-    {
+    fn errors(&self) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
         self.traverse(&CollectErrors, &mut errors);
         errors
     }
 }
 
-pub fn collect_errors<N, T>(ast: &(N, Vec<Token<T>>)) -> Vec<Error<T>>
+pub fn collect_errors<N, T>(ast: &(N, Vec<Token<T>>)) -> Vec<Diagnostic<Span>>
 where
     N: Node<T>,
     T: Clone,
 {
     let mut errors = vec![];
     ast.0.traverse(&CollectErrors, &mut errors);
-    errors.extend(ast.1.iter().map(|token| Error::UnrecognizedTokens {
-        tokens: vec![token.clone()],
-    }));
+    match ast.1.first().zip(ast.1.last()) {
+        Some((first, last)) => errors.push(Diagnostic::unrecognized_tokens(
+            first.span().joined(last.span()),
+        )),
+        None => {}
+    };
     errors
 }
 
@@ -46,7 +40,7 @@ impl<'ast, T> Visit<'ast, T> for CollectErrors
 where
     T: 'ast,
 {
-    type Accumulator = Vec<Error<'ast, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_recoverable<U>(
         &self,
@@ -55,7 +49,7 @@ where
     ) {
         match node {
             Recoverable::Present(_) => {}
-            Recoverable::Missing(error) => accumulator.push(Error::Recoverable(error)),
+            Recoverable::Missing(error) => accumulator.push(error.to_diagnostic()),
         }
     }
 }

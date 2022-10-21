@@ -1,0 +1,7 @@
+[E0100] Error: Named type must exist.
+   ╭─[graphql:1:25]
+   │
+ 1 │ type Example implements NonExistent {
+   ·                         ─────┬─────  
+   ·                              ╰─────── Type `NonExistent` is referenced to here but never defined.
+───╯

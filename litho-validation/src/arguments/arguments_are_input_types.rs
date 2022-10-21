@@ -1,9 +1,8 @@
 use std::hash::Hash;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct ArgumentsAreInputTypes<'a, T>(pub &'a Database<T>)
 where
@@ -11,9 +10,9 @@ where
 
 impl<'a, T> Visit<'a, T> for ArgumentsAreInputTypes<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_value_definition(
         &self,
@@ -22,10 +21,11 @@ where
     ) {
         match node.ty.ok().and_then(|ty| ty.named_type()) {
             Some(name) if !self.0.is_input_type(name.0.as_ref()) => {
-                accumulator.push(Error::InputValueNotInputType {
-                    name: name.0.as_ref(),
-                    span: name.span(),
-                })
+                accumulator.push(Diagnostic::input_value_not_input_type(
+                    node.name.as_ref().to_string(),
+                    name.0.as_ref().to_string(),
+                    name.span(),
+                ));
             }
             _ => {}
         }

@@ -1,9 +1,8 @@
 use std::hash::Hash;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct NamedTypesExist<'a, T>(pub &'a Database<T>)
 where
@@ -11,9 +10,9 @@ where
 
 impl<'a, T> Visit<'a, T> for NamedTypesExist<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_named_type(&self, node: &'a NamedType<T>, accumulator: &mut Self::Accumulator) {
         if self
@@ -22,10 +21,10 @@ where
             .next()
             .is_none()
         {
-            accumulator.push(Error::UnknownNamedType {
-                name: node.0.as_ref(),
-                span: node.span(),
-            })
+            accumulator.push(Diagnostic::unknown_named_type(
+                node.0.as_ref().to_string(),
+                node.span(),
+            ))
         }
     }
 }

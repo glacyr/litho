@@ -2,10 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::Arc;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct ImplementsInterface<'a, T>(pub &'a Database<T>)
 where
@@ -13,25 +12,25 @@ where
 
 impl<'a, T> ImplementsInterface<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
     fn check_inherited_implementations(
         &self,
         interface_named_type: &'a NamedType<T>,
         name: &'a T,
         implements_interfaces: &ImplementsInterfaces<T>,
-    ) -> Option<Error<'a, T>> {
+    ) -> Option<Diagnostic<Span>> {
         for inherited in self
             .0
             .implemented_interfaces(interface_named_type.0.as_ref())
         {
             if !implements_interfaces.implements_interface(inherited.0.as_ref()) {
-                return Some(Error::MissingInheritedInterface {
-                    name,
-                    interface: interface_named_type.0.as_ref(),
-                    inherited: inherited.0.as_ref(),
-                    span: interface_named_type.span(),
-                });
+                return Some(Diagnostic::missing_inherited_interface(
+                    name.to_string(),
+                    interface_named_type.0.as_ref().to_string(),
+                    inherited.0.as_ref().to_string(),
+                    interface_named_type.span(),
+                ));
             }
         }
 
@@ -42,7 +41,7 @@ where
         &self,
         interface_name: &'a NamedType<T>,
         concrete_name: &'a T,
-    ) -> Vec<Error<'a, T>> {
+    ) -> Vec<Diagnostic<Span>> {
         let interface_fields = self.0.field_definitions_by_type(interface_name.0.as_ref());
 
         let mut errors = vec![];
@@ -56,12 +55,12 @@ where
             let implemented_field = match implemented_field {
                 Some(field) => field,
                 None => {
-                    errors.push(Error::MissingInterfaceField {
-                        name: concrete_name,
-                        interface: interface_name.0.as_ref(),
-                        field: field.name.as_ref(),
-                        span: interface_name.span(),
-                    });
+                    errors.push(Diagnostic::missing_interface_field(
+                        concrete_name.to_string(),
+                        interface_name.0.as_ref().to_string(),
+                        field.name.as_ref().to_string(),
+                        interface_name.span(),
+                    ));
 
                     continue;
                 }
@@ -84,26 +83,26 @@ where
                     Some(implemented_argument) => {
                         match argument.ty.ok().zip(implemented_argument.ty.ok()) {
                             Some((expected, ty)) if !expected.is_invariant(ty) => {
-                                errors.push(Error::InvalidInterfaceFieldArgumentType {
-                                    name: concrete_name,
-                                    interface: interface_name.0.as_ref(),
-                                    field: field.name.as_ref(),
-                                    argument: argument.name.as_ref(),
-                                    expected,
-                                    ty,
-                                    span: ty.span(),
-                                })
+                                errors.push(Diagnostic::invalid_interface_field_argument_type(
+                                    concrete_name.to_string(),
+                                    interface_name.0.as_ref().to_string(),
+                                    field.name.as_ref().to_string(),
+                                    argument.name.as_ref().to_string(),
+                                    expected.to_string(),
+                                    ty.to_string(),
+                                    ty.span(),
+                                ));
                             }
                             _ => {}
                         }
                     }
-                    None => errors.push(Error::MissingInterfaceFieldArgument {
-                        name: concrete_name,
-                        interface: interface_name.0.as_ref(),
-                        field: field.name.as_ref(),
-                        argument: argument.name.as_ref(),
-                        span: implemented_field.name.span(),
-                    }),
+                    None => errors.push(Diagnostic::missing_interface_field_argument(
+                        concrete_name.to_string(),
+                        interface_name.0.as_ref().to_string(),
+                        field.name.as_ref().to_string(),
+                        argument.name.as_ref().to_string(),
+                        implemented_field.name.span(),
+                    )),
                 }
             }
 
@@ -118,14 +117,16 @@ where
 
                 match implemented_argument.ty.ok() {
                     Some(ty) if ty.is_required() => {
-                        errors.push(Error::UnexpectedNonNullInterfaceFieldArgument {
-                            name: concrete_name,
-                            interface: interface_name.0.as_ref(),
-                            field: field.name.as_ref(),
-                            argument: implemented_argument.name.as_ref(),
-                            ty,
-                            span: ty.span(),
-                        })
+                        errors.push(
+                            Diagnostic::unexpected_non_null_extra_interface_field_argument(
+                                concrete_name.to_string(),
+                                interface_name.0.as_ref().to_string(),
+                                field.name.as_ref().to_string(),
+                                implemented_argument.name.as_ref().to_string(),
+                                ty.to_string(),
+                                ty.span(),
+                            ),
+                        );
                     }
                     _ => {}
                 }
@@ -136,14 +137,14 @@ where
                     if !self
                         .is_valid_implementation_field_type(implemented_field_type, field_type) =>
                 {
-                    errors.push(Error::NonCovariantInterfaceField {
-                        name: concrete_name,
-                        interface: interface_name.0.as_ref(),
-                        field: field.name.as_ref(),
-                        expected: &field_type,
-                        ty: &implemented_field_type,
-                        span: implemented_field_type.span(),
-                    })
+                    errors.push(Diagnostic::non_covariant_interface_field(
+                        concrete_name.to_string(),
+                        interface_name.0.as_ref().to_string(),
+                        field.name.as_ref().to_string(),
+                        field_type.to_string(),
+                        implemented_field_type.to_string(),
+                        implemented_field_type.span(),
+                    ));
                 }
                 _ => {}
             }
@@ -187,7 +188,7 @@ where
         name: &'a T,
         implements_interfaces: &ImplementsInterfaces<T>,
         interface_named_type: &'a NamedType<T>,
-    ) -> Vec<Error<'a, T>> {
+    ) -> Vec<Diagnostic<Span>> {
         match self
             .0
             .type_definitions_by_name(interface_named_type.0.as_ref())
@@ -196,11 +197,11 @@ where
         {
             Some(&TypeDefinition::InterfaceTypeDefinition(_)) | None => {}
             Some(_) => {
-                return vec![Error::ImplementsNonInterfaceType {
-                    name,
-                    interface: interface_named_type.0.as_ref(),
-                    span: interface_named_type.span(),
-                }]
+                return vec![Diagnostic::implements_non_interface_type(
+                    name.to_string(),
+                    interface_named_type.0.as_ref().to_string(),
+                    interface_named_type.span(),
+                )];
             }
         };
 
@@ -221,27 +222,28 @@ where
         &self,
         name: &'a T,
         implements_interfaces: &'a ImplementsInterfaces<T>,
-    ) -> Vec<Error<'a, T>> {
+    ) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
         let mut visited = HashMap::<&T, &NamedType<T>>::new();
 
         for interface in implements_interfaces.named_types() {
             if interface.0.as_ref() == name {
-                errors.push(Error::SelfReferentialInterface {
-                    name: interface.0.as_ref(),
-                    span: interface.span(),
-                });
+                errors.push(Diagnostic::self_referential_interface(
+                    interface.0.as_ref().to_string(),
+                    interface.span(),
+                ));
 
                 continue;
             }
 
             match visited.get(&interface.0.as_ref()) {
                 Some(exists) => {
-                    errors.push(Error::DuplicateImplementsInterface {
-                        name: interface.0.as_ref(),
-                        first: exists.span(),
-                        second: interface.span(),
-                    });
+                    errors.push(Diagnostic::duplicate_implements_interface(
+                        name.to_string(),
+                        interface.0.as_ref().to_string(),
+                        exists.span(),
+                        interface.span(),
+                    ));
                     continue;
                 }
                 None => {}
@@ -258,9 +260,9 @@ where
 
 impl<'a, T> Visit<'a, T> for ImplementsInterface<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_type_definition(
         &self,

@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use litho_language::ast::{NamedType, Node, Visit};
+use litho_diagnostics::Diagnostic;
+use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct UnionMemberTypes<'a, T>(pub &'a Database<T>)
 where
@@ -12,13 +11,13 @@ where
 
 impl<'a, T> Visit<'a, T> for UnionMemberTypes<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_union_type_definition(
         &self,
-        node: &'a litho_language::ast::UnionTypeDefinition<T>,
+        node: &'a UnionTypeDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let name = match node.name.ok() {
@@ -35,11 +34,11 @@ where
         {
             match visited.get(&ty.0.as_ref()) {
                 Some(first) => {
-                    accumulator.push(Error::DuplicateUnionMember {
-                        name: ty.0.as_ref(),
-                        first: first.span(),
-                        second: ty.span(),
-                    });
+                    accumulator.push(Diagnostic::duplicate_union_member(
+                        ty.0.as_ref().to_string(),
+                        first.span(),
+                        ty.span(),
+                    ));
                     continue;
                 }
                 None => {}
@@ -48,18 +47,18 @@ where
             visited.insert(ty.0.as_ref(), ty);
 
             if !self.0.is_object_type(ty.0.as_ref()) {
-                accumulator.push(Error::NonObjectUnionMember {
-                    name: ty.0.as_ref(),
-                    span: ty.span(),
-                })
+                accumulator.push(Diagnostic::non_object_union_member(
+                    ty.0.as_ref().to_string(),
+                    ty.span(),
+                ));
             }
         }
 
         if visited.is_empty() {
-            accumulator.push(Error::MissingUnionMembers {
-                name: name.as_ref(),
-                span: name.span(),
-            })
+            accumulator.push(Diagnostic::missing_union_members(
+                name.as_ref().to_string(),
+                name.span(),
+            ));
         }
     }
 }

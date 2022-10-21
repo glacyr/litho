@@ -1,3 +1,4 @@
+use litho_diagnostics::Diagnostic;
 use wrom::branch::alt;
 use wrom::combinator::opt;
 use wrom::multi::many0;
@@ -100,11 +101,9 @@ where
         opt(description())
             .and_recognize(keyword("schema"))
             .and(opt(directives()))
-            .and(
-                root_operation_type_definitions().recover(|| {
-                    "Schema definition is missing root operation type definitions.".into()
-                }),
-            )
+            .and(root_operation_type_definitions().recover(Missing::unary(
+                Diagnostic::missing_root_operation_type_definitions,
+            )))
             .flatten()
             .map(
                 |(description, schema, directives, type_definitions)| SchemaDefinition {
@@ -128,11 +127,7 @@ where
             punctuator("{"),
             many0(root_operation_type_definition()),
             punctuator("}"),
-            Missing::delimiter_complaint(
-                "Root operation type definitions are missing closing delimiter.",
-                "This `{` here ...",
-                "... should have a corresponding `}` here.",
-            ),
+            Missing::binary(Diagnostic::missing_root_operation_type_definitions_closing_brace),
         )
         .map(|(left, definitions, right)| RootOperationTypeDefinitions {
             braces: (left, right),
@@ -149,8 +144,12 @@ where
 {
     wrom::recursive(|| {
         operation_type()
-            .and(punctuator(":").recover(|| "Missing colon.".into()))
-            .and(named_type().recover(|| "Missing named type.".into()))
+            .and(punctuator(":").recover(Missing::unary(
+                Diagnostic::missing_root_operation_type_definition_colon,
+            )))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_root_operation_type_definition_named_type,
+            )))
             .flatten()
             .map(
                 |(operation_type, colon, named_type)| RootOperationTypeDefinition {
@@ -226,7 +225,9 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(keyword("scalar"))
-            .and(name().recover(|| "Scalar type definition is missing a name".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_scalar_type_definition_name,
+            )))
             .and(opt(directives()))
             .flatten()
             .map(
@@ -249,8 +250,12 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("scalar"))
-            .and(named_type().recover(|| "Scalar extension is missing name.".into()))
-            .and(directives().recover(|| "Scalar extension is missing directives.".into()))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_scalar_type_extension_name,
+            )))
+            .and(directives().recover(Missing::unary(
+                Diagnostic::missing_scalar_type_extension_directives,
+            )))
             .flatten()
             .map(|(extend, scalar, name, directives)| ScalarTypeExtension {
                 extend_scalar: (extend, scalar),
@@ -269,7 +274,9 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(keyword("type"))
-            .and(name().recover(|| "Object type definition is missing a name.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_object_type_definition_name,
+            )))
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
@@ -298,10 +305,12 @@ where
     wrom::recursive(|| {
         keyword("implements")
             .and(opt(punctuator("&")))
-            .and(named_type().recover(|| "Missing name of an interface here.".into()))
-            .and(many0(punctuator("&").and(named_type().recover(|| {
-                "Expected the name of an interface here.".into()
-            }))))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_first_implements_interface,
+            )))
+            .and(many0(punctuator("&").and(named_type().recover(
+                Missing::unary(Diagnostic::missing_second_implements_interface),
+            ))))
             .flatten()
             .map(
                 |(implements, ampersand, first, types)| ImplementsInterfaces {
@@ -324,11 +333,7 @@ where
             punctuator("{"),
             many0(field_definition().map(Into::into)),
             punctuator("}"),
-            Missing::delimiter_complaint(
-                "Fields definition is missing `}` delimiter.",
-                "This `{` here ...",
-                "... should have a corresponding `}` here.",
-            ),
+            Missing::binary(Diagnostic::missing_fields_definition_closing_brace),
         )
         .map(|(left, definitions, right)| FieldsDefinition {
             braces: (left, right),
@@ -346,8 +351,10 @@ where
         opt(description())
             .and_recognize(name())
             .and(opt(arguments_definition().map(Into::into)))
-            .and(punctuator(":").recover(|| "Field is missing a colon here.".into()))
-            .and(ty().recover(|| "Field is missing a type here.".into()))
+            .and(
+                punctuator(":").recover(Missing::unary(Diagnostic::missing_field_definition_colon)),
+            )
+            .and(ty().recover(Missing::unary(Diagnostic::missing_field_definition_type)))
             .and(opt(directives()))
             .flatten()
             .map(
@@ -376,11 +383,7 @@ where
             punctuator("("),
             many0(input_value_definition().map(Into::into)),
             punctuator(")"),
-            Missing::delimiter_complaint(
-                "Arguments are missing `)` delimiter.",
-                "This `(` here ...",
-                "... should have a corresponding `)` here.",
-            ),
+            Missing::binary(Diagnostic::missing_arguments_closing_parentheses),
         )
         .map(|(left, definitions, right)| ArgumentsDefinition {
             parens: (left, right),
@@ -398,8 +401,12 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(name())
-            .and(punctuator(":").recover(|| "Input value is missing a colon.".into()))
-            .and(ty().recover(|| "Input value is missing a type.".into()))
+            .and(punctuator(":").recover(Missing::unary(
+                Diagnostic::missing_input_value_definition_colon,
+            )))
+            .and(ty().recover(Missing::unary(
+                Diagnostic::missing_input_value_definition_type,
+            )))
             .and(opt(default_value()))
             .and(opt(directives()))
             .flatten()
@@ -425,7 +432,9 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("type"))
-            .and(named_type().recover(|| "Object type extension is missing a name here.".into()))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_object_type_extension_name,
+            )))
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
@@ -453,7 +462,9 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(keyword("interface"))
-            .and(name().recover(|| "Interface definition is missing a name.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_interface_type_definition_name,
+            )))
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
@@ -487,7 +498,9 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("interface"))
-            .and(named_type().recover(|| "Interface extension is missing a name.".into()))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_interface_type_extension_name,
+            )))
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
@@ -522,7 +535,9 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(keyword("union"))
-            .and(name().recover(|| "Union definition is missing a name.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_union_type_definition_name,
+            )))
             .and(opt(directives()))
             .and(opt(union_member_types()))
             .flatten()
@@ -546,10 +561,10 @@ where
     wrom::recursive(|| {
         punctuator("=")
             .and(opt(punctuator("|")))
-            .and(named_type().recover(|| "Expected a named type here.".into()))
-            .and(many0(punctuator("|").and(
-                named_type().recover(|| "Expected a named type here.".into()),
-            )))
+            .and(named_type().recover(Missing::unary(Diagnostic::missing_first_union_member_type)))
+            .and(many0(punctuator("|").and(named_type().recover(
+                Missing::unary(Diagnostic::missing_second_union_member_type),
+            ))))
             .flatten()
             .map(|(eq, pipe, first, types)| UnionMemberTypes {
                 eq,
@@ -569,7 +584,9 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("union"))
-            .and(named_type().recover(|| "Union extension is missing a name.".into()))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_union_type_extension_name,
+            )))
             .and(opt(directives()))
             .and(opt(union_member_types()))
             .flatten()
@@ -593,7 +610,9 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(keyword("enum"))
-            .and(name().recover(|| "Enum definition is missing a name.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_enum_type_definition_name,
+            )))
             .and(opt(directives()))
             .and(opt(enum_values_definition()))
             .flatten()
@@ -620,11 +639,7 @@ where
             punctuator("{"),
             many0(enum_value_definition()),
             punctuator("}"),
-            Missing::delimiter_complaint(
-                "Enum values are missing `}` delimiter.",
-                "This `{` here ...",
-                "... should have a corresponding `}` here.",
-            ),
+            Missing::binary(Diagnostic::missing_enum_values_closing_brace),
         )
         .map(|(left, definitions, right)| EnumValuesDefinition {
             braces: (left, right),
@@ -662,7 +677,7 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("enum"))
-            .and(named_type().recover(|| "Enum extension is missing a name.".into()))
+            .and(named_type().recover(Missing::unary(Diagnostic::missing_enum_type_extension_name)))
             .and(opt(directives()))
             .and(opt(enum_values_definition()))
             .flatten()
@@ -686,7 +701,9 @@ where
     wrom::recursive(|| {
         opt(description())
             .and_recognize(keyword("input"))
-            .and(name().recover(|| "Input definition is missing a name.".into()))
+            .and(name().recover(Missing::unary(
+                Diagnostic::missing_input_object_type_definition_name,
+            )))
             .and(opt(directives()))
             .and(opt(input_fields_definition()))
             .flatten()
@@ -715,11 +732,7 @@ where
             punctuator("{"),
             many0(input_value_definition().map(Into::into)),
             punctuator("}"),
-            Missing::delimiter_complaint(
-                "Input fields are missing `}` delimiter.",
-                "This `{` here ...",
-                "... should have a corresponding `}` here.",
-            ),
+            Missing::binary(Diagnostic::missing_input_fields_definition_closing_brace),
         )
         .map(|(left, definitions, right)| InputFieldsDefinition {
             braces: (left, right),
@@ -737,7 +750,9 @@ where
     wrom::recursive(|| {
         keyword("extend")
             .and(keyword("input"))
-            .and(named_type().recover(|| "Input extension is missing a name.".into()))
+            .and(named_type().recover(Missing::unary(
+                Diagnostic::missing_input_object_type_extension_name,
+            )))
             .and(opt(directives()))
             .and(opt(input_fields_definition()))
             .flatten()
@@ -761,14 +776,16 @@ where
     wrom::recursive(|| {
         opt(description())
             .and(keyword("directive"))
-            .and(punctuator("@").recover(|| "Directive definition is missing a `@` here.".into()))
-            .and(name().recover(|| "Directive definition is missing a name here.".into()))
+            .and(
+                punctuator("@")
+                    .recover(Missing::unary(Diagnostic::missing_directive_definition_at)),
+            )
+            .and(name().recover(Missing::unary(Diagnostic::missing_directive_definition_at)))
             .and(opt(arguments_definition().map(Into::into)))
             .and(opt(keyword("repeatable")))
-            .and(
-                directive_locations()
-                    .recover(|| "Directive definition is missing locations here.".into()),
-            )
+            .and(directive_locations().recover(Missing::unary(
+                Diagnostic::missing_directive_definition_locations,
+            )))
             .flatten()
             .map(
                 |(
@@ -803,10 +820,13 @@ where
     wrom::recursive(|| {
         keyword("on")
             .and(opt(punctuator("|")))
-            .and(directive_location().recover(|| "Expected a directive location here.".into()))
-            .and(many0(punctuator("|").and(
-                directive_location().recover(|| "Expected a directive location here.".into()),
-            )))
+            .and(
+                directive_location()
+                    .recover(Missing::unary(Diagnostic::missing_first_directive_location)),
+            )
+            .and(many0(punctuator("|").and(directive_location().recover(
+                Missing::unary(Diagnostic::missing_second_directive_location),
+            ))))
             .flatten()
             .map(|(on, pipe, first, locations)| DirectiveLocations {
                 on,

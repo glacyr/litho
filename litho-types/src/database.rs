@@ -63,6 +63,12 @@ impl<T> Database<T>
 where
     T: From<&'static str> + Clone + Debug + Eq + Hash,
 {
+    pub fn single(document: &Document<T>) -> Database<T> {
+        let mut database = Database::new();
+        database.index(document);
+        database
+    }
+
     pub fn index(&mut self, document: &Document<T>) {
         document.traverse(&Index, self);
         document.traverse(&Inference, &mut State::new(self));

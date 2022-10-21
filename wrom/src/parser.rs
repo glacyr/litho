@@ -13,11 +13,10 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
     where
         R: Recognizer<I, E>;
 
-    fn recover<M>(self, missing: M) -> Recover<Self, M>
+    fn recover(self, missing: I::Missing) -> Recover<Self, I::Missing>
     where
         Self: Sized,
         I: Input,
-        M: Fn() -> I::Missing,
     {
         Recover(self, missing)
     }
@@ -208,12 +207,12 @@ where
     }
 }
 
-impl<I, O, E, P, M> RecoverableParser<I, Recoverable<O, I::Missing>, E> for Recover<P, M>
+impl<I, O, E, P> RecoverableParser<I, Recoverable<O, I::Missing>, E> for Recover<P, I::Missing>
 where
     I: Clone + Input,
+    I::Missing: Copy,
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
-    M: Fn() -> I::Missing,
 {
     fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Recoverable<O, I::Missing>, E>
     where
@@ -231,7 +230,7 @@ where
 
         let value = match value {
             Some(value) => Recoverable::Present(value),
-            None => Recoverable::Missing(input.missing(self.1())),
+            None => Recoverable::Missing(input.missing(self.1.clone())),
         };
 
         Ok((input, value))

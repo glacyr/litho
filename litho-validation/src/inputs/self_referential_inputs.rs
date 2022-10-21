@@ -1,9 +1,8 @@
 use std::hash::Hash;
 
+use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
-
-use crate::Error;
 
 pub struct SelfReferentialInputs<'a, T>(pub &'a Database<T>)
 where
@@ -44,9 +43,9 @@ where
 
 impl<'a, T> Visit<'a, T> for SelfReferentialInputs<'a, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + ToString,
 {
-    type Accumulator = Vec<Error<'a, T>>;
+    type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_object_type_definition(
         &self,
@@ -70,12 +69,12 @@ where
                     Type::Named(ty)
                         if self.is_recursive(&mut visited, name.as_ref(), ty.0.as_ref()) =>
                     {
-                        accumulator.push(Error::SelfReferentialInputType {
-                            name: name.as_ref(),
-                            field: field.name.as_ref(),
-                            ty: ty.0.as_ref(),
-                            span: field.name.span(),
-                        })
+                        accumulator.push(Diagnostic::self_referential_input_type(
+                            name.as_ref().to_string(),
+                            field.name.as_ref().to_string(),
+                            ty.0.as_ref().to_string(),
+                            field.name.span(),
+                        ));
                     }
                     _ => {}
                 },
