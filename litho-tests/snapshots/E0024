@@ -1,0 +1,7 @@
+[E0024] Error: Directive must have a name.
+   ╭─[graphql:1:15]
+   │
+ 1 │ type Example @ {
+   ·               ┬  
+   ·               ╰── This directive here is missing a name.
+───╯

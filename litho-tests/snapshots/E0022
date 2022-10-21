@@ -1,0 +1,9 @@
+[E0022] Error: List type must have a closing bracket.
+   ╭─[graphql:2:12]
+   │
+ 2 │     _: [Int
+   ·        ┬   ┬  
+   ·        ╰────── This `[` here ...
+   ·            │  
+   ·            ╰── ... must have a matching `]` here.
+───╯

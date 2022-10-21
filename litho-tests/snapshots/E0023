@@ -1,0 +1,7 @@
+[E0023] Error: List type must wrap another type.
+   ╭─[graphql:2:9]
+   │
+ 2 │     _: []
+   ·         │ 
+   ·         ╰─ This list type here is missing a wrapped type.
+───╯

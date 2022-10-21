@@ -1,0 +1,7 @@
+[E0030] Error: Scalar type extension must have a name.
+   ╭─[graphql:1:14]
+   │
+ 1 │ extend scalar
+   ·              │ 
+   ·              ╰─ This scalar type extension here is missing a name.
+───╯

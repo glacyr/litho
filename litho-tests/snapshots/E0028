@@ -1,0 +1,7 @@
+[E0028] Error: Root operation type definition must have a named type.
+   ╭─[graphql:2:11]
+   │
+ 2 │     query:
+   ·           ┬  
+   ·           ╰── This root operation type definition here is missing a named type.
+───╯

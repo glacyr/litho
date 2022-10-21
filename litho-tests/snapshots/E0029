@@ -1,0 +1,7 @@
+[E0029] Error: Scalar type definition must have a name.
+   ╭─[graphql:1:7]
+   │
+ 1 │ scalar
+   ·       │ 
+   ·       ╰─ This scalar type definition here is missing a name.
+───╯
