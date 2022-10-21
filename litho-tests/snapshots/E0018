@@ -1,0 +1,9 @@
+[E0018] Error: Variable definitions must have a closing parenthesis.
+   ╭─[graphql:5:29]
+   │
+ 5 │ query Example($var: Boolean! {
+   ·              ┬              ┬  
+   ·              ╰───────────────── This `(` here ...
+   ·                             │  
+   ·                             ╰── ... must have a matching `)` here.
+───╯

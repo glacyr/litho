@@ -1,0 +1,9 @@
+[E0014] Error: List value must have closing bracket.
+   ╭─[graphql:6:20]
+   │
+ 6 │     sum(list: [1, 2)
+   ·               ┬    │ 
+   ·               ╰────── This `[` here ...
+   ·                    │ 
+   ·                    ╰─ ... should have a matching `]` here.
+───╯

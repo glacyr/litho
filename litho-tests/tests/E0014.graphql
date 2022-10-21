@@ -1,0 +1,7 @@
+type Query {
+    sum(list: [Int]): Int
+}
+
+query Example {
+    sum(list: [1, 2)
+}

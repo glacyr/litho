@@ -1,0 +1,7 @@
+[E0013] Error: Type condition must have a named type.
+   ╭─[graphql:1:20]
+   │
+ 1 │ fragment Example on {
+   ·                    ┬  
+   ·                    ╰── Type condition here does not have a named type.
+───╯

@@ -1,0 +1,7 @@
+[E0019] Error: Variable definition must have a colon.
+   ╭─[graphql:5:19]
+   │
+ 5 │ query Example($var Boolean!) {
+   ·                   ┬  
+   ·                   ╰── This variable definition here is missing a colon.
+───╯

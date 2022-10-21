@@ -28,7 +28,11 @@ pub fn main() {
         let builtins = Document::<String>::parse_from_str(
             Default::default(),
             r#"
+        scalar Int
+        scalar Float
+        scalar String
         scalar Boolean
+        scalar ID
         "#,
         )
         .unwrap();

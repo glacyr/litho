@@ -1,0 +1,11 @@
+input Input {
+    foo: Boolean
+}
+
+type Query {
+    example(input: Input): Boolean
+}
+
+query Example {
+    example(input: { foo: })
+}

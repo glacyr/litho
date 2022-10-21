@@ -1,0 +1,9 @@
+[E0015] Error: Object value must have closing brace.
+    ╭─[graphql:10:42]
+    │
+ 10 │     example(input: { foo: "Hello, World!")
+    ·                    ┬                     │ 
+    ·                    ╰─────────────────────── This `{` here ...
+    ·                                          │ 
+    ·                                          ╰─ ... should have a matching `}` here.
+────╯

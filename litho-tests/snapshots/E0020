@@ -1,0 +1,7 @@
+[E0020] Error: Variable definition must have a type.
+   ╭─[graphql:5:20]
+   │
+ 5 │ query Example($var:) {
+   ·                    │ 
+   ·                    ╰─ This variable definition here is missing a type.
+───╯

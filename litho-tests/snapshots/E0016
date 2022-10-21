@@ -1,0 +1,7 @@
+[E0016] Error: Object field must have a colon.
+    ╭─[graphql:10:25]
+    │
+ 10 │     example(input: { foo "Hello, World!" })
+    ·                         ┬  
+    ·                         ╰── This object field here is missing a colon.
+────╯

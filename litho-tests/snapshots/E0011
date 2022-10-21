@@ -1,0 +1,7 @@
+[E0011] Error: Fragment definition must have a type condition.
+   ╭─[graphql:1:17]
+   │
+ 1 │ fragment Example {
+   ·                 ┬  
+   ·                 ╰── Fragment definition here does not have a type condition.
+───╯

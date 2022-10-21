@@ -1,0 +1,7 @@
+[E0017] Error: Object field must have a value.
+    ╭─[graphql:10:26]
+    │
+ 10 │     example(input: { foo: })
+    ·                          ┬  
+    ·                          ╰── This object field here is missing a value.
+────╯
