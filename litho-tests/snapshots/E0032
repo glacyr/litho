@@ -1,0 +1,7 @@
+[E0032] Error: Object type definition must have a name.
+   ╭─[graphql:1:5]
+   │
+ 1 │ type {
+   ·     ┬  
+   ·     ╰── This object type definition here is missing a name.
+───╯

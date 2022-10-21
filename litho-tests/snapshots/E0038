@@ -1,0 +1,9 @@
+[E0038] Error: Arguments definition must have a closing parenthesis.
+   ╭─[graphql:2:13]
+   │
+ 2 │     example(: Boolean!
+   ·            ┬│ 
+   ·            ╰── This `(` here ...
+   ·             │ 
+   ·             ╰─ ... must have a matching `)` here.
+───╯

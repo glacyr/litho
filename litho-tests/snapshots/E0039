@@ -1,0 +1,7 @@
+[E0039] Error: Input value definition must have a colon.
+   ╭─[graphql:2:16]
+   │
+ 2 │     example(foo Int): Boolean!
+   ·                ┬  
+   ·                ╰── This input value definition here is missing a colon.
+───╯

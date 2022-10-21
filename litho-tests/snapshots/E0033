@@ -1,0 +1,7 @@
+[E0033] Error: Implemented interfaces must not be empty.
+   ╭─[graphql:1:24]
+   │
+ 1 │ type Example implements {
+   ·                        ┬  
+   ·                        ╰── This object type here implements an interface, but its name is missing.
+───╯

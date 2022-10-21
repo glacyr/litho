@@ -1,0 +1,7 @@
+[E0037] Error: Field definition must have a type.
+   ╭─[graphql:2:9]
+   │
+ 2 │     foo:
+   ·         ┬  
+   ·         ╰── This field definition here is missing a type.
+───╯

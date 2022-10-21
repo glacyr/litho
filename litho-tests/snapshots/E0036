@@ -1,0 +1,7 @@
+[E0036] Error: Field definition must have a colon.
+   ╭─[graphql:2:8]
+   │
+ 2 │     foo String!
+   ·        ┬  
+   ·        ╰── This field definition here is missing a colon.
+───╯

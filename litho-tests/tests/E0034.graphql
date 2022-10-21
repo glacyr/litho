@@ -1,0 +1,7 @@
+interface Foo {
+    _: Boolean!
+}
+
+type Example implements Foo & {
+    _: Boolean!
+}

@@ -1,0 +1,10 @@
+[E0035] Error: Fields definition must have a closing brace.
+   ╭─[graphql:2:16]
+   │
+ 1 │ type Example {
+   ·              ┬  
+   ·              ╰── This `{` here ...
+ 2 │     _: Boolean!
+   ·                │ 
+   ·                ╰─ ... must have a matching `}` here.
+───╯

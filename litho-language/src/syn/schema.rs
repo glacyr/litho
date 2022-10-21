@@ -383,7 +383,7 @@ where
             punctuator("("),
             many0(input_value_definition().map(Into::into)),
             punctuator(")"),
-            Missing::binary(Diagnostic::missing_arguments_closing_parentheses),
+            Missing::binary(Diagnostic::missing_arguments_definition_closing_parenthesis),
         )
         .map(|(left, definitions, right)| ArgumentsDefinition {
             parens: (left, right),

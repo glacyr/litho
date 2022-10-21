@@ -1,0 +1,7 @@
+[E0034] Error: Implemented interface name is missing.
+   ╭─[graphql:5:30]
+   │
+ 5 │ type Example implements Foo & {
+   ·                              ┬  
+   ·                              ╰── This object type here implements another interface, but its name is missing.
+───╯
