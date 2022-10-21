@@ -8,7 +8,9 @@ use wrom::{recursive, Input, RecoverableParser};
 use crate::ast::*;
 use crate::lex::{Name, Token};
 
-use super::combinators::{float_value, int_value, keyword, name, punctuator, string_value};
+use super::combinators::{
+    float_value, int_value, keyword, name, name_unless, punctuator, string_value,
+};
 use super::Error;
 
 pub fn executable_document<'a, T, I>(
@@ -206,7 +208,7 @@ where
 {
     wrom::recursive(|| {
         punctuator("...")
-            .and(name())
+            .and(name_unless("on"))
             .and(opt(directives()))
             .flatten()
             .map(|(dots, fragment_name, directives)| FragmentSpread {
@@ -249,7 +251,7 @@ where
 {
     wrom::recursive(|| {
         keyword("fragment")
-            .and(name().recover(Missing::unary(Diagnostic::missing_fragment_name)))
+            .and(name_unless("on").recover(Missing::unary(Diagnostic::missing_fragment_name)))
             .and(
                 type_condition()
                     .recover(Missing::unary(Diagnostic::missing_fragment_type_condition)),

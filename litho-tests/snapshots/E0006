@@ -1,0 +1,9 @@
+[E0006] Error: Arguments are missing closing parenthesis.
+   ╭─[graphql:6:20]
+   │
+ 6 │     field(arg: true
+   ·          ┬         ┬  
+   ·          ╰──────────── This `(` here ...
+   ·                    │  
+   ·                    ╰── ... should have a matching `)` here.
+───╯

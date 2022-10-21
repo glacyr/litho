@@ -1,0 +1,6 @@
+type Query {
+    _: Boolean!
+}
+
+query Example {
+    _

@@ -17,6 +17,18 @@ where
     })
 }
 
+pub fn name_unless<T, I>(unexpected: &'static str) -> impl RecoverableParser<I, Name<T>, Error>
+where
+    I: Iterator<Item = Token<T>> + Clone,
+    T: for<'a> PartialEq<&'a str>,
+{
+    terminal(move |mut input: I| match input.next() {
+        Some(Token::Name(name)) if name.as_ref() != &unexpected => Ok((input, name)),
+        Some(_) => Err(Err::Error(Error::ExpectedName)),
+        None => Err(Err::Error(Error::Incomplete)),
+    })
+}
+
 pub fn keyword<T, I>(expected: &'static str) -> impl RecoverableParser<I, Name<T>, Error>
 where
     I: Iterator<Item = Token<T>> + Clone,

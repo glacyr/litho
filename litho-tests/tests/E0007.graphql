@@ -1,0 +1,7 @@
+type Query {
+    field(arg: Boolean!): Boolean!
+}
+
+query Example {
+    field(arg true)
+}

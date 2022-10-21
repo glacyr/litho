@@ -1,0 +1,7 @@
+[E0010] Error: Fragment definition must have a name.
+   ╭─[graphql:1:9]
+   │
+ 1 │ fragment on Query {
+   ·         ┬  
+   ·         ╰── Fragment definition here does not have a name.
+───╯

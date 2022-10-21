@@ -1,0 +1,7 @@
+[E0007] Error: Argument is missing colon.
+   ╭─[graphql:6:14]
+   │
+ 6 │     field(arg true)
+   ·              ┬  
+   ·              ╰── Argument should have a colon here.
+───╯

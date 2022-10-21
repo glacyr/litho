@@ -1,0 +1,10 @@
+[E0004] Error: Selection set is missing closing curly brace.
+   ╭─[graphql:6:6]
+   │
+ 5 │ query Example {
+   ·               ┬  
+   ·               ╰── This `{` here ...
+ 6 │     _
+   ·      │ 
+   ·      ╰─ ... should have a matching `}` here.
+───╯

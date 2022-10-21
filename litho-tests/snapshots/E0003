@@ -1,0 +1,7 @@
+[E0003] Error: Operation definition must have a selection set.
+   ╭─[graphql:1:14]
+   │
+ 1 │ query Example
+   ·              │ 
+   ·              ╰─ Expected a selection set for operation definition here.
+───╯

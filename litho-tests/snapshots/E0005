@@ -1,0 +1,7 @@
+[E0005] Error: Field must have a name.
+   ╭─[graphql:2:11]
+   │
+ 2 │     alias:
+   ·           ─┬  
+   ·            ╰── Missing name of this field here.
+───╯

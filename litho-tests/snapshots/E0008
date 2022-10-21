@@ -1,0 +1,7 @@
+[E0008] Error: Argument is missing value.
+   ╭─[graphql:6:15]
+   │
+ 6 │     field(arg:)
+   ·               │ 
+   ·               ╰─ Argument should have a value here.
+───╯
