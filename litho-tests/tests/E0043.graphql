@@ -1,0 +1,7 @@
+interface Example {
+    foo: Boolean!
+}
+
+extend interface {
+    bar: Boolean!
+}

@@ -1,0 +1,7 @@
+[E0047] Error: Union type extension must have a name.
+    ╭─[graphql:10:13]
+    │
+ 10 │ extend union = Bar
+    ·             ┬  
+    ·             ╰── This union type extension here is missing a name.
+────╯

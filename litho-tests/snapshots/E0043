@@ -1,0 +1,7 @@
+[E0043] Error: Interface type extension must have a name.
+   ╭─[graphql:5:17]
+   │
+ 5 │ extend interface {
+   ·                 ┬  
+   ·                 ╰── This interface type extension here is missing a name.
+───╯

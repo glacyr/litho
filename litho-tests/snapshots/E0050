@@ -1,0 +1,7 @@
+[E0050] Error: Enum type extension must have a name.
+   ╭─[graphql:1:12]
+   │
+ 1 │ extend enum {
+   ·            ┬  
+   ·            ╰── This enum type extension here is missing a name.
+───╯

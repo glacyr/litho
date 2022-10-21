@@ -1,0 +1,7 @@
+[E0042] Error: Interface type definition must have a name.
+   ╭─[graphql:1:10]
+   │
+ 1 │ interface {
+   ·          ┬  
+   ·          ╰── This interface type definition here is missing a name.
+───╯

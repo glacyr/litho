@@ -1,0 +1,5 @@
+type Foo {
+    foo: Boolean!
+}
+
+union Example = Foo |

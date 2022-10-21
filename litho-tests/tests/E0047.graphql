@@ -1,0 +1,10 @@
+type Foo {
+    foo: Boolean!
+}
+
+type Bar {
+    bar: Boolean!
+}
+
+union Example = Foo
+extend union = Bar

@@ -1,0 +1,11 @@
+[E0049] Error: Enum values must have a closing brace.
+   ╭─[graphql:3:8]
+   │
+ 1 │ enum Example {
+   ·              ┬  
+   ·              ╰── This `{` here ...
+   · 
+ 3 │     BAR
+   ·        │ 
+   ·        ╰─ ... must have a matching `}` here.
+───╯

@@ -1,0 +1,7 @@
+[E0041] Error: Object type extension must have a name.
+   ╭─[graphql:1:12]
+   │
+ 1 │ extend type {
+   ·            ┬  
+   ·            ╰── This object type extension here is missing a name.
+───╯

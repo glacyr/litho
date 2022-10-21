@@ -1,0 +1,7 @@
+[E0046] Error: Union member type must have a name.
+   ╭─[graphql:5:22]
+   │
+ 5 │ union Example = Foo |
+   ·                      │ 
+   ·                      ╰─ This union type definition here defines another member type but its name is missing.
+───╯

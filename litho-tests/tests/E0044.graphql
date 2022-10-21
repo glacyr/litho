@@ -1,0 +1,5 @@
+type Foo {
+    foo: String!
+}
+
+union = Foo
