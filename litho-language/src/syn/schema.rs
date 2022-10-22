@@ -639,7 +639,7 @@ where
     wrom::recursive(|| {
         delimited(
             punctuator("{"),
-            many0(enum_value_definition()),
+            many0(enum_value_definition().map(Into::into)),
             punctuator("}"),
             Missing::binary(Diagnostic::missing_enum_values_closing_brace),
         )

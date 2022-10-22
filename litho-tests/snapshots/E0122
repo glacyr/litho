@@ -8,3 +8,16 @@
    ·     ─┬─  
    ·      ╰─── ... and later again here.
 ───╯
+
+
+[E0122] Error: Enum values must be unique.
+    ╭─[graphql:11:5]
+    │
+  7 │     FOO
+    ·     ─┬─  
+    ·      ╰─── Enum value `FOO` first occurs here ...
+    · 
+ 11 │     FOO
+    ·     ─┬─  
+    ·      ╰─── ... and later again here.
+────╯

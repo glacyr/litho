@@ -1183,7 +1183,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct EnumValuesDefinition<T> {
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub definitions: Vec<EnumValueDefinition<T>>,
+    pub definitions: Vec<Arc<EnumValueDefinition<T>>>,
 }
 
 node!(
@@ -1201,7 +1201,7 @@ pub struct EnumValueDefinition<T> {
 }
 
 node!(
-    EnumValueDefinition,
+    Arc<EnumValueDefinition>,
     visit_enum_value_definition,
     description,
     enum_value,

@@ -222,4 +222,23 @@ where
             .chain(extensions)
             .flat_map(|def| def.named_types())
     }
+
+    pub fn enum_value_definitions(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
+        self.definitions
+            .enum_value_definitions(ty)
+            .chain(self.extensions.enum_value_definitions(ty))
+    }
+
+    pub fn enum_value_definitions_by_name(
+        &self,
+        ty: &T,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
+        self.definitions
+            .enum_value_definitions_by_name(ty, name)
+            .chain(self.extensions.enum_value_definitions_by_name(ty, name))
+    }
 }

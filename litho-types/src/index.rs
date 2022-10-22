@@ -146,4 +146,38 @@ where
             }
         }
     }
+
+    fn visit_enum_type_definition(
+        &self,
+        node: &'ast EnumTypeDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
+            for value in values.definitions.iter() {
+                accumulator
+                    .extensions
+                    .enum_value_definitions
+                    .entry(name.as_ref().clone())
+                    .or_default()
+                    .insert(value.enum_value.0.as_ref().clone(), value.clone());
+            }
+        }
+    }
+
+    fn visit_enum_type_extension(
+        &self,
+        node: &'ast EnumTypeExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
+            for value in values.definitions.iter() {
+                accumulator
+                    .extensions
+                    .enum_value_definitions
+                    .entry(name.0.as_ref().clone())
+                    .or_default()
+                    .insert(value.enum_value.0.as_ref().clone(), value.clone());
+            }
+        }
+    }
 }
