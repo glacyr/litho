@@ -1,0 +1,16 @@
+input Example {
+    self: Example!
+}
+
+extend input Example {
+    foo: Foo!
+    bar: Bar!
+}
+
+input Foo {
+    example: Example!
+}
+
+input Bar {
+    example: Example
+}

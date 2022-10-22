@@ -1,0 +1,13 @@
+enum Empty
+
+enum Normal {
+    FOO
+    BAR
+}
+
+enum Extended
+
+extend enum Extended {
+    FOO
+    BAR
+}

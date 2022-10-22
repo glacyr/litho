@@ -1,0 +1,12 @@
+enum Regular {
+    FOO
+    FOO
+}
+
+enum Extended {
+    FOO
+}
+
+extend enum Extended {
+    FOO
+}

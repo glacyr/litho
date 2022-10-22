@@ -1,0 +1,7 @@
+type Example {
+    foo: Boolean!
+}
+
+type Example {
+    foo: Boolean!
+}

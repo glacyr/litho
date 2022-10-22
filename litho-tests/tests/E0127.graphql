@@ -1,0 +1,5 @@
+scalar Foo
+
+extend interface Foo {
+    foo: String!
+}

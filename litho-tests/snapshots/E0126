@@ -1,0 +1,11 @@
+[E0126] Error: Type name must be unique.
+   ╭─[graphql:5:6]
+   │
+ 1 │ type Example {
+   ·      ───┬───  
+   ·         ╰───── Type `Example` is first defined here ...
+   · 
+ 5 │ type Example {
+   ·      ───┬───  
+   ·         ╰───── ... and later again here.
+───╯

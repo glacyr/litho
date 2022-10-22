@@ -1,0 +1,16 @@
+[E0121] Error: Enum must have at least one value.
+   ╭─[graphql:1:6]
+   │
+ 1 │ enum Empty
+   ·      ──┬──  
+   ·        ╰──── Enum `Empty` here doesn't have any values.
+───╯
+
+
+[E0121] Error: Enum must have at least one value.
+   ╭─[graphql:8:6]
+   │
+ 8 │ enum Extended
+   ·      ────┬───  
+   ·          ╰───── Enum `Extended` here doesn't have any values.
+───╯

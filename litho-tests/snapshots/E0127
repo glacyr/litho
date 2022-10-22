@@ -1,0 +1,11 @@
+[E0127] Error: Type extension must extend type of same kind.
+   ╭─[graphql:3:8]
+   │
+ 1 │ scalar Foo
+   · ───┬──  
+   ·    ╰──── Type `Foo` is first defined as `scalar` here ...
+   · 
+ 3 │ extend interface Foo {
+   ·        ────┬────  
+   ·            ╰────── ... and later again as `interface` here.
+───╯
