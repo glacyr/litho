@@ -1,1 +1,7 @@
-TODO
+[E0124] Error: Directive name must not start with `__`.
+   ╭─[graphql:1:12]
+   │
+ 1 │ directive @__reserved on QUERY
+   ·            ─────┬────  
+   ·                 ╰────── Directive `__reserved` is defined here, but its name start with `__` which is reserved.
+───╯
