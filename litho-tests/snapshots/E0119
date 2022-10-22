@@ -1,1 +1,21 @@
-TODO
+[E0119] Error: Union members must be unique.
+   ╭─[graphql:5:24]
+   │
+ 5 │ union Regular = Type | Type
+   ·                 ──┬─   ──┬─  
+   ·                   ╰────────── Union member type `Type` first occurs here ...
+   ·                          │   
+   ·                          ╰─── ... and later again here.
+───╯
+
+
+[E0119] Error: Union members must be unique.
+   ╭─[graphql:7:25]
+   │
+ 6 │ union Extended = Type
+   ·                  ──┬─  
+   ·                    ╰─── Union member type `Type` first occurs here ...
+ 7 │ extend union Extended = Type
+   ·                         ──┬─  
+   ·                           ╰─── ... and later again here.
+───╯

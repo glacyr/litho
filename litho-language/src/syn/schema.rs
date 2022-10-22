@@ -563,10 +563,18 @@ where
     wrom::recursive(|| {
         punctuator("=")
             .and(opt(punctuator("|")))
-            .and(named_type().recover(Missing::unary(Diagnostic::missing_first_union_member_type)))
-            .and(many0(punctuator("|").and(named_type().recover(
-                Missing::unary(Diagnostic::missing_second_union_member_type),
-            ))))
+            .and(
+                named_type()
+                    .map(Into::into)
+                    .recover(Missing::unary(Diagnostic::missing_first_union_member_type)),
+            )
+            .and(many0(
+                punctuator("|").and(
+                    named_type()
+                        .map(Into::into)
+                        .recover(Missing::unary(Diagnostic::missing_second_union_member_type)),
+                ),
+            ))
             .flatten()
             .map(|(eq, pipe, first, types)| UnionMemberTypes {
                 eq,

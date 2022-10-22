@@ -241,4 +241,20 @@ where
             .enum_value_definitions_by_name(ty, name)
             .chain(self.extensions.enum_value_definitions_by_name(ty, name))
     }
+
+    pub fn union_member_types(&self, ty: &T) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+        self.definitions
+            .union_member_types(ty)
+            .chain(self.extensions.union_member_types(ty))
+    }
+
+    pub fn union_member_types_by_name(
+        &self,
+        ty: &T,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+        self.definitions
+            .union_member_types_by_name(ty, name)
+            .chain(self.extensions.union_member_types_by_name(ty, name))
+    }
 }

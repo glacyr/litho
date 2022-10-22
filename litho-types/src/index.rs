@@ -155,7 +155,7 @@ where
         if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
             for value in values.definitions.iter() {
                 accumulator
-                    .extensions
+                    .definitions
                     .enum_value_definitions
                     .entry(name.as_ref().clone())
                     .or_default()
@@ -177,6 +177,40 @@ where
                     .entry(name.0.as_ref().clone())
                     .or_default()
                     .insert(value.enum_value.0.as_ref().clone(), value.clone());
+            }
+        }
+    }
+
+    fn visit_union_type_definition(
+        &self,
+        node: &'ast UnionTypeDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some((name, types)) = node.name.ok().zip(node.member_types.as_ref()) {
+            for ty in types.named_types() {
+                accumulator
+                    .definitions
+                    .union_member_types
+                    .entry(name.as_ref().clone())
+                    .or_default()
+                    .insert(ty.0.as_ref().clone(), ty.clone());
+            }
+        }
+    }
+
+    fn visit_union_type_extension(
+        &self,
+        node: &'ast UnionTypeExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some((name, types)) = node.name.ok().zip(node.member_types.as_ref()) {
+            for ty in types.named_types() {
+                accumulator
+                    .extensions
+                    .union_member_types
+                    .entry(name.0.as_ref().clone())
+                    .or_default()
+                    .insert(ty.0.as_ref().clone(), ty.clone());
             }
         }
     }

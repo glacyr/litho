@@ -5,7 +5,7 @@ use litho_diagnostics::Diagnostic;
 
 pub use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
 
-use super::{node, node_enum, node_unit, Node, Visit};
+use super::{node, node_arc, node_enum, node_unit, Node, Visit};
 
 #[derive(Clone, Copy, Debug)]
 pub enum Missing {
@@ -451,6 +451,7 @@ node_enum!(Type, visit_type, Named, List, NonNull);
 pub struct NamedType<T>(pub Name<T>);
 
 node_unit!(NamedType, visit_named_type);
+node_arc!(NamedType);
 
 #[derive(Clone, Debug)]
 pub struct ListType<T> {
@@ -1109,12 +1110,12 @@ node!(
 pub struct UnionMemberTypes<T> {
     pub eq: Punctuator<T>,
     pub pipe: Option<Punctuator<T>>,
-    pub first: Recoverable<NamedType<T>>,
-    pub types: Vec<(Punctuator<T>, Recoverable<NamedType<T>>)>,
+    pub first: Recoverable<Arc<NamedType<T>>>,
+    pub types: Vec<(Punctuator<T>, Recoverable<Arc<NamedType<T>>>)>,
 }
 
 impl<T> UnionMemberTypes<T> {
-    pub fn named_types(&self) -> impl Iterator<Item = &NamedType<T>> {
+    pub fn named_types(&self) -> impl Iterator<Item = &Arc<NamedType<T>>> {
         self.first
             .ok()
             .into_iter()

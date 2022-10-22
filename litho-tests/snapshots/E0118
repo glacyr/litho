@@ -1,1 +1,7 @@
-TODO
+[E0118] Error: Union must have at least one member type.
+   ╭─[graphql:5:7]
+   │
+ 5 │ union Empty
+   ·       ──┬──  
+   ·         ╰──── Union `Empty` here doesn't have any member types.
+───╯

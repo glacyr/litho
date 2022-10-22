@@ -13,6 +13,7 @@ where
     pub(crate) field_definitions_by_type: MultiMap<T, Arc<FieldDefinition<T>>>,
     pub(crate) field_definitions_by_name: HashMap<T, MultiMap<T, Arc<FieldDefinition<T>>>>,
     pub(crate) enum_value_definitions: HashMap<T, MultiMap<T, Arc<EnumValueDefinition<T>>>>,
+    pub(crate) union_member_types: HashMap<T, MultiMap<T, Arc<NamedType<T>>>>,
 }
 
 impl<T> Default for Bindings<T>
@@ -24,6 +25,7 @@ where
             field_definitions_by_type: Default::default(),
             field_definitions_by_name: Default::default(),
             enum_value_definitions: Default::default(),
+            union_member_types: Default::default(),
         }
     }
 }
@@ -73,6 +75,26 @@ where
         name: &T,
     ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
         self.enum_value_definitions
+            .get(ty)
+            .and_then(|ty| ty.get_vec(name))
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .iter()
+    }
+
+    pub fn union_member_types(&self, ty: &T) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+        self.union_member_types
+            .get(ty)
+            .into_iter()
+            .flat_map(|ty| ty.iter().map(|(_, value)| value))
+    }
+
+    pub fn union_member_types_by_name(
+        &self,
+        ty: &T,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+        self.union_member_types
             .get(ty)
             .and_then(|ty| ty.get_vec(name))
             .map(Vec::as_slice)

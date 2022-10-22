@@ -171,3 +171,18 @@ macro_rules! node_unit {
 }
 
 pub(crate) use node_unit;
+
+macro_rules! node_arc {
+    ($ty:ident) => {
+        impl<T> Node<T> for Arc<$ty<T>> {
+            fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
+            where
+                V: Visit<'ast, T>,
+            {
+                self.as_ref().traverse(visitor, accumulator);
+            }
+        }
+    };
+}
+
+pub(crate) use node_arc;
