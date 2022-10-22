@@ -1,7 +1,7 @@
 use litho_diagnostics::Diagnostic;
 use wrom::branch::alt;
 use wrom::combinator::opt;
-use wrom::multi::many0;
+use wrom::multi::{many0, many1};
 use wrom::sequence::delimited;
 use wrom::{Input, RecoverableParser};
 
@@ -125,7 +125,9 @@ where
     wrom::recursive(|| {
         delimited(
             punctuator("{"),
-            many0(root_operation_type_definition()),
+            many1(root_operation_type_definition()).recover(Missing::unary(
+                Diagnostic::missing_root_operation_type_definitions,
+            )),
             punctuator("}"),
             Missing::binary(Diagnostic::missing_root_operation_type_definitions_closing_brace),
         )

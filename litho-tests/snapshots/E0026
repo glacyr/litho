@@ -1,9 +1,10 @@
 [E0026] Error: Root operation type definitions must have a closing brace.
-   ╭─[graphql:1:9]
+   ╭─[graphql:6:17]
    │
- 1 │ schema {
-   ·        ┬│ 
+ 5 │ schema {
+   ·        ┬  
    ·        ╰── This `{` here ...
-   ·         │ 
-   ·         ╰─ ... should have a matching `}` here.
+ 6 │     query: Query
+   ·                 │ 
+   ·                 ╰─ ... should have a matching `}` here.
 ───╯

@@ -1,1 +1,6 @@
+type Query {
+    _: Boolean!
+}
+
 schema {
+    query: Query

@@ -1,1 +1,7 @@
-TODO
+[E0025] Error: Schema definition must define one or more root operation types.
+   ╭─[graphql:1:9]
+   │
+ 1 │ schema {}
+   ·         │ 
+   ·         ╰─ This schema definition doesn't define any root operation types.
+───╯

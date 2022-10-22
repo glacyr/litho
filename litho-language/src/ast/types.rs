@@ -592,7 +592,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct RootOperationTypeDefinitions<T> {
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub definitions: Vec<RootOperationTypeDefinition<T>>,
+    pub definitions: Recoverable<Vec<RootOperationTypeDefinition<T>>>,
 }
 
 node!(
