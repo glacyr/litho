@@ -1,0 +1,7 @@
+[E0055] Error: Directive definition must have a name.
+   ╭─[graphql:1:12]
+   │
+ 1 │ directive @ on QUERY
+   ·            ┬  
+   ·            ╰── This directive definition here is missing a name.
+───╯

@@ -1,0 +1,7 @@
+[E0053] Error: Input object type extension must have a name.
+   ╭─[graphql:1:13]
+   │
+ 1 │ extend input {
+   ·             ┬  
+   ·             ╰── This input object type extension here is missing a name.
+───╯

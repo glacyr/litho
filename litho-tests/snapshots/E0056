@@ -1,0 +1,7 @@
+[E0056] Error: Directive definition must have one or more locations.
+   ╭─[graphql:1:19]
+   │
+ 1 │ directive @example
+   ·                   │ 
+   ·                   ╰─ This directive definition here is missing locations.
+───╯

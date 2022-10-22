@@ -1,0 +1,7 @@
+[E0054] Error: Directive's name must start with an `@`.
+   ╭─[graphql:1:10]
+   │
+ 1 │ directive exammple on QUERY
+   ·          ┬  
+   ·          ╰── This directive's name here does not start with an `@`.
+───╯

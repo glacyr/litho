@@ -1,0 +1,2 @@
+input Example {
+    _: Boolean!

@@ -1,0 +1,7 @@
+[E0051] Error: Input object type definition must have a name.
+   ╭─[graphql:1:6]
+   │
+ 1 │ input {
+   ·      ┬  
+   ·      ╰── This input object type definition here is missing a name.
+───╯

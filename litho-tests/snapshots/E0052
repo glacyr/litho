@@ -1,0 +1,10 @@
+[E0052] Error: Input fields definition must have a closing brace.
+   ╭─[graphql:2:16]
+   │
+ 1 │ input Example {
+   ·               ┬  
+   ·               ╰── This `{` here ...
+ 2 │     _: Boolean!
+   ·                │ 
+   ·                ╰─ ... must have a `}` here.
+───╯

@@ -8,7 +8,7 @@ use wrom::{Input, RecoverableParser};
 use crate::ast::*;
 use crate::lex::Token;
 
-use super::combinators::{keyword, name, punctuator, string_value};
+use super::combinators::{keyword, name, name_unless, punctuator, string_value};
 use super::executable::{default_value, directives, enum_value, named_type, operation_type, ty};
 use super::Error;
 
@@ -780,7 +780,9 @@ where
                 punctuator("@")
                     .recover(Missing::unary(Diagnostic::missing_directive_definition_at)),
             )
-            .and(name().recover(Missing::unary(Diagnostic::missing_directive_definition_at)))
+            .and(name_unless("on").recover(Missing::unary(
+                Diagnostic::missing_directive_definition_name,
+            )))
             .and(opt(arguments_definition().map(Into::into)))
             .and(opt(keyword("repeatable")))
             .and(directive_locations().recover(Missing::unary(
