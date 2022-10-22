@@ -17,7 +17,7 @@ where
         name: &'a Name<T>,
         definition: Option<&FieldsDefinition<T>>,
     ) -> Option<Diagnostic<Span>> {
-        match self.0.field_definitions_by_type(name.as_ref()).next() {
+        match self.0.field_definitions(name.as_ref()).next() {
             Some(_) => None,
             None => Some(Diagnostic::empty_type(
                 name.as_ref().to_string(),

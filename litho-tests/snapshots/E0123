@@ -1,1 +1,16 @@
-TODO
+[E0123] Error: Input type must not be self-referential.
+   ╭─[graphql:2:5]
+   │
+ 2 │     self: Example!
+   ·     ──┬─  
+   ·       ╰─── Input type `Example` references itself here through field `self` of type `Example`.
+───╯
+
+
+[E0123] Error: Input type must not be self-referential.
+    ╭─[graphql:11:5]
+    │
+ 11 │     example: Example!
+    ·     ───┬───  
+    ·        ╰───── Input type `Foo` references itself here through field `example` of type `Example`.
+────╯

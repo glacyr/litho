@@ -42,7 +42,7 @@ where
         interface_name: &'a NamedType<T>,
         concrete_name: &'a T,
     ) -> Vec<Diagnostic<Span>> {
-        let interface_fields = self.0.field_definitions_by_type(interface_name.0.as_ref());
+        let interface_fields = self.0.field_definitions(interface_name.0.as_ref());
 
         let mut errors = vec![];
 

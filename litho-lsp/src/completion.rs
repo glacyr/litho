@@ -177,7 +177,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
                 accumulator.extend(
                     self.workspace
                         .database()
-                        .field_definitions_by_type(ty)
+                        .field_definitions(ty)
                         .map(|def| self.complete_field_definition(def)),
                 );
             }

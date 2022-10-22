@@ -58,11 +58,7 @@ where
             for field in fields.definitions.iter() {
                 accumulator
                     .definitions
-                    .field_definitions_by_type
-                    .insert(name.as_ref().clone(), field.clone());
-                accumulator
-                    .definitions
-                    .field_definitions_by_name
+                    .field_definitions
                     .entry(name.as_ref().clone())
                     .or_default()
                     .insert(field.name.as_ref().clone(), field.clone());
@@ -79,11 +75,7 @@ where
             for field in fields.definitions.iter() {
                 accumulator
                     .extensions
-                    .field_definitions_by_type
-                    .insert(name.0.as_ref().clone(), field.clone());
-                accumulator
-                    .extensions
-                    .field_definitions_by_name
+                    .field_definitions
                     .entry(name.0.as_ref().clone())
                     .or_default()
                     .insert(field.name.as_ref().clone(), field.clone());
@@ -100,11 +92,7 @@ where
             for field in fields.definitions.iter() {
                 accumulator
                     .definitions
-                    .field_definitions_by_type
-                    .insert(name.as_ref().clone(), field.clone());
-                accumulator
-                    .definitions
-                    .field_definitions_by_name
+                    .field_definitions
                     .entry(name.as_ref().clone())
                     .or_default()
                     .insert(field.name.as_ref().clone(), field.clone());
@@ -121,11 +109,7 @@ where
             for field in fields.definitions.iter() {
                 accumulator
                     .extensions
-                    .field_definitions_by_type
-                    .insert(name.0.as_ref().clone(), field.clone());
-                accumulator
-                    .extensions
-                    .field_definitions_by_name
+                    .field_definitions
                     .entry(name.0.as_ref().clone())
                     .or_default()
                     .insert(field.name.as_ref().clone(), field.clone());
@@ -141,8 +125,28 @@ where
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
                 accumulator
-                    .input_field_definitions
-                    .insert(name.as_ref().clone(), field.clone());
+                    .definitions
+                    .input_value_definitions
+                    .entry(name.as_ref().clone())
+                    .or_default()
+                    .insert(field.name.as_ref().clone(), field.clone());
+            }
+        }
+    }
+
+    fn visit_input_object_type_extension(
+        &self,
+        node: &'ast InputObjectTypeExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
+            for field in fields.definitions.iter() {
+                accumulator
+                    .extensions
+                    .input_value_definitions
+                    .entry(name.0.as_ref().clone())
+                    .or_default()
+                    .insert(field.name.as_ref().clone(), field.clone());
             }
         }
     }

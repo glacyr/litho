@@ -23,7 +23,7 @@ where
 
         visited.push(ty);
 
-        for field in self.0.input_field_definitions(ty) {
+        for field in self.0.input_value_definitions(ty) {
             match field.ty.ok() {
                 Some(Type::NonNull(ty)) => match &ty.ty {
                     Type::Named(ty) if self.is_recursive(visited, needle, ty.0.as_ref()) => {

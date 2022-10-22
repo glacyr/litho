@@ -18,13 +18,10 @@ where
     pub definitions: Bindings<T>,
     pub extensions: Bindings<T>,
     // pub inference: Inference<T>,
-    pub(crate) operation_definitions_by_name: MultiMap<T, Arc<OperationDefinition<T>>>,
-    pub(crate) fragment_definitions_by_name: MultiMap<T, Arc<FragmentDefinition<T>>>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
     pub(crate) field_definitions_by_field: MultiMap<usize, Arc<FieldDefinition<T>>>,
-    pub(crate) input_field_definitions: MultiMap<T, Arc<InputValueDefinition<T>>>,
     pub(crate) type_by_selection_set: HashMap<usize, T>,
     pub(crate) definition_for_arguments: HashMap<usize, Arc<ArgumentsDefinition<T>>>,
 }
@@ -37,13 +34,10 @@ where
         Database {
             definitions: Default::default(),
             extensions: Default::default(),
-            operation_definitions_by_name: Default::default(),
-            fragment_definitions_by_name: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
             field_definitions_by_field: Default::default(),
-            input_field_definitions: Default::default(),
             type_by_selection_set: Default::default(),
             definition_for_arguments: Default::default(),
         }
@@ -153,25 +147,19 @@ where
             })
     }
 
-    pub fn input_field_definitions(
+    pub fn input_value_definitions(
         &self,
         ty: &T,
-    ) -> impl Iterator<Item = &InputValueDefinition<T>> {
-        self.input_field_definitions
-            .get_vec(ty)
-            .map(Vec::as_slice)
-            .unwrap_or_default()
-            .iter()
-            .map(AsRef::as_ref)
+    ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
+        self.definitions
+            .input_value_definitions(ty)
+            .chain(self.extensions.input_value_definitions(ty))
     }
 
-    pub fn field_definitions_by_type(
-        &self,
-        ty: &T,
-    ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
+    pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
         self.definitions
-            .field_definitions_by_type(ty)
-            .chain(self.extensions.field_definitions_by_type(ty))
+            .field_definitions(ty)
+            .chain(self.extensions.field_definitions(ty))
     }
 
     pub fn field_definitions_by_field(

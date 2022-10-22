@@ -10,8 +10,8 @@ pub struct Bindings<T>
 where
     T: Eq + Hash,
 {
-    pub(crate) field_definitions_by_type: MultiMap<T, Arc<FieldDefinition<T>>>,
-    pub(crate) field_definitions_by_name: HashMap<T, MultiMap<T, Arc<FieldDefinition<T>>>>,
+    pub(crate) field_definitions: HashMap<T, MultiMap<T, Arc<FieldDefinition<T>>>>,
+    pub(crate) input_value_definitions: HashMap<T, MultiMap<T, Arc<InputValueDefinition<T>>>>,
     pub(crate) enum_value_definitions: HashMap<T, MultiMap<T, Arc<EnumValueDefinition<T>>>>,
     pub(crate) union_member_types: HashMap<T, MultiMap<T, Arc<NamedType<T>>>>,
 }
@@ -22,8 +22,8 @@ where
 {
     fn default() -> Self {
         Bindings {
-            field_definitions_by_type: Default::default(),
-            field_definitions_by_name: Default::default(),
+            field_definitions: Default::default(),
+            input_value_definitions: Default::default(),
             enum_value_definitions: Default::default(),
             union_member_types: Default::default(),
         }
@@ -35,15 +35,11 @@ where
     T: Eq + Hash,
 {
     /// Returns all field definitions of the given object or interface type.
-    pub fn field_definitions_by_type(
-        &self,
-        ty: &T,
-    ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
-        self.field_definitions_by_type
-            .get_vec(ty)
-            .map(Vec::as_slice)
-            .unwrap_or_default()
-            .iter()
+    pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
+        self.field_definitions
+            .get(ty)
+            .into_iter()
+            .flat_map(|ty| ty.iter().map(|(_, value)| value))
     }
 
     pub fn field_definitions_by_name(
@@ -51,7 +47,30 @@ where
         ty: &T,
         name: &T,
     ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
-        self.field_definitions_by_name
+        self.field_definitions
+            .get(ty)
+            .and_then(|ty| ty.get_vec(name))
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .iter()
+    }
+
+    pub fn input_value_definitions(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
+        self.input_value_definitions
+            .get(ty)
+            .into_iter()
+            .flat_map(|ty| ty.iter().map(|(_, value)| value))
+    }
+
+    pub fn input_value_definitions_by_name(
+        &self,
+        ty: &T,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
+        self.input_value_definitions
             .get(ty)
             .and_then(|ty| ty.get_vec(name))
             .map(Vec::as_slice)
