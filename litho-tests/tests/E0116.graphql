@@ -1,0 +1,9 @@
+interface Interface {
+    foo: String!
+    bar: Boolean
+}
+
+type Example implements Interface {
+    foo: Boolean!
+    bar: Boolean!
+}

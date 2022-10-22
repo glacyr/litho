@@ -1,0 +1,7 @@
+interface Foo {
+    foo(input: Boolean!): Boolean!
+}
+
+type Example implements Foo {
+    foo(input: String!): Boolean!
+}

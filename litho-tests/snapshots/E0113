@@ -1,0 +1,7 @@
+[E0113] Error: Type must implement field with argument from interface.
+   ╭─[graphql:6:5]
+   │
+ 6 │     foo: String!
+   ·     ─┬─  
+   ·      ╰─── Type `Example` implements interface `Foo` here, which requires that field `foo` has an argument `bar`.
+───╯

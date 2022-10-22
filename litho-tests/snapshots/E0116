@@ -1,0 +1,7 @@
+[E0116] Error: Implemented type and type from interface must be covariant.
+   ╭─[graphql:7:10]
+   │
+ 7 │     foo: Boolean!
+   ·          ────┬───  
+   ·              ╰───── Type `Example` implements interface `Interface` that defines a field `foo` of type `String!`, but `foo` is `Boolean!` here, which is incompatible.
+───╯

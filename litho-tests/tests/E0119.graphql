@@ -1,0 +1,7 @@
+type Type {
+    _: Boolean!
+}
+
+union Regular = Type | Type
+union Extended = Type
+extend union Extended = Type

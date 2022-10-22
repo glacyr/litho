@@ -1,0 +1,7 @@
+[E0114] Error: Type must implement field with argument of same type as interface.
+   ╭─[graphql:6:16]
+   │
+ 6 │     foo(input: String!): Boolean!
+   ·                ───┬───  
+   ·                   ╰───── Type `Example` implements interface `Foo` here, which requires that field `foo` has an argument `input` of type `Boolean!` instead of `String!`.
+───╯

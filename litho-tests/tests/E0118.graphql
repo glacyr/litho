@@ -1,0 +1,10 @@
+type Type {
+    _: Boolean!
+}
+
+union Empty
+
+union Valid = Type
+
+union Extended
+extend union Extended = Type

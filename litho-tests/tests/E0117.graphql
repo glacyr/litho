@@ -1,0 +1,3 @@
+interface Example implements Example {
+    example: String!
+}

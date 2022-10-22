@@ -1,0 +1,11 @@
+interface Example {
+    example: String!
+}
+
+type Foo implements Example {
+    example(arg: String): String!
+}
+
+type Bar implements Example {
+    example(arg: String!): String!
+}

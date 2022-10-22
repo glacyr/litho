@@ -1,0 +1,16 @@
+[E0120] Error: Union members must be object types.
+   ╭─[graphql:1:15]
+   │
+ 1 │ union Union = String | Int
+   ·               ───┬──  
+   ·                  ╰──── Union member type `String` is not an object type.
+───╯
+
+
+[E0120] Error: Union members must be object types.
+   ╭─[graphql:1:24]
+   │
+ 1 │ union Union = String | Int
+   ·                        ─┬─  
+   ·                         ╰─── Union member type `Int` is not an object type.
+───╯

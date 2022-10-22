@@ -1,0 +1,7 @@
+[E0112] Error: Type must implement field from interface.
+   ╭─[graphql:5:25]
+   │
+ 5 │ type Example implements Foo {
+   ·                         ─┬─  
+   ·                          ╰─── Type `Example` implements interface `Foo` here, which requires that field `foo` is implemented.
+───╯

@@ -1,0 +1,7 @@
+[E0111] Error: Type must also implement inherited interfaces.
+    ╭─[graphql:10:25]
+    │
+ 10 │ type Example implements Bar {
+    ·                         ─┬─  
+    ·                          ╰─── Type `Example` implements interface `Bar` here, which requires that `Foo` is also implemented.
+────╯
