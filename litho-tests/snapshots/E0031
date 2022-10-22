@@ -1,1 +1,7 @@
-TODO
+[E0031] Error: Scalar type extension must have one or more directives.
+   ╭─[graphql:2:22]
+   │
+ 2 │ extend scalar Example
+   ·                      │ 
+   ·                      ╰─ This scalar type extension here is missing directives.
+───╯

@@ -1,7 +1,7 @@
 use litho_diagnostics::Diagnostic;
 use wrom::branch::alt;
 use wrom::combinator::opt;
-use wrom::multi::many0;
+use wrom::multi::{many0, many1};
 use wrom::sequence::delimited;
 use wrom::{recursive, Input, RecoverableParser};
 
@@ -524,7 +524,7 @@ where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    wrom::recursive(|| many0(directive()).map(|directives| Directives { directives }))
+    wrom::recursive(|| many1(directive()).map(|directives| Directives { directives }))
 }
 
 pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Directive<T>, Error> + 'a
