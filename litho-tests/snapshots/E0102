@@ -1,0 +1,10 @@
+[E0102] Error: Field name must be unique.
+   ╭─[graphql:3:5]
+   │
+ 2 │     foo: String!
+   ·     ─┬─  
+   ·      ╰─── Field `foo` is first defined here ...
+ 3 │     foo: String!
+   ·     ─┬─  
+   ·      ╰─── ... and later defines the same field again here.
+───╯

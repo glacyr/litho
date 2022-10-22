@@ -1,0 +1,7 @@
+[E0107] Error: Input value name must not start with `__`.
+   ╭─[graphql:2:5]
+   │
+ 2 │     __reserved: String!
+   ·     ─────┬────  
+   ·          ╰────── Input value `__reserved` is defined here and starts with `__`, which is reserved.
+───╯

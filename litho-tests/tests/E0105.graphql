@@ -1,0 +1,7 @@
+input Input {
+    foo: String!
+}
+
+type Output {
+    input: Input!
+}

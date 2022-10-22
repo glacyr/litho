@@ -1,0 +1,4 @@
+type Example {
+    foo: String!
+    foo: String!
+}

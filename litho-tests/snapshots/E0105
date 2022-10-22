@@ -1,0 +1,7 @@
+[E0105] Error: Field must be output type.
+   ╭─[graphql:6:12]
+   │
+ 6 │     input: Input!
+   ·            ──┬──  
+   ·              ╰──── Field `input` is defined here as type `Input`, which is an input type.
+───╯

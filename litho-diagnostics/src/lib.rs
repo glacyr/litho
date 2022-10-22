@@ -267,11 +267,11 @@ diagnostics! {
         "... gets extended here ..." @ extension,
         "... and later defines the same field again here." @ second
     },
-    E104 => ReservedFieldName @ span + name {
+    E0104 => ReservedFieldName @ span + name {
         "Field name must not start with `__`.",
         "Field `{name}` is defined here and starts with `__`, which is reserved." @ span
     },
-    E105 => FieldNotOutputType @ span + name, ty {
+    E0105 => FieldNotOutputType @ span + name, ty {
         "Field must be output type.",
         "Field `{name}` is defined here as type `{ty}`, which is an input type." @ span
     },

@@ -1,0 +1,7 @@
+[E0108] Error: Input value must be input type.
+   ╭─[graphql:6:13]
+   │
+ 6 │     output: Output!
+   ·             ───┬──  
+   ·                ╰──── Input value `output` is defined here as type `Output`, which is an output type.
+───╯

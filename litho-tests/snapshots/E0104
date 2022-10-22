@@ -1,0 +1,7 @@
+[E0104] Error: Field name must not start with `__`.
+   ╭─[graphql:2:5]
+   │
+ 2 │     __reserved: String!
+   ·     ─────┬────  
+   ·          ╰────── Field `__reserved` is defined here and starts with `__`, which is reserved.
+───╯

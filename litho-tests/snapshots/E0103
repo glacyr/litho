@@ -1,0 +1,14 @@
+[E0103] Error: Field name must be unique across extended types.
+   ╭─[graphql:6:5]
+   │
+ 2 │     foo: String!
+   ·     ─┬─  
+   ·      ╰─── Type `Example` first defines field `foo` here, ...
+   · 
+ 5 │ extend type Example {
+   ·             ───┬───  
+   ·                ╰───── ... gets extended here ...
+ 6 │     foo: String!
+   ·     ─┬─  
+   ·      ╰─── ... and later defines the same field again here.
+───╯

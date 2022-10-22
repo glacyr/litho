@@ -1,0 +1,7 @@
+[E0110] Error: Implemented type must be interface.
+   ╭─[graphql:3:25]
+   │
+ 3 │ type Example implements Foo {
+   ·                         ─┬─  
+   ·                          ╰─── Type `Example` implements type `Foo` here, but `Foo` is not an interface.
+───╯

@@ -1,0 +1,7 @@
+interface Foo {
+    foo: String!
+}
+
+type Example implements Foo & Foo {
+    foo: String!
+}

@@ -1,0 +1,20 @@
+[E0101] Error: Type must define one or more fields.
+   ╭─[graphql:1:16]
+   │
+ 1 │ ╭─▶ type EmptyType {
+   ⋮ ⋮   
+ 3 │ ├─▶ }
+   · │       
+   · ╰─────── Type `EmptyType` is defined here but the schema doesn't define any fields for it.
+───╯
+
+
+[E0101] Error: Type must define one or more fields.
+    ╭─[graphql:11:26]
+    │
+ 11 │ ╭─▶ interface EmptyInterface {
+    ⋮ ⋮   
+ 13 │ ├─▶ }
+    · │       
+    · ╰─────── Type `EmptyInterface` is defined here but the schema doesn't define any fields for it.
+────╯

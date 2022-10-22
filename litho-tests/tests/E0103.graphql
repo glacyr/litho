@@ -1,0 +1,7 @@
+type Example {
+    foo: String!
+}
+
+extend type Example {
+    foo: String!
+}

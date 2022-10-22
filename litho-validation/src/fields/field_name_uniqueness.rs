@@ -79,9 +79,11 @@ where
                 .next()
             {
                 Some(first) if !Arc::ptr_eq(first, field) => {
-                    accumulator.push(Diagnostic::duplicate_field(
+                    accumulator.push(Diagnostic::duplicate_extended_field(
+                        name.0.as_ref().to_string(),
                         field.name.as_ref().to_string(),
                         first.name.span(),
+                        name.span(),
                         field.name.span(),
                     ))
                 }

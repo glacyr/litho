@@ -1,0 +1,19 @@
+type EmptyType {
+
+}
+
+type ExtendedType
+
+extend type ExtendedType {
+    _: Boolean!
+}
+
+interface EmptyInterface {
+
+}
+
+interface ExtendedInterface
+
+extend interface ExtendedInterface {
+    _: Boolean!
+}

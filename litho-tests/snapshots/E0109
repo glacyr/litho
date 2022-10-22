@@ -1,0 +1,9 @@
+[E0109] Error: Type must not implement same interface twice.
+   ╭─[graphql:5:31]
+   │
+ 5 │ type Example implements Foo & Foo {
+   ·                         ─┬─   ─┬─  
+   ·                          ╰───────── Type `Example` first implements interface `Foo` here ...
+   ·                                │   
+   ·                                ╰─── ... and later implements the same interface again here.
+───╯

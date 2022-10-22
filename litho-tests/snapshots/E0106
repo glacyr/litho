@@ -1,0 +1,9 @@
+[E0106] Error: Argument name must be unique.
+   ╭─[graphql:2:26]
+   │
+ 2 │     hello(name: String!, name: String!): String!
+   ·           ──┬─           ──┬─  
+   ·             ╰────────────────── Argument `name` is first defined here ...
+   ·                            │   
+   ·                            ╰─── ... and later defined again here.
+───╯

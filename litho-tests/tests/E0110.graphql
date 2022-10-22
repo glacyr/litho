@@ -1,0 +1,5 @@
+scalar Foo
+
+type Example implements Foo {
+    foo: String!
+}
