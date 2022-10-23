@@ -9,7 +9,7 @@ pub struct Index;
 
 impl<'ast, T> Visit<'ast, T> for Index
 where
-    T: Clone + Eq + Hash + 'ast,
+    T: 'ast + Clone + Eq + Hash,
 {
     type Accumulator = Database<T>;
 
@@ -56,12 +56,11 @@ where
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
-                accumulator
-                    .definitions
-                    .field_definitions
-                    .entry(name.as_ref().clone())
-                    .or_default()
-                    .insert(field.name.as_ref().clone(), field.clone());
+                accumulator.definitions.field_definitions.insert(
+                    name.as_ref(),
+                    field.name.as_ref(),
+                    field,
+                );
             }
         }
     }
@@ -73,12 +72,11 @@ where
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
-                accumulator
-                    .extensions
-                    .field_definitions
-                    .entry(name.0.as_ref().clone())
-                    .or_default()
-                    .insert(field.name.as_ref().clone(), field.clone());
+                accumulator.extensions.field_definitions.insert(
+                    name.0.as_ref(),
+                    field.name.as_ref(),
+                    field,
+                );
             }
         }
     }
@@ -90,12 +88,11 @@ where
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
-                accumulator
-                    .definitions
-                    .field_definitions
-                    .entry(name.as_ref().clone())
-                    .or_default()
-                    .insert(field.name.as_ref().clone(), field.clone());
+                accumulator.definitions.field_definitions.insert(
+                    name.as_ref(),
+                    field.name.as_ref(),
+                    field,
+                );
             }
         }
     }
@@ -107,12 +104,11 @@ where
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
-                accumulator
-                    .extensions
-                    .field_definitions
-                    .entry(name.0.as_ref().clone())
-                    .or_default()
-                    .insert(field.name.as_ref().clone(), field.clone());
+                accumulator.extensions.field_definitions.insert(
+                    name.0.as_ref(),
+                    field.name.as_ref(),
+                    field,
+                );
             }
         }
     }
@@ -124,12 +120,11 @@ where
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
-                accumulator
-                    .definitions
-                    .input_value_definitions
-                    .entry(name.as_ref().clone())
-                    .or_default()
-                    .insert(field.name.as_ref().clone(), field.clone());
+                accumulator.definitions.input_value_definitions.insert(
+                    name.as_ref(),
+                    field.name.as_ref(),
+                    field,
+                );
             }
         }
     }
@@ -141,12 +136,11 @@ where
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
             for field in fields.definitions.iter() {
-                accumulator
-                    .extensions
-                    .input_value_definitions
-                    .entry(name.0.as_ref().clone())
-                    .or_default()
-                    .insert(field.name.as_ref().clone(), field.clone());
+                accumulator.extensions.input_value_definitions.insert(
+                    name.0.as_ref(),
+                    field.name.as_ref(),
+                    field,
+                );
             }
         }
     }
@@ -158,12 +152,11 @@ where
     ) {
         if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
             for value in values.definitions.iter() {
-                accumulator
-                    .definitions
-                    .enum_value_definitions
-                    .entry(name.as_ref().clone())
-                    .or_default()
-                    .insert(value.enum_value.0.as_ref().clone(), value.clone());
+                accumulator.definitions.enum_value_definitions.insert(
+                    name.as_ref(),
+                    value.enum_value.0.as_ref(),
+                    value,
+                );
             }
         }
     }
@@ -175,12 +168,11 @@ where
     ) {
         if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
             for value in values.definitions.iter() {
-                accumulator
-                    .extensions
-                    .enum_value_definitions
-                    .entry(name.0.as_ref().clone())
-                    .or_default()
-                    .insert(value.enum_value.0.as_ref().clone(), value.clone());
+                accumulator.extensions.enum_value_definitions.insert(
+                    name.0.as_ref(),
+                    value.enum_value.0.as_ref(),
+                    value,
+                );
             }
         }
     }
@@ -195,9 +187,7 @@ where
                 accumulator
                     .definitions
                     .union_member_types
-                    .entry(name.as_ref().clone())
-                    .or_default()
-                    .insert(ty.0.as_ref().clone(), ty.clone());
+                    .insert(name.as_ref(), ty.0.as_ref(), ty);
             }
         }
     }
@@ -209,12 +199,11 @@ where
     ) {
         if let Some((name, types)) = node.name.ok().zip(node.member_types.as_ref()) {
             for ty in types.named_types() {
-                accumulator
-                    .extensions
-                    .union_member_types
-                    .entry(name.0.as_ref().clone())
-                    .or_default()
-                    .insert(ty.0.as_ref().clone(), ty.clone());
+                accumulator.extensions.union_member_types.insert(
+                    name.0.as_ref(),
+                    ty.0.as_ref(),
+                    ty,
+                );
             }
         }
     }

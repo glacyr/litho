@@ -152,14 +152,16 @@ where
         ty: &T,
     ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
         self.definitions
-            .input_value_definitions(ty)
-            .chain(self.extensions.input_value_definitions(ty))
+            .input_value_definitions
+            .by_type(ty)
+            .chain(self.extensions.input_value_definitions.by_type(ty))
     }
 
     pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
         self.definitions
-            .field_definitions(ty)
-            .chain(self.extensions.field_definitions(ty))
+            .field_definitions
+            .by_type(ty)
+            .chain(self.extensions.field_definitions.by_type(ty))
     }
 
     pub fn field_definitions_by_field(
@@ -180,8 +182,9 @@ where
         name: &T,
     ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
         self.definitions
-            .field_definitions_by_name(ty, name)
-            .chain(self.extensions.field_definitions_by_name(ty, name))
+            .field_definitions
+            .by_name(ty, name)
+            .chain(self.extensions.field_definitions.by_name(ty, name))
     }
 
     pub fn type_by_selection_set(&self, selection_set: &Arc<SelectionSet<T>>) -> Option<&T> {
@@ -216,8 +219,9 @@ where
         ty: &T,
     ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
         self.definitions
-            .enum_value_definitions(ty)
-            .chain(self.extensions.enum_value_definitions(ty))
+            .enum_value_definitions
+            .by_type(ty)
+            .chain(self.extensions.enum_value_definitions.by_type(ty))
     }
 
     pub fn enum_value_definitions_by_name(
@@ -226,14 +230,16 @@ where
         name: &T,
     ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
         self.definitions
-            .enum_value_definitions_by_name(ty, name)
-            .chain(self.extensions.enum_value_definitions_by_name(ty, name))
+            .enum_value_definitions
+            .by_name(ty, name)
+            .chain(self.extensions.enum_value_definitions.by_name(ty, name))
     }
 
     pub fn union_member_types(&self, ty: &T) -> impl Iterator<Item = &Arc<NamedType<T>>> {
         self.definitions
-            .union_member_types(ty)
-            .chain(self.extensions.union_member_types(ty))
+            .union_member_types
+            .by_type(ty)
+            .chain(self.extensions.union_member_types.by_type(ty))
     }
 
     pub fn union_member_types_by_name(
@@ -242,7 +248,8 @@ where
         name: &T,
     ) -> impl Iterator<Item = &Arc<NamedType<T>>> {
         self.definitions
-            .union_member_types_by_name(ty, name)
-            .chain(self.extensions.union_member_types_by_name(ty, name))
+            .union_member_types
+            .by_name(ty, name)
+            .chain(self.extensions.union_member_types.by_name(ty, name))
     }
 }
