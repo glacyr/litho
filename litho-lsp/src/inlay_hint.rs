@@ -45,7 +45,7 @@ impl<'a> Visit<'a, SmolStr> for InlayHintVisitor<'a> {
         node: &'a Arc<SelectionSet<SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        if let Some(name) = self.database.type_by_selection_set(&node) {
+        if let Some(name) = self.database.inference.type_by_selection_set.get(&node) {
             accumulator.push(InlayHint {
                 data: None,
                 kind: Some(InlayHintKind::TYPE),

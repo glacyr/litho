@@ -133,7 +133,12 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
     fn visit_field(&self, node: &'a Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
         if let Some(name) = node.name.ok() {
             if name.span().contains(self.offset) {
-                if let Some(definition) = self.database.field_definitions_by_field(&node).next() {
+                if let Some(definition) = self
+                    .database
+                    .inference
+                    .field_definitions_by_field
+                    .get(&node)
+                {
                     accumulator.replace(Hover {
                         contents: HoverContents::Scalar(MarkedString::String(format!(
                             "```\n{}\n```\n\n---\n\n{}",

@@ -5,9 +5,9 @@ use litho_language::ast::*;
 
 use super::Database;
 
-pub struct Index;
+pub struct BindingsBuilder;
 
-impl<'ast, T> Visit<'ast, T> for Index
+impl<'ast, T> Visit<'ast, T> for BindingsBuilder
 where
     T: 'ast + Clone + Eq + Hash,
 {

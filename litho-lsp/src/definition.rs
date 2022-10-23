@@ -52,8 +52,9 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
                 if let Some(definition) = self
                     .workspace
                     .database()
-                    .field_definitions_by_field(&node)
-                    .next()
+                    .inference
+                    .field_definitions_by_field
+                    .get(&node)
                 {
                     if let Some(location) = self.workspace.span_to_location(definition.name.span())
                     {
@@ -73,7 +74,13 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
             return;
         }
 
-        let definitions = match self.workspace.database().definition_for_arguments(node) {
+        let definitions = match self
+            .workspace
+            .database()
+            .inference
+            .definition_for_arguments
+            .get(node)
+        {
             Some(definitions) => definitions,
             None => return,
         };

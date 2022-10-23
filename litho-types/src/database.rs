@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
@@ -6,9 +5,9 @@ use std::sync::Arc;
 use litho_language::ast::*;
 use multimap::MultiMap;
 
-use super::bindings::Bindings;
-use super::index::Index;
-use super::inference::{Inference, State};
+use super::bindings_builder::BindingsBuilder;
+use super::inference_builder::{InferenceBuilder, InferenceState};
+use super::{Bindings, Inference};
 
 #[derive(Debug)]
 pub struct Database<T>
@@ -17,13 +16,10 @@ where
 {
     pub definitions: Bindings<T>,
     pub extensions: Bindings<T>,
-    // pub inference: Inference<T>,
+    pub inference: Inference<T>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
-    pub(crate) field_definitions_by_field: MultiMap<usize, Arc<FieldDefinition<T>>>,
-    pub(crate) type_by_selection_set: HashMap<usize, T>,
-    pub(crate) definition_for_arguments: HashMap<usize, Arc<ArgumentsDefinition<T>>>,
 }
 
 impl<T> Default for Database<T>
@@ -34,12 +30,10 @@ where
         Database {
             definitions: Default::default(),
             extensions: Default::default(),
+            inference: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
-            field_definitions_by_field: Default::default(),
-            type_by_selection_set: Default::default(),
-            definition_for_arguments: Default::default(),
         }
     }
 }
@@ -64,8 +58,8 @@ where
     }
 
     pub fn index(&mut self, document: &Document<T>) {
-        document.traverse(&Index, self);
-        document.traverse(&Inference, &mut State::new(self));
+        document.traverse(&BindingsBuilder, self);
+        document.traverse(&InferenceBuilder, &mut InferenceState::new(self));
     }
 }
 
@@ -164,18 +158,6 @@ where
             .chain(self.extensions.field_definitions.by_type(ty))
     }
 
-    pub fn field_definitions_by_field(
-        &self,
-        field: &Arc<Field<T>>,
-    ) -> impl Iterator<Item = &FieldDefinition<T>> {
-        self.field_definitions_by_field
-            .get_vec(&(Arc::as_ptr(field) as usize))
-            .map(Vec::as_slice)
-            .unwrap_or_default()
-            .iter()
-            .map(AsRef::as_ref)
-    }
-
     pub fn field_definitions_by_name(
         &self,
         ty: &T,
@@ -185,20 +167,6 @@ where
             .field_definitions
             .by_name(ty, name)
             .chain(self.extensions.field_definitions.by_name(ty, name))
-    }
-
-    pub fn type_by_selection_set(&self, selection_set: &Arc<SelectionSet<T>>) -> Option<&T> {
-        self.type_by_selection_set
-            .get(&(Arc::as_ptr(selection_set) as usize))
-    }
-
-    pub fn definition_for_arguments(
-        &self,
-        arguments: &Arc<Arguments<T>>,
-    ) -> Option<&ArgumentsDefinition<T>> {
-        self.definition_for_arguments
-            .get(&(Arc::as_ptr(arguments) as usize))
-            .map(AsRef::as_ref)
     }
 
     pub fn implemented_interfaces(&self, ty: &T) -> impl Iterator<Item = &NamedType<T>> {

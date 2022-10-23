@@ -173,7 +173,13 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
         if node.span().contains(self.offset) {
             accumulator.truncate(0);
 
-            if let Some(ty) = self.workspace.database().type_by_selection_set(node) {
+            if let Some(ty) = self
+                .workspace
+                .database()
+                .inference
+                .type_by_selection_set
+                .get(node)
+            {
                 accumulator.extend(
                     self.workspace
                         .database()
@@ -192,7 +198,13 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
         if node.span().contains(self.offset) {
             accumulator.truncate(0);
 
-            if let Some(definition) = self.workspace.database().definition_for_arguments(node) {
+            if let Some(definition) = self
+                .workspace
+                .database()
+                .inference
+                .definition_for_arguments
+                .get(node)
+            {
                 accumulator.extend(
                     definition
                         .definitions
