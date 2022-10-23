@@ -46,13 +46,22 @@ fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
 
 impl Backend {
     pub async fn check_all(&self) {
-        let workspace = self.workspace.lock().await;
+        let mut workspace = self.workspace.lock().await;
 
-        for document in workspace.documents() {
+        for id in workspace.take_invalid() {
+            let document = match workspace.document_by_id(id) {
+                Some(document) => document,
+                None => continue,
+            };
+
+            if document.is_internal() {
+                continue;
+            }
+
             self.client
                 .publish_diagnostics(
                     document.url().to_owned(),
-                    document.diagnostics(&workspace).collect(),
+                    workspace.diagnostics(id).collect(),
                     document.version(),
                 )
                 .await;
@@ -90,7 +99,7 @@ impl LanguageServer for Backend {
                 }),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 definition_provider: Some(OneOf::Left(true)),
-                inlay_hint_provider: Some(OneOf::Left(true)),
+                // inlay_hint_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             ..Default::default()

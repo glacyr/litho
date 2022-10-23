@@ -18,8 +18,9 @@ mod names;
 mod types;
 mod unions;
 
-pub fn check<T>(document: &Document<T>, database: &Database<T>) -> Vec<Diagnostic<Span>>
+pub fn check<N, T>(document: &N, database: &Database<T>) -> Vec<Diagnostic<Span>>
 where
+    N: Node<T>,
     T: Eq + Hash + Display + Borrow<str>,
 {
     let mut errors = vec![];

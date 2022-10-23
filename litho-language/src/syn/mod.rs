@@ -80,7 +80,7 @@ where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    many0(definition()).map(|definitions| Document { definitions })
+    many0(definition().map(Into::into)).map(|definitions| Document { definitions })
 }
 
 pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a

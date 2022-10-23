@@ -1,21 +1,13 @@
 [package]
-name = "litho-lsp"
+name = "litho-compiler"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ignore = "0.4.18"
-line-col = "0.2.1"
-lsp-types = { version = "*", features = ["proposed"] }
-serde_json = { version = "*" }
-smol_str = "0.1.23"
-tokio = { version = "1.21.1", features = ["full"] }
-tower-lsp = "0.17.0"
-url-escape = "0.1.1"
+multimap = "0.8.3"
 
-litho-compiler = { path = "../litho-compiler" }
 litho-diagnostics = { path = "../litho-diagnostics" }
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }

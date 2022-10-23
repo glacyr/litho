@@ -57,15 +57,4 @@ impl Document {
     pub fn ast(&self) -> &Ast<SmolStr> {
         &self.ast
     }
-
-    pub fn diagnostics<'a>(
-        &'a self,
-        workspace: &'a Workspace,
-    ) -> impl Iterator<Item = Diagnostic> + 'a {
-        self.diagnostics
-            .iter()
-            .cloned()
-            .chain(litho_validation::check(self.ast(), workspace.database()).into_iter())
-            .map(|diagnostic| serialize_diagnostic(diagnostic, workspace))
-    }
 }

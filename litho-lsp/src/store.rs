@@ -39,7 +39,7 @@ impl Store {
         self.get(&id).unwrap()
     }
 
-    pub fn update<F>(&mut self, id: SourceId, url: Url, version: Option<i32>, apply: F) -> &Document
+    pub fn update<F>(&mut self, id: SourceId, url: Url, version: Option<i32>, apply: F) -> String
     where
         F: FnOnce(String) -> String,
     {
@@ -50,7 +50,7 @@ impl Store {
             Document::new(id, url, version, document.is_internal(), text.as_ref()),
         );
 
-        self.get(&id).unwrap()
+        text
     }
 
     pub fn remove(&mut self, id: &SourceId) -> Option<Document> {

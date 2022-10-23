@@ -1,0 +1,174 @@
+use std::borrow::Borrow;
+use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Display};
+use std::hash::Hash;
+
+use litho_diagnostics::Diagnostic;
+use litho_language::ast::{DefinitionId, Document};
+use litho_language::chk::collect_errors;
+use litho_language::lex::{SourceId, Span};
+use litho_language::Parse;
+use litho_types::Database;
+use litho_validation::check;
+
+use super::{Consumer, DepGraph, Dependency, Producer};
+
+#[derive(Debug)]
+pub struct Compiler<T>
+where
+    T: Eq + Hash,
+{
+    definition_diagnostics: HashMap<DefinitionId, Vec<Diagnostic<Span>>>,
+    definition_sources: HashMap<DefinitionId, SourceId>,
+    documents: HashMap<SourceId, Document<T>>,
+    document_diagnostics: HashMap<SourceId, Vec<Diagnostic<Span>>>,
+    graph: DepGraph<DefinitionId, Dependency<T>>,
+    database: Database<T>,
+}
+
+impl<T> Compiler<T>
+where
+    T: Eq + Hash + Debug,
+{
+    pub fn new() -> Compiler<T> {
+        Compiler {
+            definition_diagnostics: Default::default(),
+            definition_sources: Default::default(),
+            documents: Default::default(),
+            document_diagnostics: Default::default(),
+            graph: DepGraph::new(),
+            database: Database::new(),
+        }
+    }
+
+    pub fn database(&self) -> &Database<T> {
+        &self.database
+    }
+}
+
+impl<T> Compiler<T>
+where
+    T: Eq + Clone + Debug + Hash + Display + Borrow<str>,
+{
+    pub fn diagnostics(&self, source_id: SourceId) -> impl Iterator<Item = &Diagnostic<Span>> {
+        let document_diagnostics = self
+            .document_diagnostics
+            .get(&source_id)
+            .map(Vec::as_slice)
+            .unwrap_or_default()
+            .into_iter();
+
+        let definition_diagnostics = self
+            .documents
+            .get(&source_id)
+            .into_iter()
+            .flat_map(|document| document.definitions.iter())
+            .flat_map(|definition| {
+                self.definition_diagnostics
+                    .get(&definition.id())
+                    .into_iter()
+                    .flatten()
+            });
+
+        document_diagnostics.chain(definition_diagnostics)
+    }
+
+    pub fn replace_document(&mut self, source_id: SourceId, text: &str) -> HashSet<SourceId>
+    where
+        T: for<'a> From<&'a str> + for<'b> PartialEq<&'b str>,
+    {
+        let mut source_ids = self.remove_document(source_id);
+        source_ids.extend(self.add_document(source_id, text));
+
+        source_ids
+    }
+
+    pub fn add_document(&mut self, source_id: SourceId, text: &str) -> HashSet<SourceId>
+    where
+        T: for<'a> From<&'a str> + for<'b> PartialEq<&'b str>,
+    {
+        let result = Document::parse_from_str(source_id, text).unwrap_or_default();
+        let diagnostics = collect_errors(&result);
+
+        let mut definition_ids = HashSet::new();
+
+        for definition in result.0.definitions.iter() {
+            self.definition_sources.insert(definition.id(), source_id);
+
+            if let Some(product) = definition.product() {
+                definition_ids.extend(self.graph.produce(definition.id(), product));
+            }
+
+            for dependency in definition.consumes() {
+                self.graph.consume(definition.id(), dependency);
+            }
+        }
+
+        self.documents.insert(source_id, result.0);
+        self.document_diagnostics.insert(source_id, diagnostics);
+
+        self.invalidate(definition_ids)
+    }
+
+    pub fn remove_document(&mut self, source_id: SourceId) -> HashSet<SourceId> {
+        let document = self.documents.remove(&source_id);
+
+        let mut definition_ids = HashSet::new();
+
+        for definition in document
+            .as_ref()
+            .map(|document| document.definitions.iter())
+            .into_iter()
+            .flatten()
+        {
+            self.graph.invalidate(definition.id(), &mut definition_ids);
+            self.graph.remove(definition.id());
+        }
+
+        let source_ids = self.invalidate(definition_ids);
+
+        for definition in document
+            .map(|document| document.definitions.into_iter())
+            .into_iter()
+            .flatten()
+        {
+            self.definition_sources.remove(&definition.id());
+        }
+
+        source_ids
+    }
+
+    fn invalidate<I>(&mut self, definition_ids: I) -> HashSet<SourceId>
+    where
+        I: IntoIterator<Item = DefinitionId>,
+    {
+        let mut source_ids = HashSet::new();
+
+        for definition_id in definition_ids.into_iter() {
+            self.definition_diagnostics.remove(&definition_id);
+
+            source_ids.extend(self.definition_sources.get(&definition_id).into_iter());
+        }
+
+        source_ids
+    }
+
+    pub fn rebuild(&mut self)
+    where
+        T: From<&'static str>,
+    {
+        self.database = Database::new();
+
+        for document in self.documents.values() {
+            self.database.index(document);
+        }
+
+        for document in self.documents.values() {
+            for definition in document.definitions.iter() {
+                self.definition_diagnostics
+                    .entry(definition.id())
+                    .or_insert_with(|| check(definition, &self.database));
+            }
+        }
+    }
+}

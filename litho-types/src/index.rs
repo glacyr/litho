@@ -9,7 +9,7 @@ pub struct Index;
 
 impl<'ast, T> Visit<'ast, T> for Index
 where
-    T: From<&'static str> + Clone + Eq + Hash + 'ast,
+    T: Clone + Eq + Hash + 'ast,
 {
     type Accumulator = Database<T>;
 

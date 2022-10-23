@@ -1,13 +1,17 @@
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 
 use ignore::types::TypesBuilder;
 use ignore::WalkBuilder;
-use litho_language::lex::{SourceMap, Span};
+use litho_compiler::Compiler;
+use litho_language::lex::{SourceId, SourceMap, Span};
 use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 use url_escape::percent_encoding::AsciiSet;
+
+use crate::diagnostic::serialize_diagnostic;
 
 use super::{Document, Store};
 
@@ -15,7 +19,8 @@ use super::{Document, Store};
 pub struct Workspace {
     store: Store,
     source_map: SourceMap<Url>,
-    database: Database<SmolStr>,
+    compiler: Compiler<SmolStr>,
+    invalid: HashSet<SourceId>,
 }
 
 impl Workspace {
@@ -23,13 +28,24 @@ impl Workspace {
         Workspace {
             store: Store::new(),
             source_map: SourceMap::new(),
-            database: Default::default(),
+            compiler: Compiler::new(),
+            invalid: HashSet::new(),
         }
     }
 
-    pub fn document(&self, url: &Url) -> Option<&Document> {
-        let id = self.source_map.get(url)?;
+    pub fn document_by_id(&self, id: SourceId) -> Option<&Document> {
         self.store.get(&id)
+    }
+
+    pub fn document(&self, url: &Url) -> Option<&Document> {
+        self.document_by_id(self.source_map.get(url)?)
+    }
+
+    pub fn diagnostics(&self, source_id: SourceId) -> impl Iterator<Item = Diagnostic> + '_ {
+        self.compiler
+            .diagnostics(source_id)
+            .into_iter()
+            .map(|diagnostic| serialize_diagnostic(diagnostic, self))
     }
 
     pub fn documents(&self) -> impl Iterator<Item = &Document> {
@@ -37,7 +53,7 @@ impl Workspace {
     }
 
     pub fn database(&self) -> &Database<SmolStr> {
-        &self.database
+        self.compiler.database()
     }
 
     pub fn mutate<F, O>(&mut self, mutation: F) -> O
@@ -141,6 +157,9 @@ impl Workspace {
     ) {
         let id = self.source_map.get_or_insert(url.to_owned());
 
+        self.invalid
+            .extend(self.compiler.replace_document(id, &text));
+
         self.store.insert(id, url, version, internal, text);
     }
 
@@ -150,12 +169,16 @@ impl Workspace {
     {
         let id = self.source_map.get_or_insert(url.to_owned());
 
-        self.store.update(id, url, version, update);
+        let text = self.store.update(id, url, version, update);
+
+        self.invalid
+            .extend(self.compiler.replace_document(id, &text));
     }
 
     pub fn refresh_file(&mut self, url: Url) -> Result<(), ()> {
         let id = self.source_map.get_or_insert(url.to_owned());
 
+        self.invalid.extend(self.compiler.remove_document(id));
         self.store.remove(&id);
         self.populate_file(url)?;
 
@@ -163,11 +186,7 @@ impl Workspace {
     }
 
     pub fn rebuild(&mut self) {
-        self.database = Database::new();
-
-        for document in self.store.docs() {
-            self.database.index(document.ast());
-        }
+        self.compiler.rebuild()
     }
 
     pub fn index_to_position(&self, source: &str, index: usize) -> Position {
@@ -202,5 +221,9 @@ impl Workspace {
             uri,
             range: self.span_to_range(span)?,
         })
+    }
+
+    pub fn take_invalid(&mut self) -> HashSet<SourceId> {
+        std::mem::take(&mut self.invalid)
     }
 }

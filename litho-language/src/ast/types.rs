@@ -59,12 +59,20 @@ pub type Recoverable<T> = wrom::Recoverable<T, Missing>;
 /// A GraphQL Document describes a complete file or request string operated on
 /// by a GraphQL service or client. A document contains multiple definitions,
 /// either executable or representative of a GraphQL type system.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Document<T> {
-    pub definitions: Vec<Definition<T>>,
+    pub definitions: Vec<Arc<Definition<T>>>,
 }
 
 node!(Document, visit_document, definitions);
+
+impl<T> Default for Document<T> {
+    fn default() -> Self {
+        Document {
+            definitions: vec![],
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum Definition<T> {
@@ -73,11 +81,20 @@ pub enum Definition<T> {
 }
 
 node_enum!(
-    Definition,
+    Arc<Definition>,
     visit_definition,
     ExecutableDefinition,
     TypeSystemDefinitionOrExtension
 );
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct DefinitionId(usize);
+
+impl<T> Definition<T> {
+    pub fn id(self: &Arc<Self>) -> DefinitionId {
+        DefinitionId(Arc::as_ptr(self) as usize)
+    }
+}
 
 /// Documents are only executable by a GraphQL service if they are
 /// `ExecutableDocument` and contain at least one `OperationDefinition`. A
