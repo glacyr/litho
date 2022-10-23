@@ -55,7 +55,7 @@ where
 
 impl<T> Database<T>
 where
-    T: From<&'static str> + Clone + Debug + Eq + Hash,
+    T: From<&'static str> + Clone + Eq + Hash,
 {
     pub fn single(document: &Document<T>) -> Database<T> {
         let mut database = Database::new();

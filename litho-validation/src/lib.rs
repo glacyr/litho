@@ -1,5 +1,4 @@
 use std::borrow::Borrow;
-use std::fmt::Display;
 use std::hash::Hash;
 
 use litho_diagnostics::Diagnostic;
@@ -21,7 +20,7 @@ mod unions;
 pub fn check<N, T>(document: &N, database: &Database<T>) -> Vec<Diagnostic<Span>>
 where
     N: Node<T>,
-    T: Eq + Hash + Display + Borrow<str>,
+    T: Eq + Hash + Borrow<str> + ToString,
 {
     let mut errors = vec![];
     document.traverse(&arguments::ArgumentNameUniqueness(database), &mut errors);

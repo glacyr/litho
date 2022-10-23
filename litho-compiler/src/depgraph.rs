@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::once;
 
@@ -16,7 +15,7 @@ where
 impl<K, V> DepGraph<K, V>
 where
     K: Eq + Hash + Copy,
-    V: Eq + Hash + Debug,
+    V: Eq + Hash,
 {
     pub fn new() -> DepGraph<K, V> {
         DepGraph {

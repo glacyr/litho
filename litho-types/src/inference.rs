@@ -29,7 +29,7 @@ pub struct Inference;
 
 impl<'ast, T> Visit<'ast, T> for Inference
 where
-    T: From<&'static str> + Clone + std::fmt::Debug + Eq + Hash + 'ast,
+    T: From<&'static str> + Clone + Eq + Hash + 'ast,
 {
     type Accumulator = State<'ast, T>;
 

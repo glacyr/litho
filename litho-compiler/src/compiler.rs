@@ -1,6 +1,5 @@
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 use litho_diagnostics::Diagnostic;
@@ -28,7 +27,7 @@ where
 
 impl<T> Compiler<T>
 where
-    T: Eq + Hash + Debug,
+    T: Eq + Hash,
 {
     pub fn new() -> Compiler<T> {
         Compiler {
@@ -48,7 +47,7 @@ where
 
 impl<T> Compiler<T>
 where
-    T: Eq + Clone + Debug + Hash + Display + Borrow<str>,
+    T: Eq + Clone + Hash + Borrow<str> + ToString,
 {
     pub fn diagnostics(&self, source_id: SourceId) -> impl Iterator<Item = &Diagnostic<Span>> {
         let document_diagnostics = self
