@@ -124,4 +124,23 @@ where
     fn post_visit_field(&self, _node: &'ast Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
         accumulator.stack.pop();
     }
+
+    fn visit_input_value_definition(
+        &self,
+        node: &'ast Arc<InputValueDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        match node.ty.ok().zip(
+            node.default_value
+                .as_ref()
+                .and_then(|value| value.value.ok()),
+        ) {
+            Some((ty, value)) => accumulator
+                .database
+                .inference
+                .types_for_values
+                .insert(value, ty),
+            None => {}
+        }
+    }
 }

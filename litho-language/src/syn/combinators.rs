@@ -72,7 +72,7 @@ where
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::FloatValue(float_value)) => Ok((input, float_value)),
-        Some(token) => Err(Err::Error(Error::ExpectedFloatValue)),
+        Some(_) => Err(Err::Error(Error::ExpectedFloatValue)),
         None => Err(Err::Error(Error::Incomplete)),
     })
 }
@@ -84,7 +84,7 @@ where
 {
     terminal(move |mut input: I| match input.next() {
         Some(Token::StringValue(string_value)) => Ok((input, string_value)),
-        Some(token) => Err(Err::Error(Error::ExpectedStringValue)),
+        Some(_) => Err(Err::Error(Error::ExpectedStringValue)),
         None => Err(Err::Error(Error::Incomplete)),
     })
 }

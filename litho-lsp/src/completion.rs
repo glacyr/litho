@@ -146,13 +146,99 @@ impl<'a> CompletionVisitor<'a> {
                         | TypeDefinition::UnionTypeDefinition(_) => CompletionItemKind::ENUM,
                         TypeDefinition::InterfaceTypeDefinition(_) => CompletionItemKind::INTERFACE,
                         TypeDefinition::InputObjectTypeDefinition(_) => CompletionItemKind::STRUCT,
-                        TypeDefinition::ScalarTypeDefinition(_) => CompletionItemKind::UNIT,
+                        TypeDefinition::ScalarTypeDefinition(_) => CompletionItemKind::VALUE,
                         TypeDefinition::ObjectTypeDefinition(_) => CompletionItemKind::CLASS,
                     }),
                     label: name.to_string(),
                     ..Default::default()
                 })
             })
+    }
+
+    pub fn complete_value(&self, ty: &Type<SmolStr>) -> impl Iterator<Item = CompletionItem> + '_ {
+        let mut items = vec![];
+
+        let ty = match ty {
+            Type::NonNull(ty) => ty.ty.as_ref(),
+            ty => {
+                items.push(CompletionItem {
+                    label: "null".to_owned(),
+                    kind: Some(CompletionItemKind::KEYWORD),
+                    ..Default::default()
+                });
+                ty
+            }
+        };
+
+        let name = match ty {
+            Type::List(_) => {
+                items.push(CompletionItem {
+                    label: "[".to_owned(),
+                    label_details: Some(CompletionItemLabelDetails {
+                        detail: Some("...]".to_owned()),
+                        description: None,
+                    }),
+                    insert_text: Some("[${0}]".to_owned()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    kind: Some(CompletionItemKind::OPERATOR),
+                    ..Default::default()
+                });
+
+                return items.into_iter();
+            }
+            ty => match ty.name() {
+                Some(name) => name,
+                None => return items.into_iter(),
+            },
+        };
+
+        items.extend(
+            self.workspace
+                .database()
+                .enum_value_definitions(name)
+                .map(|definition| CompletionItem {
+                    label: definition.enum_value.0.as_ref().to_string(),
+                    kind: Some(CompletionItemKind::ENUM),
+                    ..Default::default()
+                }),
+        );
+
+        match self
+            .workspace
+            .database()
+            .type_definitions_by_name(name)
+            .next()
+        {
+            Some(ty) if ty.is_scalar() && name == "String" => {
+                items.push(CompletionItem {
+                    label: "\"".to_owned(),
+                    label_details: Some(CompletionItemLabelDetails {
+                        detail: Some("...\"".to_owned()),
+                        description: None,
+                    }),
+                    insert_text: Some("\"${0}\"".to_owned()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    kind: Some(CompletionItemKind::OPERATOR),
+                    ..Default::default()
+                });
+            }
+            Some(ty) if ty.is_input_object_type() => {
+                items.push(CompletionItem {
+                    label: "{".to_owned(),
+                    label_details: Some(CompletionItemLabelDetails {
+                        detail: Some("...}".to_owned()),
+                        description: None,
+                    }),
+                    insert_text: Some("{${0}}".to_owned()),
+                    insert_text_format: Some(InsertTextFormat::SNIPPET),
+                    kind: Some(CompletionItemKind::OPERATOR),
+                    ..Default::default()
+                });
+            }
+            _ => {}
+        };
+
+        items.into_iter()
     }
 }
 
@@ -250,6 +336,17 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
                 if field.colon.ok().is_some() && field.colon.span().before(self.offset) {
                     accumulator.extend(self.complete_all_types(true))
+                }
+
+                match field.default_value.as_ref() {
+                    Some(default_value) if default_value.eq.span().before(self.offset) => {
+                        accumulator.truncate(0);
+
+                        if let Some(ty) = field.ty.ok() {
+                            accumulator.extend(self.complete_value(ty))
+                        }
+                    }
+                    _ => {}
                 }
             }
         }

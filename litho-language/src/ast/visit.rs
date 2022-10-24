@@ -93,7 +93,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_fields_definition, FieldsDefinition);
     visit!(visit_field_definition, Arc<FieldDefinition>);
     visit!(visit_arguments_definition, Arc<ArgumentsDefinition>);
-    visit!(visit_input_value_definition, InputValueDefinition);
+    visit!(visit_input_value_definition, Arc<InputValueDefinition>);
     visit!(visit_object_type_extension, ObjectTypeExtension);
     visit!(visit_interface_type_definition, InterfaceTypeDefinition);
     visit!(visit_interface_type_extension, InterfaceTypeExtension);

@@ -28,7 +28,10 @@ The Boolean scalar type represents `true` or `false`. Response formats should
 use a built-in boolean type if supported; otherwise, they should use their
 representation of the integers `1` and `0`.
 """
-scalar Boolean
+enum Boolean {
+    false
+    true
+}
 
 """
 The ID scalar type represents a unique identifier, often used to refetch an

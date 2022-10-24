@@ -217,7 +217,7 @@ node!(Arc<Arguments>, visit_arguments, parens, items);
 pub struct Argument<T> {
     pub name: Name<T>,
     pub colon: Recoverable<Punctuator<T>>,
-    pub value: Recoverable<Value<T>>,
+    pub value: Recoverable<Arc<Value<T>>>,
 }
 
 node!(Argument, visit_argument, name, colon, value);
@@ -295,7 +295,7 @@ pub enum Value<T> {
 }
 
 node_enum!(
-    Value,
+    Arc<Value>,
     visit_value,
     Variable,
     IntValue,
@@ -329,7 +329,7 @@ node_unit!(EnumValue, visit_enum_value);
 #[derive(Clone, Debug)]
 pub struct ListValue<T> {
     pub brackets: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub values: Vec<Value<T>>,
+    pub values: Vec<Arc<Value<T>>>,
 }
 
 node!(ListValue, visit_list_value, brackets, values);
@@ -346,7 +346,7 @@ node!(ObjectValue, visit_object_value, braces, object_fields);
 pub struct ObjectField<T> {
     pub name: Name<T>,
     pub colon: Recoverable<Punctuator<T>>,
-    pub value: Recoverable<Value<T>>,
+    pub value: Recoverable<Arc<Value<T>>>,
 }
 
 node!(ObjectField, visit_object_field, name, colon, value);
@@ -368,7 +368,7 @@ node!(
 pub struct VariableDefinition<T> {
     pub variable: Variable<T>,
     pub colon: Recoverable<Punctuator<T>>,
-    pub ty: Recoverable<Type<T>>,
+    pub ty: Recoverable<Arc<Type<T>>>,
     pub default_value: Option<DefaultValue<T>>,
     pub directives: Option<Directives<T>>,
 }
@@ -394,7 +394,7 @@ node!(Variable, visit_variable, dollar, name);
 #[derive(Clone, Debug)]
 pub struct DefaultValue<T> {
     pub eq: Punctuator<T>,
-    pub value: Recoverable<Value<T>>,
+    pub value: Recoverable<Arc<Value<T>>>,
 }
 
 node!(DefaultValue, visit_default_value, eq, value);
@@ -402,8 +402,8 @@ node!(DefaultValue, visit_default_value, eq, value);
 #[derive(Clone, Debug)]
 pub enum Type<T> {
     Named(NamedType<T>),
-    List(Box<ListType<T>>),
-    NonNull(Box<NonNullType<T>>),
+    List(ListType<T>),
+    NonNull(NonNullType<T>),
 }
 
 impl<T> Type<T> {
@@ -414,7 +414,7 @@ impl<T> Type<T> {
     pub fn named_type(&self) -> Option<&NamedType<T>> {
         match self {
             Type::Named(ty) => Some(ty),
-            Type::List(ty) => ty.ty.ok().and_then(Type::named_type),
+            Type::List(ty) => ty.ty.ok().and_then(|ty| ty.named_type()),
             Type::NonNull(ty) => ty.ty.named_type(),
         }
     }
@@ -462,7 +462,7 @@ where
     }
 }
 
-node_enum!(Type, visit_type, Named, List, NonNull);
+node_enum!(Arc<Type>, visit_type, Named, List, NonNull);
 
 #[derive(Clone, Debug)]
 pub struct NamedType<T>(pub Name<T>);
@@ -473,14 +473,14 @@ node_arc!(NamedType);
 #[derive(Clone, Debug)]
 pub struct ListType<T> {
     pub brackets: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub ty: Recoverable<Type<T>>,
+    pub ty: Recoverable<Arc<Type<T>>>,
 }
 
 node!(ListType, visit_list_type, brackets, ty);
 
 #[derive(Clone, Debug)]
 pub struct NonNullType<T> {
-    pub ty: Type<T>,
+    pub ty: Arc<Type<T>>,
     pub bang: Punctuator<T>,
 }
 
@@ -729,6 +729,14 @@ impl<T> TypeDefinition<T> {
         }
     }
 
+    pub fn is_input_object_type(&self) -> bool {
+        matches!(self, TypeDefinition::InputObjectTypeDefinition(_))
+    }
+
+    pub fn is_scalar(&self) -> bool {
+        matches!(self, TypeDefinition::ScalarTypeDefinition(_))
+    }
+
     pub fn is_object_type(&self) -> bool {
         matches!(self, TypeDefinition::ObjectTypeDefinition(_))
     }
@@ -961,7 +969,7 @@ pub struct FieldDefinition<T> {
     pub name: Name<T>,
     pub arguments_definition: Option<Arc<ArgumentsDefinition<T>>>,
     pub colon: Recoverable<Punctuator<T>>,
-    pub ty: Recoverable<Type<T>>,
+    pub ty: Recoverable<Arc<Type<T>>>,
     pub directives: Option<Directives<T>>,
 }
 
@@ -1005,7 +1013,7 @@ pub struct InputValueDefinition<T> {
     pub description: Option<Description<T>>,
     pub name: Name<T>,
     pub colon: Recoverable<Punctuator<T>>,
-    pub ty: Recoverable<Type<T>>,
+    pub ty: Recoverable<Arc<Type<T>>>,
     pub default_value: Option<DefaultValue<T>>,
     pub directives: Option<Directives<T>>,
 }

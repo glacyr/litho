@@ -1,4 +1,5 @@
 use std::hash::Hash;
+use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
@@ -16,7 +17,7 @@ where
 
     fn visit_input_value_definition(
         &self,
-        node: &'a InputValueDefinition<T>,
+        node: &'a Arc<InputValueDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         match node.ty.ok().and_then(|ty| ty.named_type()) {

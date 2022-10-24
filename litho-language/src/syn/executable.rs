@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use litho_diagnostics::Diagnostic;
 use wrom::branch::alt;
 use wrom::combinator::opt;
@@ -291,7 +293,7 @@ where
     })
 }
 
-pub fn value<'a, T, I>() -> impl RecoverableParser<I, Value<T>, Error> + 'a
+pub fn value<'a, T, I>() -> impl RecoverableParser<I, Arc<Value<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
@@ -309,6 +311,7 @@ where
             object_value().map(Value::ObjectValue),
         ))
     })
+    .map(Into::into)
 }
 
 pub fn boolean_value<'a, T, I>() -> impl RecoverableParser<I, BooleanValue<T>, Error> + 'a
@@ -463,18 +466,19 @@ where
     })
 }
 
-pub fn ty<'a, T, I>() -> impl RecoverableParser<I, Type<T>, Error> + 'a
+pub fn ty<'a, T, I>() -> impl RecoverableParser<I, Arc<Type<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     wrom::recursive(|| {
         alt((
-            non_null_type().map(Box::new).map(Type::NonNull),
+            non_null_type().map(Type::NonNull),
             named_type().map(Type::Named),
-            list_type().map(Box::new).map(Type::List),
+            list_type().map(Type::List),
         ))
     })
+    .map(Into::into)
 }
 
 pub fn named_type<'a, T, I>() -> impl RecoverableParser<I, NamedType<T>, Error> + 'a
@@ -510,12 +514,10 @@ where
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     wrom::recursive(|| {
-        alt((
-            named_type().map(Type::Named),
-            list_type().map(Box::new).map(Type::List),
-        ))
-        .and(punctuator("!"))
-        .map(|(ty, bang)| NonNullType { ty, bang })
+        alt((named_type().map(Type::Named), list_type().map(Type::List)))
+            .map(Into::into)
+            .and(punctuator("!"))
+            .map(|(ty, bang)| NonNullType { ty, bang })
     })
 }
 

@@ -18,7 +18,7 @@ where
 
     fn visit_input_value_definition(
         &self,
-        node: &'a InputValueDefinition<T>,
+        node: &'a Arc<InputValueDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if node.name.as_ref().borrow().starts_with("__") {

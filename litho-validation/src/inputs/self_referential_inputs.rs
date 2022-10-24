@@ -24,8 +24,8 @@ where
         visited.push(ty);
 
         for field in self.0.input_value_definitions(ty) {
-            match field.ty.ok() {
-                Some(Type::NonNull(ty)) => match &ty.ty {
+            match field.ty.ok().map(AsRef::as_ref) {
+                Some(Type::NonNull(ty)) => match ty.ty.as_ref() {
                     Type::Named(ty) if self.is_recursive(visited, needle, ty.0.as_ref()) => {
                         return true;
                     }
@@ -64,8 +64,8 @@ where
         {
             let mut visited = vec![];
 
-            match field.ty.ok() {
-                Some(Type::NonNull(ty)) => match &ty.ty {
+            match field.ty.ok().map(AsRef::as_ref) {
+                Some(Type::NonNull(ty)) => match ty.ty.as_ref() {
                     Type::Named(ty)
                         if self.is_recursive(&mut visited, name.as_ref(), ty.0.as_ref()) =>
                     {
