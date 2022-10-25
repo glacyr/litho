@@ -161,6 +161,10 @@ impl Workspace {
             .extend(self.compiler.replace_document(id, &text));
 
         self.store.insert(id, url, version, internal, text);
+        self.store
+            .get_mut(&id)
+            .into_iter()
+            .for_each(|doc| doc.ast = self.compiler.document(id).cloned());
     }
 
     pub fn update_file_contents<F>(&mut self, url: Url, version: Option<i32>, update: F)
@@ -173,6 +177,11 @@ impl Workspace {
 
         self.invalid
             .extend(self.compiler.replace_document(id, &text));
+
+        self.store
+            .get_mut(&id)
+            .into_iter()
+            .for_each(|doc| doc.ast = self.compiler.document(id).cloned());
     }
 
     pub fn refresh_file(&mut self, url: Url) -> Result<(), ()> {

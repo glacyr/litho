@@ -45,7 +45,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_inline_fragment, InlineFragment);
     visit!(visit_fragment_definition, FragmentDefinition);
     visit!(visit_type_condition, TypeCondition);
-    visit!(visit_value, Value);
+    visit!(visit_value, Arc<Value>);
     visit!(visit_boolean_value, BooleanValue);
     visit!(visit_null_value, NullValue);
     visit!(visit_enum_value, EnumValue);

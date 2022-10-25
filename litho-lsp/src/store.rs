@@ -21,6 +21,10 @@ impl Store {
         self.documents.get(source_id)
     }
 
+    pub fn get_mut(&mut self, source_id: &SourceId) -> Option<&mut Document> {
+        self.documents.get_mut(source_id)
+    }
+
     pub fn docs(&self) -> impl Iterator<Item = &Document> {
         self.documents.values()
     }

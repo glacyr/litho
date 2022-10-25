@@ -172,17 +172,17 @@ impl<'a> CompletionVisitor<'a> {
 
         let name = match ty {
             Type::List(_) => {
-                items.push(CompletionItem {
-                    label: "[".to_owned(),
-                    label_details: Some(CompletionItemLabelDetails {
-                        detail: Some("...]".to_owned()),
-                        description: None,
-                    }),
-                    insert_text: Some("[${0}]".to_owned()),
-                    insert_text_format: Some(InsertTextFormat::SNIPPET),
-                    kind: Some(CompletionItemKind::OPERATOR),
-                    ..Default::default()
-                });
+                // items.push(CompletionItem {
+                //     label: "[".to_owned(),
+                //     label_details: Some(CompletionItemLabelDetails {
+                //         detail: Some("...]".to_owned()),
+                //         description: None,
+                //     }),
+                //     insert_text: Some("[${0}]".to_owned()),
+                //     insert_text_format: Some(InsertTextFormat::SNIPPET),
+                //     kind: Some(CompletionItemKind::OPERATOR),
+                //     ..Default::default()
+                // });
 
                 return items.into_iter();
             }
@@ -369,6 +369,30 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
                     accumulator.extend(self.complete_all_types(true))
                 }
             }
+        }
+    }
+
+    fn visit_value(&self, node: &'a Arc<Value<SmolStr>>, accumulator: &mut Self::Accumulator) {
+        match node.as_ref() {
+            Value::ListValue(list) if list.brackets.span().contains(self.offset) => {
+                accumulator.truncate(0);
+
+                match self
+                    .workspace
+                    .database()
+                    .inference
+                    .types_for_values
+                    .get(node)
+                    .map(AsRef::as_ref)
+                {
+                    Some(Type::List(ty)) => match ty.ty.ok() {
+                        Some(ty) => accumulator.extend(self.complete_value(ty)),
+                        None => {}
+                    },
+                    Some(_) | None => {}
+                }
+            }
+            _ => {}
         }
     }
 }

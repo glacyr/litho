@@ -135,11 +135,13 @@ where
                 .as_ref()
                 .and_then(|value| value.value.ok()),
         ) {
-            Some((ty, value)) => accumulator
-                .database
-                .inference
-                .types_for_values
-                .insert(value, ty),
+            Some((ty, value)) => {
+                accumulator
+                    .database
+                    .inference
+                    .types_for_values
+                    .insert(value, ty);
+            }
             None => {}
         }
     }

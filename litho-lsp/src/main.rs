@@ -93,13 +93,17 @@ impl LanguageServer for Backend {
                 )),
                 completion_provider: Some(CompletionOptions {
                     trigger_characters: Some(
-                        " (,\t".chars().into_iter().map(|c| c.to_string()).collect(),
+                        " (,[{\t"
+                            .chars()
+                            .into_iter()
+                            .map(|c| c.to_string())
+                            .collect(),
                     ),
                     ..Default::default()
                 }),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 definition_provider: Some(OneOf::Left(true)),
-                // inlay_hint_provider: Some(OneOf::Left(true)),
+                inlay_hint_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             ..Default::default()

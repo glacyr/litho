@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::{DefinitionId, Document};
@@ -19,7 +20,7 @@ where
 {
     definition_diagnostics: HashMap<DefinitionId, Vec<Diagnostic<Span>>>,
     definition_sources: HashMap<DefinitionId, SourceId>,
-    documents: HashMap<SourceId, Document<T>>,
+    documents: HashMap<SourceId, Arc<Document<T>>>,
     document_diagnostics: HashMap<SourceId, Vec<Diagnostic<Span>>>,
     graph: DepGraph<DefinitionId, Dependency<T>>,
     database: Database<T>,
@@ -42,6 +43,10 @@ where
 
     pub fn database(&self) -> &Database<T> {
         &self.database
+    }
+
+    pub fn document(&self, source_id: SourceId) -> Option<&Arc<Document<T>>> {
+        self.documents.get(&source_id)
     }
 }
 
@@ -103,7 +108,7 @@ where
             }
         }
 
-        self.documents.insert(source_id, result.0);
+        self.documents.insert(source_id, Arc::new(result.0));
         self.document_diagnostics.insert(source_id, diagnostics);
 
         self.invalidate(definition_ids)
@@ -127,7 +132,8 @@ where
         let source_ids = self.invalidate(definition_ids);
 
         for definition in document
-            .map(|document| document.definitions.into_iter())
+            .as_ref()
+            .map(|document| document.definitions.iter())
             .into_iter()
             .flatten()
         {
