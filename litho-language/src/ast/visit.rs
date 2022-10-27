@@ -44,6 +44,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_fragment_spread, FragmentSpread);
     visit!(visit_inline_fragment, InlineFragment);
     visit!(visit_fragment_definition, FragmentDefinition);
+    visit!(post_visit_fragment_definition, FragmentDefinition);
     visit!(visit_type_condition, TypeCondition);
     visit!(visit_value, Arc<Value>);
     visit!(post_visit_value, Arc<Value>);

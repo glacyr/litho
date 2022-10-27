@@ -265,7 +265,7 @@ pub struct FragmentDefinition<T> {
 
 node!(
     FragmentDefinition,
-    visit_fragment_definition,
+    visit_fragment_definition + post_visit_fragment_definition,
     fragment,
     fragment_name,
     type_condition,

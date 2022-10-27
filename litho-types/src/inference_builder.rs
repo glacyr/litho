@@ -72,6 +72,36 @@ where
         accumulator.stack.pop();
     }
 
+    fn visit_fragment_definition(
+        &self,
+        node: &'ast FragmentDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let name = node
+            .type_condition
+            .ok()
+            .and_then(|ty| ty.named_type.ok())
+            .map(|ty| ty.as_ref());
+
+        if let Some((name, selection_set)) = name.zip(node.selection_set.ok()) {
+            accumulator
+                .database
+                .inference
+                .type_by_selection_set
+                .insert(selection_set, &Arc::new(name.to_owned()));
+        }
+
+        accumulator.stack.push(name.cloned());
+    }
+
+    fn post_visit_fragment_definition(
+        &self,
+        _node: &'ast FragmentDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.stack.pop();
+    }
+
     fn visit_field(&self, node: &'ast Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
         let ty = accumulator.stack.last().into_iter().flatten().next();
         let name = node.name.ok();
