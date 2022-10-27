@@ -47,19 +47,26 @@ where
     }
 }
 
-impl<T> Database<T>
+impl<'a, T> FromIterator<&'a Document<T>> for Database<T>
 where
-    T: From<&'static str> + Clone + Eq + Hash,
+    T: From<&'static str> + Clone + Eq + Hash + 'a,
 {
-    pub fn single(document: &Document<T>) -> Database<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a Document<T>>,
+    {
         let mut database = Database::new();
-        database.index(document);
-        database
-    }
+        let docs = iter.into_iter().collect::<Vec<_>>();
 
-    pub fn index(&mut self, document: &Document<T>) {
-        document.traverse(&BindingsBuilder, self);
-        document.traverse(&InferenceBuilder, &mut InferenceState::new(self));
+        for document in docs.iter() {
+            document.traverse(&BindingsBuilder, &mut database);
+        }
+
+        for document in docs.iter() {
+            document.traverse(&InferenceBuilder, &mut InferenceState::new(&mut database));
+        }
+
+        database
     }
 }
 

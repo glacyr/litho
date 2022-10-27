@@ -162,11 +162,11 @@ where
     where
         T: From<&'static str>,
     {
-        self.database = Database::new();
-
-        for document in self.documents.values() {
-            self.database.index(document);
-        }
+        self.database = self
+            .documents
+            .values()
+            .map(AsRef::as_ref)
+            .collect::<Database<_>>();
 
         for document in self.documents.values() {
             for definition in document.definitions.iter() {
