@@ -93,11 +93,7 @@ impl LanguageServer for Backend {
                 )),
                 completion_provider: Some(CompletionOptions {
                     trigger_characters: Some(
-                        " (,[{\t"
-                            .chars()
-                            .into_iter()
-                            .map(|c| c.to_string())
-                            .collect(),
+                        " \t".chars().into_iter().map(|c| c.to_string()).collect(),
                     ),
                     ..Default::default()
                 }),

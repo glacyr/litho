@@ -155,6 +155,25 @@ impl<'a> CompletionVisitor<'a> {
             })
     }
 
+    pub fn complete_input_fields(&self, ty: &SmolStr) -> impl Iterator<Item = CompletionItem> + '_ {
+        self.workspace
+            .database()
+            .input_value_definitions(ty)
+            .map(|def| CompletionItem {
+                label: def.name.to_string(),
+                label_details: Some(CompletionItemLabelDetails {
+                    detail: Some(format!(": {}", def.ty.to_string())),
+                    ..Default::default()
+                }),
+                insert_text: Some(format!("{}: ", def.name.to_string())),
+                command: Some(Command {
+                    command: "editor.action.triggerSuggest".to_owned(),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            })
+    }
+
     pub fn complete_value(&self, ty: &Type<SmolStr>) -> impl Iterator<Item = CompletionItem> + '_ {
         let mut items = vec![];
 
@@ -374,7 +393,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_value(&self, node: &'a Arc<Value<SmolStr>>, accumulator: &mut Self::Accumulator) {
         match node.as_ref() {
-            Value::ListValue(list) if list.brackets.span().contains(self.offset) => {
+            Value::ListValue(list) if list.span().contains(self.offset) => {
                 accumulator.truncate(0);
 
                 match self
@@ -390,6 +409,54 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
                         None => {}
                     },
                     Some(_) | None => {}
+                }
+            }
+            Value::ObjectValue(object) if object.span().contains(self.offset) => {
+                accumulator.truncate(0);
+
+                if let Some(ty) = self
+                    .workspace
+                    .database()
+                    .inference
+                    .types_for_values
+                    .get(node)
+                    .and_then(|ty| ty.name())
+                {
+                    accumulator.extend(self.complete_input_fields(ty));
+                }
+
+                for field in object.object_fields.iter() {
+                    match field.colon.ok() {
+                        Some(colon) if colon.span().before(self.offset) => {}
+                        _ => continue,
+                    };
+
+                    match field.value.ok() {
+                        Some(value) if value.span().before(self.offset) => continue,
+                        _ => {}
+                    };
+
+                    accumulator.truncate(0);
+
+                    let field_ty = self
+                        .workspace
+                        .database()
+                        .inference
+                        .types_for_values
+                        .get(node)
+                        .and_then(|ty| ty.name())
+                        .and_then(|ty| {
+                            self.workspace
+                                .database()
+                                .input_value_definitions_by_name(ty, field.name.as_ref())
+                                .next()
+                        })
+                        .and_then(|field| field.ty.ok())
+                        .map(AsRef::as_ref);
+
+                    if let Some(field_ty) = field_ty {
+                        accumulator.extend(self.complete_value(field_ty));
+                    }
                 }
             }
             _ => {}

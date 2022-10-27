@@ -9,7 +9,7 @@ pub struct Span {
 
 impl Span {
     pub fn before(&self, index: usize) -> bool {
-        self.end <= index
+        self.end < index
     }
 
     pub fn contains(&self, index: usize) -> bool {
