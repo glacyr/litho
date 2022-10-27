@@ -315,6 +315,10 @@ impl<T> Value<T> {
         matches!(self, Value::BooleanValue(_))
     }
 
+    pub fn is_null(&self) -> bool {
+        matches!(self, Value::NullValue(_))
+    }
+
     pub fn is_id_like(&self) -> bool {
         self.is_string()
     }

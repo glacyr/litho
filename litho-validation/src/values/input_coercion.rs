@@ -23,7 +23,7 @@ where
         };
 
         let ty = match ty.as_ref() {
-            Type::NonNull(_) if matches!(node.as_ref(), Value::NullValue(_)) => {
+            Type::NonNull(_) if node.is_null() => {
                 accumulator.push(Diagnostic::expected_non_null_value(
                     ty.to_string(),
                     node.span(),
@@ -31,6 +31,7 @@ where
                 return;
             }
             Type::NonNull(ty) => ty.ty.as_ref(),
+            _ if node.is_null() => return,
             ty => ty,
         };
 
