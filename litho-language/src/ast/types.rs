@@ -247,7 +247,7 @@ pub struct InlineFragment<T> {
 
 node!(
     InlineFragment,
-    visit_inline_fragment,
+    visit_inline_fragment + post_visit_inline_fragment,
     dots,
     type_condition,
     directives,

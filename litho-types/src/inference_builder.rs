@@ -81,7 +81,9 @@ where
             .type_condition
             .ok()
             .and_then(|ty| ty.named_type.ok())
-            .map(|ty| ty.as_ref());
+            .map(AsRef::as_ref);
+
+        accumulator.stack.push(name.cloned());
 
         if let Some((name, selection_set)) = name.zip(node.selection_set.ok()) {
             accumulator
@@ -90,13 +92,50 @@ where
                 .type_by_selection_set
                 .insert(selection_set, &Arc::new(name.to_owned()));
         }
-
-        accumulator.stack.push(name.cloned());
     }
 
     fn post_visit_fragment_definition(
         &self,
         _node: &'ast FragmentDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.stack.pop();
+    }
+
+    fn visit_inline_fragment(
+        &self,
+        node: &'ast InlineFragment<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        match node.type_condition.as_ref() {
+            Some(ty) => {
+                let name = ty.named_type.ok().map(AsRef::as_ref);
+                accumulator.stack.push(name.cloned());
+
+                if let Some((name, selection_set)) = name.zip(node.selection_set.ok()) {
+                    accumulator
+                        .database
+                        .inference
+                        .type_by_selection_set
+                        .insert(selection_set, &Arc::new(name.to_owned()));
+                }
+            }
+            None => {
+                accumulator.stack.push(
+                    accumulator
+                        .stack
+                        .last()
+                        .map(Option::as_ref)
+                        .flatten()
+                        .cloned(),
+                );
+            }
+        }
+    }
+
+    fn post_visit_inline_fragment(
+        &self,
+        _node: &'ast InlineFragment<T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();
