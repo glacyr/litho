@@ -46,14 +46,18 @@ pub trait Visit<'ast, T> {
     visit!(visit_fragment_definition, FragmentDefinition);
     visit!(visit_type_condition, TypeCondition);
     visit!(visit_value, Arc<Value>);
+    visit!(post_visit_value, Arc<Value>);
     visit!(visit_boolean_value, BooleanValue);
     visit!(visit_null_value, NullValue);
     visit!(visit_enum_value, EnumValue);
     visit!(visit_list_value, ListValue);
+    visit!(post_visit_list_value, ListValue);
     visit!(visit_object_value, ObjectValue);
     visit!(visit_object_field, ObjectField);
+    visit!(post_visit_object_field, ObjectField);
     visit!(visit_variable_definitions, VariableDefinitions);
     visit!(visit_variable_definition, VariableDefinition);
+    visit!(post_visit_variable_definition, VariableDefinition);
     visit!(visit_variable, Variable);
     visit!(visit_default_value, DefaultValue);
     visit!(visit_type, Type);
@@ -94,6 +98,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_field_definition, Arc<FieldDefinition>);
     visit!(visit_arguments_definition, Arc<ArgumentsDefinition>);
     visit!(visit_input_value_definition, Arc<InputValueDefinition>);
+    visit!(post_visit_input_value_definition, Arc<InputValueDefinition>);
     visit!(visit_object_type_extension, ObjectTypeExtension);
     visit!(visit_interface_type_definition, InterfaceTypeDefinition);
     visit!(visit_interface_type_extension, InterfaceTypeExtension);

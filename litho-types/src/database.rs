@@ -151,6 +151,17 @@ where
             .chain(self.extensions.input_value_definitions.by_type(ty))
     }
 
+    pub fn input_value_definitions_by_name(
+        &self,
+        ty: &T,
+        name: &T,
+    ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
+        self.definitions
+            .input_value_definitions
+            .by_name(ty, name)
+            .chain(self.extensions.input_value_definitions.by_type(ty))
+    }
+
     pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
         self.definitions
             .field_definitions

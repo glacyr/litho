@@ -1,0 +1,16 @@
+[E0202] Error: Expected an int value.
+   ╭─[graphql:3:25]
+   │
+ 3 │     error(value: Int! = false): Int!
+   ·                         ──┬──  
+   ·                           ╰──── This should be a `Int` here.
+───╯
+
+
+[E0202] Error: Expected an int value.
+   ╭─[graphql:6:32]
+   │
+ 6 │     listError(value: [Int!] = [false]): Int!
+   ·                                ──┬──  
+   ·                                  ╰──── This should be a `Int` here.
+───╯

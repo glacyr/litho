@@ -1,0 +1,3 @@
+type Example {
+    example(nonNull: Int! = null): Int!
+}

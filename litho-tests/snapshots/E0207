@@ -1,0 +1,7 @@
+[E0204] Error: Expected a string value.
+   ╭─[graphql:7:30]
+   │
+ 7 │     error(foo: Foo! = { foo: 42 }): Int!
+   ·                              ─┬  
+   ·                               ╰── This should be a `String` here.
+───╯

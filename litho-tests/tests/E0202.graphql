@@ -1,0 +1,7 @@
+type Example {
+    ok(value: Int! = 42): Int!
+    error(value: Int! = false): Int!
+
+    listOk(value: [Int!] = [42]): Int!
+    listError(value: [Int!] = [false]): Int!
+}

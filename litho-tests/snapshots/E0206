@@ -1,0 +1,7 @@
+[E0206] Error: Expected an input object value.
+   ╭─[graphql:7:23]
+   │
+ 7 │     error(foo: Foo! = 42): Int!
+   ·                       ─┬  
+   ·                        ╰── This should be a `Foo` here.
+───╯

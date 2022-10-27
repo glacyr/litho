@@ -1,0 +1,16 @@
+[E0204] Error: Expected a string value.
+   ╭─[graphql:3:28]
+   │
+ 3 │     error(value: String! = 42): Int!
+   ·                            ─┬  
+   ·                             ╰── This should be a `String` here.
+───╯
+
+
+[E0204] Error: Expected a string value.
+   ╭─[graphql:5:26]
+   │
+ 5 │     idError(value: ID! = 42): Int!
+   ·                          ─┬  
+   ·                           ╰── This should be a `ID` here.
+───╯

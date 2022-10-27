@@ -1,0 +1,7 @@
+[E0209] Error: Enum values must exist in schema definition.
+   ╭─[graphql:8:26]
+   │
+ 8 │     error(foo: FooBar! = FOOD): Int!
+   ·                          ──┬─  
+   ·                            ╰─── Enum value `FOOD` here is not a valid value for enum `FooBar`.
+───╯

@@ -110,7 +110,7 @@ macro_rules! node {
 pub(crate) use node;
 
 macro_rules! node_enum {
-    (Arc<$ty:ident>, $visit:ident, $($variants:ident),* $(,)?) => {
+    (Arc<$ty:ident>, $visit:ident $(+ $post:ident)?, $($variants:ident),* $(,)?) => {
         impl<T> Node<T> for $ty<T> {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
@@ -135,7 +135,7 @@ macro_rules! node_enum {
             }
         }
     };
-    ($ty:ident, $visit:ident, $($variants:ident),* $(,)?) => {
+    ($ty:ident, $visit:ident $(+ $post:ident)?, $($variants:ident),* $(,)?) => {
         impl<T> Node<T> for $ty<T> {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
@@ -148,6 +148,8 @@ macro_rules! node_enum {
                         Self::$variants(node) => node.traverse(visitor, accumulator),
                     )*
                 }
+
+                $(visitor.$post(self, accumulator);)?
             }
         }
     };

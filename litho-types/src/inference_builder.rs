@@ -11,6 +11,7 @@ where
 {
     database: &'a mut Database<T>,
     stack: Vec<Option<T>>,
+    value_type: Vec<Option<Arc<Type<T>>>>,
 }
 
 impl<'a, T> InferenceState<'a, T>
@@ -21,6 +22,7 @@ where
         InferenceState {
             database,
             stack: vec![],
+            value_type: vec![],
         }
     }
 }
@@ -130,19 +132,84 @@ where
         node: &'ast Arc<InputValueDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        match node.ty.ok().zip(
-            node.default_value
-                .as_ref()
-                .and_then(|value| value.value.ok()),
-        ) {
-            Some((ty, value)) => {
+        accumulator.value_type.push(node.ty.ok().cloned());
+    }
+
+    fn post_visit_input_value_definition(
+        &self,
+        _node: &'ast Arc<InputValueDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.value_type.pop();
+    }
+
+    fn visit_value(&self, node: &'ast Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
+        if let Some(ty) = accumulator.value_type.last().and_then(|ty| ty.as_ref()) {
+            accumulator
+                .database
+                .inference
+                .types_for_values
+                .insert(node, ty);
+        }
+    }
+
+    fn visit_list_value(&self, _node: &'ast ListValue<T>, accumulator: &mut Self::Accumulator) {
+        let ty = accumulator
+            .value_type
+            .last()
+            .and_then(|ty| ty.as_ref())
+            .and_then(|ty| ty.list_value_type())
+            .map(|ty| ty.clone());
+
+        accumulator.value_type.push(ty);
+    }
+
+    fn post_visit_list_value(
+        &self,
+        _node: &'ast ListValue<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.value_type.pop();
+    }
+
+    fn visit_object_field(&self, node: &'ast ObjectField<T>, accumulator: &mut Self::Accumulator) {
+        let ty = accumulator
+            .value_type
+            .last()
+            .and_then(|ty| ty.as_ref())
+            .and_then(|ty| ty.name())
+            .and_then(|ty| {
                 accumulator
                     .database
-                    .inference
-                    .types_for_values
-                    .insert(value, ty);
-            }
-            None => {}
-        }
+                    .input_value_definitions_by_name(ty, node.name.as_ref())
+                    .next()
+            })
+            .and_then(|field| field.ty.ok().cloned());
+
+        accumulator.value_type.push(ty);
+    }
+
+    fn post_visit_object_field(
+        &self,
+        _node: &'ast ObjectField<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.value_type.pop();
+    }
+
+    fn visit_variable_definition(
+        &self,
+        node: &'ast VariableDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.value_type.push(node.ty.ok().cloned());
+    }
+
+    fn post_visit_variable_definition(
+        &self,
+        _node: &'ast VariableDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.value_type.pop();
     }
 }

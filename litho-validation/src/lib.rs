@@ -16,6 +16,7 @@ mod interfaces;
 mod names;
 mod types;
 mod unions;
+mod values;
 
 pub fn check<N, T>(document: &N, database: &Database<T>) -> Vec<Diagnostic<Span>>
 where
@@ -40,5 +41,8 @@ where
     document.traverse(&names::UniqueNames(database), &mut errors);
     document.traverse(&types::NamedTypesExist(database), &mut errors);
     document.traverse(&unions::UnionMemberTypes(database), &mut errors);
+    document.traverse(&values::EnumCoercion(database), &mut errors);
+    document.traverse(&values::InputCoercion(database), &mut errors);
+    document.traverse(&values::ObjectCoercion(database), &mut errors);
     errors
 }

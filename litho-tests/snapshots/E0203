@@ -1,0 +1,7 @@
+[E0203] Error: Expected a float value.
+   ╭─[graphql:4:27]
+   │
+ 4 │     error(value: Float! = false): Int!
+   ·                           ──┬──  
+   ·                             ╰──── This should be a `Float` here.
+───╯

@@ -1,0 +1,8 @@
+input Foo {
+    foo: String!
+}
+
+type Example {
+    ok(foo: Foo! = { foo: "Hello World" }): Int!
+    error(foo: Foo! = 42): Int!
+}

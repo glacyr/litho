@@ -1,0 +1,7 @@
+input Foo {
+    foo: String!
+}
+
+type Example {
+    error(foo: Foo! = { foo: "Hello", bar: "World" }): Int!
+}

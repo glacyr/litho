@@ -373,6 +373,46 @@ diagnostics! {
         "Type extension must extend type of same kind.",
         "Type `{name}` is first defined as `{first_type}` here ..." @ first,
         "... and later again as `{second_type}` here." @ second
+    },
+    E0200 => ExpectedNonNullValue @ span + ty {
+        "Expected a non-null value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0201 => ExpectedListValue @ span + ty {
+        "Expected a list value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0202 => ExpectedIntValue @ span + ty {
+        "Expected an int value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0203 => ExpectedFloatValue @ span + ty {
+        "Expected a float value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0204 => ExpectedStringValue @ span + ty {
+        "Expected a string value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0205 => ExpectedBooleanValue @ span + ty {
+        "Expected a boolean value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0206 => ExpectedInputObjectValue @ span + ty {
+        "Expected an input object value.",
+        "This should be a `{ty}` here." @ span
+    },
+    E0207 => MissingInputField @ span + name, ty {
+        "Expected a value for required input field.",
+        "This input object here must have a field `{name}` of type `{ty}`." @ span
+    },
+    E0208 => UnrecognizedInputField @ span + name, ty {
+        "All fields in input object must exist in schema definition.",
+        "Value is provided for field `{name}` here, but type `{ty}` has no such field." @ span
+    },
+    E0209 => UnrecognizedEnumValue @ span + name, value {
+        "Enum values must exist in schema definition.",
+        "Enum value `{value}` here is not a valid value for enum `{name}`." @ span
     }
 }
 

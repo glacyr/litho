@@ -1,0 +1,7 @@
+[E0205] Error: Expected a boolean value.
+   ╭─[graphql:3:29]
+   │
+ 3 │     error(value: Boolean! = "false"): Int!
+   ·                             ───┬───  
+   ·                                ╰───── This should be a `Boolean` here.
+───╯

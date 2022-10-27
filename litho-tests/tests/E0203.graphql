@@ -1,0 +1,5 @@
+type Example {
+    ok(value: Float! = 42.0): Int!
+    also(value: Float! = 42): Int!
+    error(value: Float! = false): Int!
+}

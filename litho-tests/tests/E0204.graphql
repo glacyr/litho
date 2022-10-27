@@ -1,0 +1,6 @@
+type Example {
+    ok(value: String! = "Hello World!"): Int!
+    error(value: String! = 42): Int!
+    idOk(value: ID! = "123-456"): Int!
+    idError(value: ID! = 42): Int!
+}

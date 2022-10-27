@@ -1,0 +1,9 @@
+enum FooBar {
+    FOO
+    BAR
+}
+
+type Example {
+    ok(foo: FooBar! = FOO): Int!
+    error(foo: FooBar! = FOOD): Int!
+}

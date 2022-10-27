@@ -1,0 +1,7 @@
+[E0208] Error: All fields in input object must exist in schema definition.
+   ╭─[graphql:6:39]
+   │
+ 6 │     error(foo: Foo! = { foo: "Hello", bar: "World" }): Int!
+   ·                                       ─┬─  
+   ·                                        ╰─── Value is provided for field `bar` here, but type `Foo` has no such field.
+───╯

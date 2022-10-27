@@ -294,9 +294,39 @@ pub enum Value<T> {
     ObjectValue(ObjectValue<T>),
 }
 
+impl<T> Value<T> {
+    pub fn is_int(&self) -> bool {
+        matches!(self, Value::IntValue(_))
+    }
+
+    pub fn is_float(&self) -> bool {
+        matches!(self, Value::FloatValue(_))
+    }
+
+    pub fn is_float_like(&self) -> bool {
+        self.is_int() || self.is_float()
+    }
+
+    pub fn is_string(&self) -> bool {
+        matches!(self, Value::StringValue(_))
+    }
+
+    pub fn is_boolean(&self) -> bool {
+        matches!(self, Value::BooleanValue(_))
+    }
+
+    pub fn is_id_like(&self) -> bool {
+        self.is_string()
+    }
+
+    pub fn is_list(&self) -> bool {
+        matches!(self, Value::ListValue(_))
+    }
+}
+
 node_enum!(
     Arc<Value>,
-    visit_value,
+    visit_value + post_visit_value,
     Variable,
     IntValue,
     FloatValue,
@@ -332,7 +362,12 @@ pub struct ListValue<T> {
     pub values: Vec<Arc<Value<T>>>,
 }
 
-node!(ListValue, visit_list_value, brackets, values);
+node!(
+    ListValue,
+    visit_list_value + post_visit_list_value,
+    brackets,
+    values
+);
 
 #[derive(Clone, Debug)]
 pub struct ObjectValue<T> {
@@ -349,7 +384,13 @@ pub struct ObjectField<T> {
     pub value: Recoverable<Arc<Value<T>>>,
 }
 
-node!(ObjectField, visit_object_field, name, colon, value);
+node!(
+    ObjectField,
+    visit_object_field + post_visit_object_field,
+    name,
+    colon,
+    value
+);
 
 #[derive(Clone, Debug)]
 pub struct VariableDefinitions<T> {
@@ -375,7 +416,7 @@ pub struct VariableDefinition<T> {
 
 node!(
     VariableDefinition,
-    visit_variable_definition,
+    visit_variable_definition + post_visit_variable_definition,
     variable,
     colon,
     ty,
@@ -421,6 +462,14 @@ impl<T> Type<T> {
 
     pub fn is_required(&self) -> bool {
         matches!(self, Type::NonNull(_))
+    }
+
+    pub fn list_value_type(&self) -> Option<&Arc<Type<T>>> {
+        match self {
+            Type::List(ty) => ty.ty.ok(),
+            Type::NonNull(ty) => ty.ty.list_value_type(),
+            Type::Named(_) => None,
+        }
     }
 }
 
@@ -1020,7 +1069,7 @@ pub struct InputValueDefinition<T> {
 
 node!(
     Arc<InputValueDefinition>,
-    visit_input_value_definition,
+    visit_input_value_definition + post_visit_input_value_definition,
     description,
     name,
     colon,

@@ -1,0 +1,7 @@
+[E0200] Error: Expected a non-null value.
+   ╭─[graphql:2:29]
+   │
+ 2 │     example(nonNull: Int! = null): Int!
+   ·                             ──┬─  
+   ·                               ╰─── This should be a `Int!` here.
+───╯

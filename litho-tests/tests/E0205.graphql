@@ -1,0 +1,4 @@
+type Example {
+    ok(value: Boolean! = false): Int!
+    error(value: Boolean! = "false"): Int!
+}
