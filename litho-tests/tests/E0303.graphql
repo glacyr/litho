@@ -1,0 +1,10 @@
+type Query {
+    foo: String!
+}
+
+query {
+    foo
+    bar
+    aliased: foo
+    error: bar
+}

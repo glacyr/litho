@@ -1,3 +1,7 @@
+type Query {
+    _: Boolean!
+}
+
 fragment on Query {
     _
 }

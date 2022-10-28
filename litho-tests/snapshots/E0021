@@ -1,7 +1,7 @@
 [E0021] Error: Default value must have a value.
-   ╭─[graphql:1:28]
+   ╭─[graphql:5:28]
    │
- 1 │ query Example($value: Int =) {
+ 5 │ query Example($value: Int =) {
    ·                            │ 
    ·                            ╰─ This default value here is missing a value.
 ───╯

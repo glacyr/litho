@@ -1,0 +1,16 @@
+[E0303] Error: Queried field does not exist.
+   ╭─[graphql:7:5]
+   │
+ 7 │     bar
+   ·     ─┬─  
+   ·      ╰─── Type `Query` does not have a field named `bar`.
+───╯
+
+
+[E0303] Error: Queried field does not exist.
+   ╭─[graphql:9:12]
+   │
+ 9 │     error: bar
+   ·            ─┬─  
+   ·             ╰─── Type `Query` does not have a field named `bar`.
+───╯
