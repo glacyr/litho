@@ -467,6 +467,11 @@ diagnostics! {
     E0312 => MissingRequiredArgument @ span + name, ty {
         "Missing required argument.",
         "Argument `{name}` of type `{ty}` is required but not given here." @ span
+    },
+    E0313 => DuplicateFragmentName @ second + name {
+        "Fragment definitions must be unique.",
+        "Fragment `{name}` is first defined here ..." @ first,
+        "... and later defined again here." @ second
     }
 }
 

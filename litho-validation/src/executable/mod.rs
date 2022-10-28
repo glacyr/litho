@@ -7,6 +7,7 @@ use litho_language::lex::Span;
 use litho_types::Database;
 
 mod fields;
+mod fragments;
 mod operations;
 
 pub fn check<N, T>(document: &N, database: &Database<T>) -> Vec<Diagnostic<Span>>
@@ -18,6 +19,7 @@ where
     document.traverse(&fields::FieldSelectionMerging(database), &mut errors);
     document.traverse(&fields::FieldSelections(database), &mut errors);
     document.traverse(&fields::LeafFieldSelections(database), &mut errors);
+    document.traverse(&fragments::FragmentNameUniqueness(database), &mut errors);
     document.traverse(&operations::OperationNameUniqueness(database), &mut errors);
     document.traverse(&operations::LoneAnonymousOperation(database), &mut errors);
     errors

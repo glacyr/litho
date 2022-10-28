@@ -1,0 +1,11 @@
+type Query {
+    _: Boolean!
+}
+
+fragment HelloWorld on Query {
+    _
+}
+
+fragment HelloWorld on Query {
+    _
+}

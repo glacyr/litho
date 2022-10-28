@@ -1,0 +1,11 @@
+[E0313] Error: Fragment definitions must be unique.
+   ╭─[graphql:9:10]
+   │
+ 5 │ fragment HelloWorld on Query {
+   ·          ─────┬────  
+   ·               ╰────── Fragment `HelloWorld` is first defined here ...
+   · 
+ 9 │ fragment HelloWorld on Query {
+   ·          ─────┬────  
+   ·               ╰────── ... and later defined again here.
+───╯
