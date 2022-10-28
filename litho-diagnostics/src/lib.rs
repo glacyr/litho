@@ -458,6 +458,11 @@ diagnostics! {
     E0310 => UndefinedArgument @ span + name {
         "Argument must exist in schema.",
         "Argument `{name}` here is not defined in schema." @ span
+    },
+    E0311 => DuplicateArgument @ second + name {
+        "Argument may be provided only once.",
+        "Argument `{name}` is first given here ..." @ first,
+        "... and later again here." @ second
     }
 }
 

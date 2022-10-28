@@ -1,0 +1,9 @@
+[E0311] Error: Argument may be provided only once.
+   ╭─[graphql:6:27]
+   │
+ 6 │     example(foo: "Hello", foo: "World!")
+   ·             ─┬─           ─┬─  
+   ·              ╰───────────────── Argument `foo` is first given here ...
+   ·                            │   
+   ·                            ╰─── ... and later again here.
+───╯
