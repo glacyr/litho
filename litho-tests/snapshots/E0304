@@ -6,6 +6,6 @@
     ·                ╰──── Response key `weight` is first used here ...
     · 
  24 │             weight: name
-    ·             ───┬───  
-    ·                ╰───── ... and later again here for a field of a different type.
+    ·             ───┬──  
+    ·                ╰──── ... and later again here for a field of a different type.
 ────╯

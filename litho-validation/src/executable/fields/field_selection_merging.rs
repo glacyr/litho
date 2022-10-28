@@ -91,12 +91,12 @@ where
         let span_a =
             a.1.alias
                 .as_ref()
-                .map(|alias| alias.span())
+                .map(|alias| alias.name.span())
                 .unwrap_or(a.1.name.span());
         let span_b =
             b.1.alias
                 .as_ref()
-                .map(|alias| alias.span())
+                .map(|alias| alias.name.span())
                 .unwrap_or(b.1.name.span());
 
         if self.same_response_shape(a.1, b.1)? == false {
