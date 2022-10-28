@@ -20,6 +20,7 @@ where
     pub operations: Operations<T>,
     pub fragments: Fragments<T>,
     pub usages: Usages<T>,
+    pub interface_implementations: MultiMap<T, T>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
@@ -37,6 +38,7 @@ where
             operations: Default::default(),
             fragments: Default::default(),
             usages: Default::default(),
+            interface_implementations: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
@@ -159,6 +161,13 @@ where
             })
     }
 
+    pub fn interface_implementations(&self, interface: &T) -> impl Iterator<Item = &T> {
+        self.interface_implementations
+            .get_vec(interface)
+            .into_iter()
+            .flatten()
+    }
+
     pub fn input_value_definitions(
         &self,
         ty: &T,
@@ -248,5 +257,15 @@ where
             .union_member_types
             .by_name(ty, name)
             .chain(self.extensions.union_member_types.by_name(ty, name))
+    }
+
+    pub fn type_exists(&self, ty: &T) -> bool {
+        self.type_definitions_by_name(ty).next().is_some()
+    }
+
+    pub fn possible_types<'a>(&'a self, ty: &'a T) -> impl Iterator<Item = &T> {
+        std::iter::once(ty)
+            .chain(self.union_member_types(ty).map(|ty| ty.0.as_ref()))
+            .chain(self.interface_implementations(ty))
     }
 }

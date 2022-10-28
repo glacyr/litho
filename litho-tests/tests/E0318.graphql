@@ -1,0 +1,29 @@
+interface Animal {
+    name: String!
+}
+
+type Cat implements Animal {
+    name: String!
+}
+
+union Pet = Cat
+
+type Query {
+    animal: Pet!
+}
+
+query {
+    ... on Animal {
+        name
+    }
+    ... on Query {
+        animal {
+            ... on Cat {
+                name
+            }
+            ... on Animal {
+                name
+            }
+        }
+    }
+}

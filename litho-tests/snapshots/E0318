@@ -1,0 +1,7 @@
+[E0318] Error: Fragment spread must be possible.
+    ╭─[graphql:16:12]
+    │
+ 16 │     ... on Animal {
+    ·            ───┬──  
+    ·               ╰──── Fragment assumes type `Animal`, but scope is type `Query`.
+────╯

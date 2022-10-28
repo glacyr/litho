@@ -34,6 +34,16 @@ where
             accumulator
                 .type_definitions_by_name
                 .insert(name.as_ref().clone(), node.clone());
+
+            for interface in node
+                .implements_interfaces()
+                .into_iter()
+                .flat_map(|implements| implements.types())
+            {
+                accumulator
+                    .interface_implementations
+                    .insert(interface.clone(), name.as_ref().clone());
+            }
         }
     }
 
@@ -46,6 +56,16 @@ where
             accumulator
                 .type_extensions_by_name
                 .insert(name.clone(), node.clone());
+
+            for interface in node
+                .implements_interfaces()
+                .into_iter()
+                .flat_map(|implements| implements.types())
+            {
+                accumulator
+                    .interface_implementations
+                    .insert(interface.clone(), name.clone());
+            }
         }
     }
 

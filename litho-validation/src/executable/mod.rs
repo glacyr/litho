@@ -30,6 +30,7 @@ where
         &fragments::FragmentSpreadsMustNotFormCycles(database),
         &mut errors,
     );
+    document.traverse(&fragments::FragmentSpreadIsPossible(database), &mut errors);
     document.traverse(&operations::OperationNameUniqueness(database), &mut errors);
     document.traverse(&operations::LoneAnonymousOperation(database), &mut errors);
     errors

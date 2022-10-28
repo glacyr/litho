@@ -488,6 +488,10 @@ diagnostics! {
     E0317 => CyclicFragmentDefinition @ span + name, spread {
         "Fragment definition must not be cyclic.",
         "Fragment `{name}` includes fragment `{spread}` here, which causes a cycle." @ span
+    },
+    E0318 => ImpossibleFragmentSpread @ span + ty, scope {
+        "Fragment spread must be possible.",
+        "Fragment assumes type `{ty}`, but scope is type `{scope}`." @ span
     }
 }
 
