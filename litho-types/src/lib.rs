@@ -1,5 +1,6 @@
 mod bindings;
 mod database;
+mod fragments;
 mod indexer;
 mod inference;
 mod inferencer;
@@ -10,6 +11,7 @@ mod operations;
 
 pub use bindings::Bindings;
 pub use database::Database;
+pub use fragments::Fragments;
 pub use inference::Inference;
 pub use inferred::Inferred;
 pub use map::Map;

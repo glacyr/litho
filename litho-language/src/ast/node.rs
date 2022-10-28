@@ -12,6 +12,29 @@ pub trait Node<T> {
         self.traverse(&SpanCollector, &mut span);
         span.unwrap_or_default()
     }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq;
+}
+
+impl<N, T> Node<T> for &N
+where
+    N: Node<T>,
+{
+    fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
+    where
+        V: Visit<'ast, T>,
+    {
+        (*self).traverse(visitor, accumulator)
+    }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        (*self).congruent(*other)
+    }
 }
 
 pub struct SpanCollector;
@@ -35,6 +58,17 @@ where
         self.iter()
             .for_each(|item| item.traverse(visitor, accumulator))
     }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        if self.len() == other.len() {
+            self.iter().zip(other.iter()).all(|(a, b)| a.congruent(b))
+        } else {
+            false
+        }
+    }
 }
 
 impl<T, N> Node<T> for Option<N>
@@ -47,6 +81,17 @@ where
     {
         self.iter()
             .for_each(|item| item.traverse(visitor, accumulator))
+    }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        match (self, other) {
+            (Some(lhs), Some(rhs)) => lhs.congruent(rhs),
+            (None, None) => true,
+            (_, _) => false,
+        }
     }
 }
 
@@ -62,6 +107,13 @@ where
         let (a, b) = self;
         a.traverse(visitor, accumulator);
         b.traverse(visitor, accumulator);
+    }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.0.congruent(&other.0) && self.1.congruent(&other.1)
     }
 }
 
@@ -79,6 +131,13 @@ where
             Recoverable::Present(value) => value.traverse(visitor, accumulator),
             Recoverable::Missing(_) => {}
         }
+    }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.ok().congruent(&other.ok())
     }
 }
 
@@ -103,6 +162,16 @@ macro_rules! node {
 
                 $(visitor.$post(self, accumulator);)?
             }
+
+            fn congruent(&self, other: &Self) -> bool
+            where
+                T: PartialEq,
+            {
+                $(
+                    self.$fields.congruent(&other.$fields) &&
+                )*
+                true
+            }
         }
     };
 }
@@ -122,6 +191,18 @@ macro_rules! node_enum {
                     )*
                 }
             }
+
+            fn congruent(&self, other: &Self) -> bool
+            where
+                T: PartialEq,
+            {
+                match (self, other) {
+                    $(
+                        (Self::$variants(lhs), Self::$variants(rhs)) => lhs.congruent(rhs),
+                    )*
+                    (_, _) => false,
+                }
+            }
         }
 
         impl<T> Node<T> for Arc<$ty<T>> {
@@ -132,6 +213,13 @@ macro_rules! node_enum {
                 visitor.$visit(self, accumulator);
 
                 self.as_ref().traverse(visitor, accumulator);
+            }
+
+            fn congruent(&self, other: &Self) -> bool
+            where
+                T: PartialEq,
+            {
+                self.as_ref().congruent(other.as_ref())
             }
         }
     };
@@ -151,6 +239,18 @@ macro_rules! node_enum {
 
                 $(visitor.$post(self, accumulator);)?
             }
+
+            fn congruent(&self, other: &Self) -> bool
+            where
+                T: PartialEq,
+            {
+                match (self, other) {
+                    $(
+                        (Self::$variants(lhs), Self::$variants(rhs)) => lhs.congruent(rhs),
+                    )*
+                    (_, _) => false,
+                }
+            }
         }
     };
 }
@@ -168,6 +268,13 @@ macro_rules! node_unit {
 
                 self.0.traverse(visitor, accumulator);
             }
+
+            fn congruent(&self, other: &Self) -> bool
+            where
+                T: PartialEq,
+            {
+                self.0.congruent(&other.0)
+            }
         }
     };
 }
@@ -182,6 +289,13 @@ macro_rules! node_arc {
                 V: Visit<'ast, T>,
             {
                 self.as_ref().traverse(visitor, accumulator);
+            }
+
+            fn congruent(&self, other: &Self) -> bool
+            where
+                T: PartialEq,
+            {
+                self.as_ref().congruent(other.as_ref())
             }
         }
     };

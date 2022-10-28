@@ -9,6 +9,13 @@ impl<T> Node<T> for Name<T> {
     {
         visitor.visit_span(self.span(), accumulator);
     }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_raw_token().congruent(other.as_raw_token())
+    }
 }
 
 impl<T> Node<T> for Punctuator<T> {
@@ -17,6 +24,13 @@ impl<T> Node<T> for Punctuator<T> {
         V: Visit<'ast, T>,
     {
         visitor.visit_span(self.span(), accumulator);
+    }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_raw_token().congruent(other.as_raw_token())
     }
 }
 
@@ -28,6 +42,13 @@ impl<T> Node<T> for IntValue<T> {
         visitor.visit_int_value(self, accumulator);
         visitor.visit_span(self.span(), accumulator);
     }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_raw_token().congruent(other.as_raw_token())
+    }
 }
 
 impl<T> Node<T> for FloatValue<T> {
@@ -38,6 +59,13 @@ impl<T> Node<T> for FloatValue<T> {
         visitor.visit_float_value(self, accumulator);
         visitor.visit_span(self.span(), accumulator);
     }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_raw_token().congruent(other.as_raw_token())
+    }
 }
 
 impl<T> Node<T> for StringValue<T> {
@@ -47,5 +75,12 @@ impl<T> Node<T> for StringValue<T> {
     {
         visitor.visit_string_value(self, accumulator);
         visitor.visit_span(self.span(), accumulator);
+    }
+
+    fn congruent(&self, other: &Self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_raw_token().congruent(other.as_raw_token())
     }
 }

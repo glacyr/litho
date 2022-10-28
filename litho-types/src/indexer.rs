@@ -218,4 +218,14 @@ where
             None => accumulator.operations.nameless.push(node.clone()),
         }
     }
+
+    fn visit_fragment_definition(
+        &self,
+        node: &'ast Arc<FragmentDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let Some(name) = node.fragment_name.ok() {
+            accumulator.fragments.by_name.insert(name.as_ref(), node);
+        }
+    }
 }

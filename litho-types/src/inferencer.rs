@@ -74,7 +74,7 @@ where
 
     fn visit_fragment_definition(
         &self,
-        node: &'ast FragmentDefinition<T>,
+        node: &'ast Arc<FragmentDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let name = node
@@ -96,7 +96,7 @@ where
 
     fn post_visit_fragment_definition(
         &self,
-        _node: &'ast FragmentDefinition<T>,
+        _node: &'ast Arc<FragmentDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();

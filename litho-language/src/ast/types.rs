@@ -111,7 +111,7 @@ node!(ExecutableDocument, visit_executable_document, definitions);
 #[derive(Clone, Debug)]
 pub enum ExecutableDefinition<T> {
     OperationDefinition(Arc<OperationDefinition<T>>),
-    FragmentDefinition(FragmentDefinition<T>),
+    FragmentDefinition(Arc<FragmentDefinition<T>>),
 }
 
 node_enum!(
@@ -264,7 +264,7 @@ pub struct FragmentDefinition<T> {
 }
 
 node!(
-    FragmentDefinition,
+    Arc<FragmentDefinition>,
     visit_fragment_definition + post_visit_fragment_definition,
     fragment,
     fragment_name,
@@ -782,12 +782,20 @@ impl<T> TypeDefinition<T> {
         }
     }
 
+    pub fn is_enum(&self) -> bool {
+        matches!(self, TypeDefinition::EnumTypeDefinition(_))
+    }
+
     pub fn is_input_object_type(&self) -> bool {
         matches!(self, TypeDefinition::InputObjectTypeDefinition(_))
     }
 
     pub fn is_scalar(&self) -> bool {
         matches!(self, TypeDefinition::ScalarTypeDefinition(_))
+    }
+
+    pub fn is_scalar_like(&self) -> bool {
+        self.is_scalar() || self.is_enum()
     }
 
     pub fn is_object_type(&self) -> bool {

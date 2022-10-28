@@ -1,0 +1,11 @@
+[E0305] Error: Selection set contains different fields with the same name.
+    ╭─[graphql:19:13]
+    │
+ 15 │             name: nickname
+    ·             ──┬──  
+    ·               ╰──── Response key `name` is first used here ...
+    · 
+ 19 │             name
+    ·             ──┬─  
+    ·               ╰─── ... and later again here for a different field of the same type.
+────╯

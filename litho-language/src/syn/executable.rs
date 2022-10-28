@@ -37,7 +37,9 @@ where
             operation_definition()
                 .map(Into::into)
                 .map(ExecutableDefinition::OperationDefinition),
-            fragment_definition().map(ExecutableDefinition::FragmentDefinition),
+            fragment_definition()
+                .map(Into::into)
+                .map(ExecutableDefinition::FragmentDefinition),
         ))
     })
 }

@@ -15,6 +15,10 @@ impl<T> Error<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        &self.0
+    }
 }
 
 /// Represents a name in a GraphQL document.
@@ -64,6 +68,10 @@ impl<T> Name<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        &self.0
+    }
 }
 
 impl<T> AsRef<T> for Name<T> {
@@ -94,6 +102,10 @@ impl<T> Punctuator<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        &self.0
+    }
 }
 
 impl<T> AsRef<T> for Punctuator<T> {
@@ -110,6 +122,10 @@ impl<T> IntValue<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        &self.0
+    }
 }
 
 /// Represents a float value (literal) in a GraphQL document.
@@ -120,6 +136,10 @@ impl<T> FloatValue<T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
+
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        &self.0
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -128,6 +148,10 @@ pub struct StringValue<T>(RawToken<T>);
 impl<T> StringValue<T> {
     pub fn span(&self) -> Span {
         self.0.span
+    }
+
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        &self.0
     }
 }
 

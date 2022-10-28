@@ -1,0 +1,39 @@
+type Query {
+    pet: Pet!
+}
+
+type Cat {
+    name: String!
+    nickname: String!
+    weight: Float!
+}
+
+type Dog {
+    name: String!
+}
+
+union Pet = Cat | Dog
+
+query A {
+    pet {
+        ... on Cat {
+            weight
+        }
+
+        ... on Dog {
+            weight: name
+        }
+    }
+}
+
+query B {
+    pet {
+        ... on Cat {
+            name: nickname
+        }
+
+        ... on Dog {
+            name
+        }
+    }
+}

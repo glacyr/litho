@@ -426,6 +426,26 @@ diagnostics! {
     E0303 => UndefinedField @ span + ty, field {
         "Queried field does not exist.",
         "Type `{ty}` does not have a field named `{field}`." @ span
+    },
+    E0304 => IncompatibleResponseShape @ second + name {
+        "Selection set contains multiple fields of incompatible types with the same name.",
+        "Response key `{name}` is first used here ..." @ first,
+        "... and later again here for a field of a different type." @ second
+    },
+    E0305 => DifferentFieldNames @ second + name {
+        "Selection set contains different fields with the same name.",
+        "Response key `{name}` is first used here ..." @ first,
+        "... and later again here for a different field of the same type." @ second
+    },
+    E0306 => DifferentFieldArguments @ second + name {
+        "Selection set contains fields with the same name but different arguments.",
+        "Response key `{name}` is first used here ..." @ first,
+        "... and later again here with different arguments." @ second
+    },
+    E0307 => IncompatibleResponseFields @ second + name {
+        "Selection set contains multiple fields with the same name with incompatible selection sets.",
+        "Response key `{name}` is first used here ..." @ first,
+        "... and later again here with an incompatible different selection set." @ second
     }
 }
 

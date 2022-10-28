@@ -1,0 +1,11 @@
+[E0304] Error: Selection set contains multiple fields of incompatible types with the same name.
+    ╭─[graphql:24:13]
+    │
+ 20 │             weight
+    ·             ───┬──  
+    ·                ╰──── Response key `weight` is first used here ...
+    · 
+ 24 │             weight: name
+    ·             ───┬───  
+    ·                ╰───── ... and later again here for a field of a different type.
+────╯

@@ -11,6 +11,15 @@ pub struct RawToken<T> {
     pub span: Span,
 }
 
+impl<T> RawToken<T>
+where
+    T: PartialEq,
+{
+    pub fn congruent(&self, other: &Self) -> bool {
+        self.kind == other.kind && self.source == other.source
+    }
+}
+
 #[derive(Clone)]
 pub struct RawLexer<'a, T> {
     source_id: SourceId,
