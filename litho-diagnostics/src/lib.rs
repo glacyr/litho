@@ -480,6 +480,10 @@ diagnostics! {
     E0315 => UnusedFragmentDefinition @ span + name {
         "Fragment definitions must be used.",
         "Fragment `{name}` is defined here but never used." @ span
+    },
+    E0316 => UndefinedFragment @ span + name {
+        "Fragment definition must be defined.",
+        "Fragment `{name}` is used here but never defined." @ span
     }
 }
 

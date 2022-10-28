@@ -1,0 +1,7 @@
+[E0316] Error: Fragment definition must be defined.
+   ╭─[graphql:2:9]
+   │
+ 2 │     ... undefinedFragment
+   ·         ────────┬────────  
+   ·                 ╰────────── Fragment `undefinedFragment` is used here but never defined.
+───╯
