@@ -231,7 +231,7 @@ pub struct FragmentSpread<T> {
 
 node!(
     Arc<FragmentSpread>,
-    visit_fragment_spread,
+    visit_fragment_spread + post_visit_fragment_spread,
     dots,
     fragment_name,
     directives

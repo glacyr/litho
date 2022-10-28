@@ -1,0 +1,16 @@
+type Query {
+    _: Boolean!
+}
+
+fragment Foo on Query {
+    ... Bar
+}
+
+fragment Bar on Query {
+    ... Foo
+}
+
+query {
+    ... Foo
+    ... Bar
+}

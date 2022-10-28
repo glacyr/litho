@@ -26,6 +26,10 @@ where
         &fragments::FragmentSpreadTargetDefined(database),
         &mut errors,
     );
+    document.traverse(
+        &fragments::FragmentSpreadsMustNotFormCycles(database),
+        &mut errors,
+    );
     document.traverse(&operations::OperationNameUniqueness(database), &mut errors);
     document.traverse(&operations::LoneAnonymousOperation(database), &mut errors);
     errors

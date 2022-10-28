@@ -484,6 +484,10 @@ diagnostics! {
     E0316 => UndefinedFragment @ span + name {
         "Fragment definition must be defined.",
         "Fragment `{name}` is used here but never defined." @ span
+    },
+    E0317 => CyclicFragmentDefinition @ span + name, spread {
+        "Fragment definition must not be cyclic.",
+        "Fragment `{name}` includes fragment `{spread}` here, which causes a cycle." @ span
     }
 }
 

@@ -1,0 +1,16 @@
+[E0317] Error: Fragment definition must not be cyclic.
+   ╭─[graphql:6:9]
+   │
+ 6 │     ... Bar
+   ·         ─┬─  
+   ·          ╰─── Fragment `Foo` includes fragment `Bar` here, which causes a cycle.
+───╯
+
+
+[E0317] Error: Fragment definition must not be cyclic.
+    ╭─[graphql:10:9]
+    │
+ 10 │     ... Foo
+    ·         ─┬─  
+    ·          ╰─── Fragment `Bar` includes fragment `Foo` here, which causes a cycle.
+────╯
