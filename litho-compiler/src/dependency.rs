@@ -99,7 +99,7 @@ where
 {
     fn product(&self) -> Option<Dependency<T>> {
         self.name
-            .ok()
+            .as_ref()
             .map(|name| Dependency::Fragment(name.as_ref().to_owned()))
     }
 }

@@ -1,0 +1,11 @@
+type Query {
+    hello: String!
+}
+
+query {
+    hello
+}
+
+query Named {
+    hello
+}

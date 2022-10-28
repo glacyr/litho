@@ -124,7 +124,7 @@ node_enum!(
 #[derive(Clone, Debug)]
 pub struct OperationDefinition<T> {
     pub ty: Option<OperationType<T>>,
-    pub name: Recoverable<Name<T>>,
+    pub name: Option<Name<T>>,
     pub variable_definitions: Option<VariableDefinitions<T>>,
     pub directives: Option<Directives<T>>,
     pub selection_set: Recoverable<Arc<SelectionSet<T>>>,

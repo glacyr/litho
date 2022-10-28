@@ -1,7 +1,0 @@
-[E0002] Error: Operation definition must have a name.
-   ╭─[graphql:5:6]
-   │
- 5 │ query {
-   ·      ┬  
-   ·      ╰── Expected a name for operation definition here.
-───╯

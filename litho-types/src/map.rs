@@ -26,6 +26,10 @@ where
     pub fn get(&self, key: &K) -> impl Iterator<Item = &Arc<V>> {
         self.0.get_vec(key).map(Vec::as_slice).into_iter().flatten()
     }
+
+    pub fn len(&self) -> usize {
+        self.0.iter().count()
+    }
 }
 
 impl<K, V> Default for Map<K, V>

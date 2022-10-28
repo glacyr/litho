@@ -11,7 +11,7 @@ diagnostics! {
     E0002 => MissingOperationDefinitionName @ span {
         "Operation definition must have a name.",
         "Expected a name for operation definition here." @ span
-    },
+    } @deprecated,
     E0003 => MissingOperationDefinitionSelectionSet @ span {
         "Operation definition must have a selection set.",
         "Expected a selection set for operation definition here." @ span
@@ -418,6 +418,14 @@ diagnostics! {
         "Operation definitions must be unique.",
         "Operation `{name}` is first defined here ..." @ first,
         "... and later defined again here." @ second
+    },
+    E0301 => LoneAnonymousOperation @ span {
+        "Anonymous operation definitions must be alone.",
+        "Anonymous operation defined here must not coexist with named operation definitions." @ span
+    },
+    E0303 => UndefinedField @ span + ty, field {
+        "Queried field does not exist.",
+        "Type `{ty}` does not have a field named `{field}`." @ span
     }
 }
 

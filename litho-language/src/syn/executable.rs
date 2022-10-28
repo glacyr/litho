@@ -50,9 +50,7 @@ where
 {
     wrom::recursive(|| {
         operation_type()
-            .and(name().recover(Missing::unary(
-                Diagnostic::missing_operation_definition_name,
-            )))
+            .and(opt(name()))
             .and(opt(variable_definitions()))
             .and(opt(directives()))
             .and(selection_set().map(Into::into).recover(Missing::unary(

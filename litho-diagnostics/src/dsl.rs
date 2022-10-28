@@ -3,6 +3,16 @@ pub trait DiagnosticInfo<S> {
     fn message(&self) -> &'static str;
     fn span(&self) -> S;
     fn labels(&self) -> Vec<(S, String)>;
+    fn is_deprecated(&self) -> bool;
+}
+
+macro_rules! deprecated {
+    (@deprecated) => {
+        true
+    };
+    () => {
+        false
+    };
 }
 
 macro_rules! diagnostics {
@@ -12,7 +22,7 @@ macro_rules! diagnostics {
             $(
                 $label:literal @ $label_span:ident
             ),*
-        }
+        } $(@$directive:ident)?
     ),*) => {
         #[derive(Clone, Debug)]
         pub enum Diagnostic<S> where S: Copy {
@@ -102,6 +112,10 @@ macro_rules! diagnostics {
                             ),
                         )*
                     ]
+                }
+
+                fn is_deprecated(&self) -> bool {
+                    deprecated!($(@$directive)?)
                 }
             }
         )*

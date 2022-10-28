@@ -213,7 +213,7 @@ where
         node: &'ast Arc<OperationDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        match node.name.ok() {
+        match node.name.as_ref() {
             Some(name) => accumulator.operations.by_name.insert(name.as_ref(), node),
             None => accumulator.operations.nameless.push(node.clone()),
         }

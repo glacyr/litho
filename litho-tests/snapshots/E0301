@@ -1,0 +1,9 @@
+[E0301] Error: Anonymous operation definitions must be alone.
+   ╭─[graphql:5:1]
+   │
+ 5 │ ╭─▶ query {
+   ⋮ ⋮   
+ 7 │ ├─▶ }
+   · │       
+   · ╰─────── Anonymous operation defined here must not coexist with named operation definitions.
+───╯

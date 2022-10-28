@@ -25,6 +25,10 @@ where
     pub fn nameless(&self) -> impl Iterator<Item = &Arc<OperationDefinition<T>>> {
         self.nameless.iter()
     }
+
+    pub fn len(&self) -> usize {
+        self.by_name.len() + self.nameless.len()
+    }
 }
 
 impl<T> Default for Operations<T>

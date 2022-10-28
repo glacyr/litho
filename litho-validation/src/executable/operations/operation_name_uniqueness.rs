@@ -20,7 +20,7 @@ where
         node: &'a Arc<OperationDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        match node.name.ok() {
+        match node.name.as_ref() {
             Some(name) => match self.0.operations.by_name(name.as_ref()).next() {
                 Some(first) if !Arc::ptr_eq(first, node) => {
                     accumulator.push(Diagnostic::duplicate_operation_name(
