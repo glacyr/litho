@@ -1,0 +1,7 @@
+[E0315] Error: Fragment definitions must be used.
+   ╭─[graphql:5:10]
+   │
+ 5 │ fragment Unused on Query {
+   ·          ───┬──  
+   ·             ╰──── Fragment `Unused` is defined here but never used.
+───╯

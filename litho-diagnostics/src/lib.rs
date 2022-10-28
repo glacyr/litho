@@ -476,6 +476,10 @@ diagnostics! {
     E0314 => FragmentOnNonCompositeType @ span + name, ty {
         "Fragment definitions must target composite type.",
         "Fragment `{name}` targets non-composite type `{ty}` here." @ span
+    },
+    E0315 => UnusedFragmentDefinition @ span + name {
+        "Fragment definitions must be used.",
+        "Fragment `{name}` is defined here but never used." @ span
     }
 }
 

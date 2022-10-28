@@ -10,4 +10,5 @@ query {
     ... on NonExistent {
         _
     }
+    ... Example
 }

@@ -1,7 +1,7 @@
 [E0012] Error: Fragment definition must have a selection set.
-   ╭─[graphql:5:26]
+   ╭─[graphql:9:26]
    │
- 5 │ fragment Example on Query
+ 9 │ fragment Example on Query
    ·                          │ 
    ·                          ╰─ Fragment definition here does not have a selection set.
 ───╯

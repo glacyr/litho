@@ -2,4 +2,8 @@ type Query {
     _: Boolean!
 }
 
+query {
+    ... Example
+}
+
 fragment Example on Query

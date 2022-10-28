@@ -9,3 +9,7 @@ fragment HelloWorld on Query {
 fragment HelloWorld on Query {
     _
 }
+
+query {
+    ... HelloWorld
+}

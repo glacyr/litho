@@ -1,3 +1,7 @@
 fragment Example {
     _
 }
+
+query {
+    ... Example
+}

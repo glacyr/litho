@@ -21,6 +21,7 @@ where
     document.traverse(&fields::LeafFieldSelections(database), &mut errors);
     document.traverse(&fragments::FragmentNameUniqueness(database), &mut errors);
     document.traverse(&fragments::FragmentOnCompositeTypes(database), &mut errors);
+    document.traverse(&fragments::FragmentsMustBeUsed(database), &mut errors);
     document.traverse(&operations::OperationNameUniqueness(database), &mut errors);
     document.traverse(&operations::LoneAnonymousOperation(database), &mut errors);
     errors

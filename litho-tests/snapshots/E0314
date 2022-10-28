@@ -5,3 +5,12 @@
    ·                     ───┬──  
    ·                        ╰──── Fragment `Example` targets non-composite type `String` here.
 ───╯
+
+
+[E0315] Error: Fragment definitions must be used.
+   ╭─[graphql:1:10]
+   │
+ 1 │ fragment Example on String {
+   ·          ───┬───  
+   ·             ╰───── Fragment `Example` is defined here but never used.
+───╯

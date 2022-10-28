@@ -1,0 +1,7 @@
+type Query {
+    _: Boolean!
+}
+
+fragment Unused on Query {
+    _
+}

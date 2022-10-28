@@ -9,3 +9,12 @@
    ·          ─────┬────  
    ·               ╰────── ... and later defined again here.
 ───╯
+
+
+[E0315] Error: Fragment definitions must be used.
+   ╭─[graphql:9:10]
+   │
+ 9 │ fragment HelloWorld on Query {
+   ·          ─────┬────  
+   ·               ╰────── Fragment `HelloWorld` is defined here but never used.
+───╯
