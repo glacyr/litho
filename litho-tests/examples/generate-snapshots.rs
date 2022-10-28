@@ -39,9 +39,7 @@ pub fn main() {
 
         let ast = Document::<String>::parse_from_str(Default::default(), &source).unwrap();
         let mut errors = collect_errors(&ast);
-        let mut database = Database::new();
-        database.index(&builtins.0);
-        database.index(&ast.0);
+        let database = Database::from_iter([&builtins.0, &ast.0]);
         errors.extend(check(&ast.0, &database));
 
         let output = errors
