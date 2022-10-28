@@ -25,6 +25,10 @@ where
             None => return,
         };
 
+        if !self.0.is_composite_type(ty) {
+            return;
+        }
+
         for selection in node.selections.iter() {
             match selection {
                 Selection::Field(field) => {

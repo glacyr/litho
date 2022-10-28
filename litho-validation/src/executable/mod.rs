@@ -17,6 +17,7 @@ where
     let mut errors = vec![];
     document.traverse(&fields::FieldSelectionMerging(database), &mut errors);
     document.traverse(&fields::FieldSelections(database), &mut errors);
+    document.traverse(&fields::LeafFieldSelections(database), &mut errors);
     document.traverse(&operations::OperationNameUniqueness(database), &mut errors);
     document.traverse(&operations::LoneAnonymousOperation(database), &mut errors);
     errors

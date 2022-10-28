@@ -1,0 +1,11 @@
+type Composite {
+    foo: String!
+}
+
+type Query {
+    composite: Composite!
+}
+
+query {
+    composite
+}

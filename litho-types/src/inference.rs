@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use litho_language::ast::*;
 
 use super::Inferred;
@@ -8,6 +10,12 @@ pub struct Inference<T> {
     pub type_by_selection_set: Inferred<SelectionSet<T>, T>,
     pub definition_for_arguments: Inferred<Arguments<T>, ArgumentsDefinition<T>>,
     pub types_for_values: Inferred<Value<T>, Type<T>>,
+}
+
+impl<T> Inference<T> {
+    pub fn type_for_field(&self, field: &Arc<Field<T>>) -> Option<&Arc<Type<T>>> {
+        self.field_definitions_by_field.get(field)?.ty.ok()
+    }
 }
 
 impl<T> Default for Inference<T> {

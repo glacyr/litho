@@ -1,0 +1,7 @@
+[E0308] Error: Field of composite type must have selection set.
+    ╭─[graphql:10:5]
+    │
+ 10 │     composite
+    ·     ────┬────  
+    ·         ╰────── Field `Composite` of composite type `composite` here must have a selection set.
+────╯

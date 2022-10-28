@@ -133,6 +133,11 @@ where
             .any(|definition| definition.is_object_type())
     }
 
+    pub fn is_composite_type(&self, name: &T) -> bool {
+        self.type_definitions_by_name(name)
+            .any(|definition| definition.is_composite())
+    }
+
     pub fn is_union_member(&self, ty: &T, name: &T) -> bool {
         self.type_definitions_by_name(name)
             .any(|def| match def.as_ref() {

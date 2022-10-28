@@ -786,6 +786,10 @@ impl<T> TypeDefinition<T> {
         matches!(self, TypeDefinition::EnumTypeDefinition(_))
     }
 
+    pub fn is_interface(&self) -> bool {
+        matches!(self, TypeDefinition::InterfaceTypeDefinition(_))
+    }
+
     pub fn is_input_object_type(&self) -> bool {
         matches!(self, TypeDefinition::InputObjectTypeDefinition(_))
     }
@@ -796,6 +800,14 @@ impl<T> TypeDefinition<T> {
 
     pub fn is_scalar_like(&self) -> bool {
         self.is_scalar() || self.is_enum()
+    }
+
+    pub fn is_union(&self) -> bool {
+        matches!(self, TypeDefinition::UnionTypeDefinition(_))
+    }
+
+    pub fn is_composite(&self) -> bool {
+        self.is_object_type() || self.is_interface() || self.is_union()
     }
 
     pub fn is_object_type(&self) -> bool {

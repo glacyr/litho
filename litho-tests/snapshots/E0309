@@ -1,0 +1,7 @@
+[E0309] Error: Field of scalar-like type must not have a selection set.
+   ╭─[graphql:6:5]
+   │
+ 6 │     scalar {
+   ·     ───┬──  
+   ·        ╰──── Field `String` of scalar-like type `scalar` here must not have a selection set.
+───╯

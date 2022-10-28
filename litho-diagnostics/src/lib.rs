@@ -446,6 +446,14 @@ diagnostics! {
         "Selection set contains multiple fields with the same name with incompatible selection sets.",
         "Response key `{name}` is first used here ..." @ first,
         "... and later again here with an incompatible different selection set." @ second
+    },
+    E0308 => MissingSelectionSet @ span + ty, field {
+        "Field of composite type must have selection set.",
+        "Field `{field}` of composite type `{ty}` here must have a selection set." @ span
+    },
+    E0309 => UnexpectedSelectionSet @ span + ty, field {
+        "Field of scalar-like type must not have a selection set.",
+        "Field `{field}` of scalar-like type `{ty}` here must not have a selection set." @ span
     }
 }
 
