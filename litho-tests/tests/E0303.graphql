@@ -1,10 +1,42 @@
 type Query {
+    type: Type!
+    interface: Interface!
+    union: Union!
+}
+
+interface Interface {
     foo: String!
 }
 
-query {
-    foo
-    bar
-    aliased: foo
-    error: bar
+type Type {
+    foo: String!
+}
+
+union Union = Type
+
+query Type {
+    type {
+        foo
+        bar
+        aliased: foo
+        error: bar
+    }
+}
+
+query Interface {
+    interface {
+        foo
+        bar
+        aliased: foo
+        error: bar
+    }
+}
+
+query Union {
+    union {
+        foo
+        bar
+        aliased: foo
+        error: bar
+    }
 }

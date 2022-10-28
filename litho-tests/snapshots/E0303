@@ -1,16 +1,70 @@
 [E0303] Error: Queried field does not exist.
-   ╭─[graphql:7:5]
-   │
- 7 │     bar
-   ·     ─┬─  
-   ·      ╰─── Type `Query` does not have a field named `bar`.
-───╯
+    ╭─[graphql:20:9]
+    │
+ 20 │         bar
+    ·         ─┬─  
+    ·          ╰─── Type `Type` does not have a field named `bar`.
+────╯
 
 
 [E0303] Error: Queried field does not exist.
-   ╭─[graphql:9:12]
-   │
- 9 │     error: bar
-   ·            ─┬─  
-   ·             ╰─── Type `Query` does not have a field named `bar`.
-───╯
+    ╭─[graphql:22:16]
+    │
+ 22 │         error: bar
+    ·                ─┬─  
+    ·                 ╰─── Type `Type` does not have a field named `bar`.
+────╯
+
+
+[E0303] Error: Queried field does not exist.
+    ╭─[graphql:29:9]
+    │
+ 29 │         bar
+    ·         ─┬─  
+    ·          ╰─── Type `Interface` does not have a field named `bar`.
+────╯
+
+
+[E0303] Error: Queried field does not exist.
+    ╭─[graphql:31:16]
+    │
+ 31 │         error: bar
+    ·                ─┬─  
+    ·                 ╰─── Type `Interface` does not have a field named `bar`.
+────╯
+
+
+[E0303] Error: Queried field does not exist.
+    ╭─[graphql:37:9]
+    │
+ 37 │         foo
+    ·         ─┬─  
+    ·          ╰─── Type `Union` does not have a field named `foo`.
+────╯
+
+
+[E0303] Error: Queried field does not exist.
+    ╭─[graphql:38:9]
+    │
+ 38 │         bar
+    ·         ─┬─  
+    ·          ╰─── Type `Union` does not have a field named `bar`.
+────╯
+
+
+[E0303] Error: Queried field does not exist.
+    ╭─[graphql:39:18]
+    │
+ 39 │         aliased: foo
+    ·                  ─┬─  
+    ·                   ╰─── Type `Union` does not have a field named `foo`.
+────╯
+
+
+[E0303] Error: Queried field does not exist.
+    ╭─[graphql:40:16]
+    │
+ 40 │         error: bar
+    ·                ─┬─  
+    ·                 ╰─── Type `Union` does not have a field named `bar`.
+────╯
