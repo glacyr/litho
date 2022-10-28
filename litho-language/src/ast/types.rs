@@ -166,7 +166,7 @@ node!(Arc<SelectionSet>, visit_selection_set, braces, selections);
 #[derive(Clone, Debug)]
 pub enum Selection<T> {
     Field(Arc<Field<T>>),
-    FragmentSpread(FragmentSpread<T>),
+    FragmentSpread(Arc<FragmentSpread<T>>),
     InlineFragment(InlineFragment<T>),
 }
 
@@ -230,7 +230,7 @@ pub struct FragmentSpread<T> {
 }
 
 node!(
-    FragmentSpread,
+    Arc<FragmentSpread>,
     visit_fragment_spread,
     dots,
     fragment_name,

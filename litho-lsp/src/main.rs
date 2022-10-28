@@ -11,6 +11,7 @@ mod document;
 mod hover;
 mod inlay_hint;
 mod printer;
+mod references;
 mod store;
 mod util;
 mod workspace;
@@ -21,6 +22,7 @@ use document::Document;
 use hover::HoverProvider;
 use inlay_hint::InlayHintProvider;
 use printer::Printer;
+use references::ReferencesProvider;
 use store::Store;
 use util::{index_to_position, line_col_to_offset, span_to_range};
 use workspace::Workspace;
@@ -100,6 +102,7 @@ impl LanguageServer for Backend {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
+                references_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             ..Default::default()
@@ -219,6 +222,17 @@ impl LanguageServer for Backend {
             CompletionProvider::new(document, &workspace)
                 .completion(params.text_document_position.position),
         ))
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let workspace = self.workspace.lock().await;
+        let document = match workspace.document(&params.text_document_position.text_document.uri) {
+            Some(document) => document,
+            None => return Ok(None),
+        };
+
+        Ok(ReferencesProvider::new(document, &workspace)
+            .references(params.text_document_position.position))
     }
 }
 

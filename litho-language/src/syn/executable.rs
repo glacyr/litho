@@ -204,7 +204,7 @@ where
     })
 }
 
-pub fn fragment_spread<'a, T, I>() -> impl RecoverableParser<I, FragmentSpread<T>, Error> + 'a
+pub fn fragment_spread<'a, T, I>() -> impl RecoverableParser<I, Arc<FragmentSpread<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
@@ -219,6 +219,7 @@ where
                 fragment_name,
                 directives,
             })
+            .map(Into::into)
     })
 }
 

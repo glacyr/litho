@@ -298,4 +298,26 @@ where
     ) {
         accumulator.value_type.pop();
     }
+
+    fn visit_fragment_spread(
+        &self,
+        node: &'ast Arc<FragmentSpread<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let definition = match accumulator
+            .database
+            .fragments
+            .by_name(node.fragment_name.as_ref())
+            .next()
+        {
+            Some(definition) => definition,
+            None => return,
+        };
+
+        accumulator
+            .database
+            .usages
+            .fragments
+            .track(definition, node);
+    }
 }

@@ -8,6 +8,8 @@ mod inferred;
 mod map;
 mod named;
 mod operations;
+mod references;
+mod usages;
 
 pub use bindings::Bindings;
 pub use database::Database;
@@ -17,3 +19,5 @@ pub use inferred::Inferred;
 pub use map::Map;
 pub use named::Named;
 pub use operations::Operations;
+pub use references::References;
+pub use usages::Usages;

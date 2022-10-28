@@ -7,7 +7,7 @@ use multimap::MultiMap;
 
 use super::indexer::Indexer;
 use super::inferencer::{InferenceState, Inferencer};
-use super::{Bindings, Fragments, Inference, Operations};
+use super::{Bindings, Fragments, Inference, Operations, Usages};
 
 #[derive(Debug)]
 pub struct Database<T>
@@ -19,6 +19,7 @@ where
     pub inference: Inference<T>,
     pub operations: Operations<T>,
     pub fragments: Fragments<T>,
+    pub usages: Usages<T>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
@@ -35,6 +36,7 @@ where
             inference: Default::default(),
             operations: Default::default(),
             fragments: Default::default(),
+            usages: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
