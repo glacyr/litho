@@ -472,6 +472,10 @@ diagnostics! {
         "Fragment definitions must be unique.",
         "Fragment `{name}` is first defined here ..." @ first,
         "... and later defined again here." @ second
+    },
+    E0314 => FragmentOnNonCompositeType @ span + name, ty {
+        "Fragment definitions must target composite type.",
+        "Fragment `{name}` targets non-composite type `{ty}` here." @ span
     }
 }
 

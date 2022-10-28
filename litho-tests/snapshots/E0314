@@ -1,0 +1,7 @@
+[E0314] Error: Fragment definitions must target composite type.
+   ╭─[graphql:1:21]
+   │
+ 1 │ fragment Example on String {
+   ·                     ───┬──  
+   ·                        ╰──── Fragment `Example` targets non-composite type `String` here.
+───╯
