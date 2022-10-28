@@ -1,0 +1,15 @@
+type Query {
+    hello: String!
+}
+
+query First {
+    hello
+}
+
+query Second {
+    hello
+}
+
+query First {
+    hello
+}

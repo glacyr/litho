@@ -413,6 +413,11 @@ diagnostics! {
     E0209 => UnrecognizedEnumValue @ span + name, value {
         "Enum values must exist in schema definition.",
         "Enum value `{value}` here is not a valid value for enum `{name}`." @ span
+    },
+    E0300 => DuplicateOperationName @ second + name {
+        "Operation definitions must be unique.",
+        "Operation `{name}` is first defined here ..." @ first,
+        "... and later defined again here." @ second
     }
 }
 

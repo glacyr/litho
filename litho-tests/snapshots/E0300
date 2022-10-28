@@ -1,0 +1,11 @@
+[E0300] Error: Operation definitions must be unique.
+    ╭─[graphql:13:7]
+    │
+  5 │ query First {
+    ·       ──┬──  
+    ·         ╰──── Operation `First` is first defined here ...
+    · 
+ 13 │ query First {
+    ·       ──┬──  
+    ·         ╰──── ... and later defined again here.
+────╯
