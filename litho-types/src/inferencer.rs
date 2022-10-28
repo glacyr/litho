@@ -27,9 +27,9 @@ where
     }
 }
 
-pub struct InferenceBuilder;
+pub struct Inferencer;
 
-impl<'ast, T> Visit<'ast, T> for InferenceBuilder
+impl<'ast, T> Visit<'ast, T> for Inferencer
 where
     T: From<&'static str> + Clone + Eq + Hash + 'ast,
 {

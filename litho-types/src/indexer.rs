@@ -5,9 +5,9 @@ use litho_language::ast::*;
 
 use super::Database;
 
-pub struct BindingsBuilder;
+pub struct Indexer;
 
-impl<'ast, T> Visit<'ast, T> for BindingsBuilder
+impl<'ast, T> Visit<'ast, T> for Indexer
 where
     T: 'ast + Clone + Eq + Hash,
 {
@@ -205,6 +205,17 @@ where
                     ty,
                 );
             }
+        }
+    }
+
+    fn visit_operation_definition(
+        &self,
+        node: &'ast Arc<OperationDefinition<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        match node.name.ok() {
+            Some(name) => accumulator.operations.by_name.insert(name.as_ref(), node),
+            None => accumulator.operations.nameless.push(node.clone()),
         }
     }
 }

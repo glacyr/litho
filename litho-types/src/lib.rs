@@ -1,13 +1,17 @@
 mod bindings;
-mod bindings_builder;
 mod database;
+mod indexer;
 mod inference;
-mod inference_builder;
+mod inferencer;
 mod inferred;
+mod map;
 mod named;
+mod operations;
 
 pub use bindings::Bindings;
 pub use database::Database;
 pub use inference::Inference;
 pub use inferred::Inferred;
+pub use map::Map;
 pub use named::Named;
+pub use operations::Operations;

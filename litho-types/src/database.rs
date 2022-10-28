@@ -5,9 +5,9 @@ use std::sync::Arc;
 use litho_language::ast::*;
 use multimap::MultiMap;
 
-use super::bindings_builder::BindingsBuilder;
-use super::inference_builder::{InferenceBuilder, InferenceState};
-use super::{Bindings, Inference};
+use super::indexer::Indexer;
+use super::inferencer::{InferenceState, Inferencer};
+use super::{Bindings, Inference, Operations};
 
 #[derive(Debug)]
 pub struct Database<T>
@@ -17,6 +17,7 @@ where
     pub definitions: Bindings<T>,
     pub extensions: Bindings<T>,
     pub inference: Inference<T>,
+    pub operations: Operations<T>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
@@ -31,6 +32,7 @@ where
             definitions: Default::default(),
             extensions: Default::default(),
             inference: Default::default(),
+            operations: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
@@ -59,11 +61,11 @@ where
         let docs = iter.into_iter().collect::<Vec<_>>();
 
         for document in docs.iter() {
-            document.traverse(&BindingsBuilder, &mut database);
+            document.traverse(&Indexer, &mut database);
         }
 
         for document in docs.iter() {
-            document.traverse(&InferenceBuilder, &mut InferenceState::new(&mut database));
+            document.traverse(&Inferencer, &mut InferenceState::new(&mut database));
         }
 
         database
