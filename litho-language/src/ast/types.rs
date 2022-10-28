@@ -208,7 +208,7 @@ node!(Alias, visit_alias, name, colon);
 #[derive(Clone, Debug)]
 pub struct Arguments<T> {
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub items: Vec<Argument<T>>,
+    pub items: Vec<Arc<Argument<T>>>,
 }
 
 node!(Arc<Arguments>, visit_arguments, parens, items);
@@ -220,7 +220,7 @@ pub struct Argument<T> {
     pub value: Recoverable<Arc<Value<T>>>,
 }
 
-node!(Argument, visit_argument, name, colon, value);
+node!(Arc<Argument>, visit_argument, name, colon, value);
 
 #[derive(Clone, Debug)]
 pub struct FragmentSpread<T> {

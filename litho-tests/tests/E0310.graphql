@@ -1,0 +1,7 @@
+type Query {
+    example(foo: String): String
+}
+
+query {
+    example(foo: "Hello", bar: "World!")
+}

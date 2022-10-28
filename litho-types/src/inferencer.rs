@@ -186,6 +186,23 @@ where
                     .inference
                     .definition_for_arguments
                     .insert(arguments, definition);
+
+                for argument in arguments.items.iter() {
+                    let definition = match definition
+                        .definitions
+                        .iter()
+                        .find(|def| def.name.as_ref() == argument.name.as_ref())
+                    {
+                        Some(definition) => definition,
+                        None => continue,
+                    };
+
+                    accumulator
+                        .database
+                        .inference
+                        .definitions_for_arguments
+                        .insert(argument, definition);
+                }
             }
         } else {
             accumulator.stack.push(None);

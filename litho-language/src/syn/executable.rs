@@ -189,7 +189,7 @@ where
     })
 }
 
-pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Argument<T>, Error> + 'a
+pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Arc<Argument<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
@@ -200,6 +200,7 @@ where
             .and(value().recover(Missing::unary(Diagnostic::missing_argument_value)))
             .flatten()
             .map(|(name, colon, value)| Argument { name, colon, value })
+            .map(Into::into)
     })
 }
 

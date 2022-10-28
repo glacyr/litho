@@ -1,0 +1,7 @@
+[E0310] Error: Argument must exist in schema.
+   ╭─[graphql:6:27]
+   │
+ 6 │     example(foo: "Hello", bar: "World!")
+   ·                           ─┬─  
+   ·                            ╰─── Argument `bar` here is not defined in schema.
+───╯

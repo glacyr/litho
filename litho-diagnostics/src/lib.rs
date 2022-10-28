@@ -454,6 +454,10 @@ diagnostics! {
     E0309 => UnexpectedSelectionSet @ span + ty, field {
         "Field of scalar-like type must not have a selection set.",
         "Field `{field}` of scalar-like type `{ty}` here must not have a selection set." @ span
+    },
+    E0310 => UndefinedArgument @ span + name {
+        "Argument must exist in schema.",
+        "Argument `{name}` here is not defined in schema." @ span
     }
 }
 
