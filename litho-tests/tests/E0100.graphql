@@ -1,3 +1,13 @@
 type Example implements NonExistent {
     _: Boolean
 }
+
+fragment Example on NonExistent {
+    _
+}
+
+query {
+    ... on NonExistent {
+        _
+    }
+}

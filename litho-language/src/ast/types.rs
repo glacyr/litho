@@ -276,7 +276,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct TypeCondition<T> {
     pub on: Name<T>,
-    pub named_type: Recoverable<Name<T>>,
+    pub named_type: Recoverable<NamedType<T>>,
 }
 
 node!(TypeCondition, visit_type_condition, on, named_type);

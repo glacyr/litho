@@ -1,7 +1,7 @@
 [E0009] Error: Inline fragment is missing selection set.
-   ╭─[graphql:2:17]
+   ╭─[graphql:6:17]
    │
- 2 │     ... on Query
+ 6 │     ... on Query
    ·                 ┬  
    ·                 ╰── Inline fragment here should have a selection set.
 ───╯

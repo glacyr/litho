@@ -1,3 +1,7 @@
+type Query {
+    _: Boolean!
+}
+
 query Example {
     ... on Query
 }

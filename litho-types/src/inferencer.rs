@@ -81,7 +81,7 @@ where
             .type_condition
             .ok()
             .and_then(|ty| ty.named_type.ok())
-            .map(AsRef::as_ref);
+            .map(|ty| ty.0.as_ref());
 
         accumulator.stack.push(name.cloned());
 
@@ -109,7 +109,7 @@ where
     ) {
         match node.type_condition.as_ref() {
             Some(ty) => {
-                let name = ty.named_type.ok().map(AsRef::as_ref);
+                let name = ty.named_type.ok().map(|ty| ty.0.as_ref());
                 accumulator.stack.push(name.cloned());
 
                 if let Some((name, selection_set)) = name.zip(node.selection_set.ok()) {

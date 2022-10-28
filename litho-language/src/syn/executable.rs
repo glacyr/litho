@@ -287,7 +287,7 @@ where
 {
     wrom::recursive(|| {
         keyword("on")
-            .and(name().recover(Missing::unary(
+            .and(named_type().recover(Missing::unary(
                 Diagnostic::missing_type_condition_named_type,
             )))
             .map(|(on, named_type)| TypeCondition { on, named_type })
