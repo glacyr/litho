@@ -492,6 +492,10 @@ diagnostics! {
     E0318 => ImpossibleFragmentSpread @ span + ty, scope {
         "Fragment spread must be possible.",
         "Fragment assumes type `{ty}`, but scope is type `{scope}`." @ span
+    },
+    E0319 => UndefinedDirective @ span + name {
+        "Directive must be defined.",
+        "Directive `@{name}` is refered to here, but never defined." @ span
     }
 }
 

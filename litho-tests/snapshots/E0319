@@ -1,0 +1,16 @@
+[E0319] Error: Directive must be defined.
+   ╭─[graphql:1:13]
+   │
+ 1 │ type Query @undefinedDirective {
+   ·             ─────────┬────────  
+   ·                      ╰────────── Directive `@undefinedDirective` is refered to here, but never defined.
+───╯
+
+
+[E0319] Error: Directive must be defined.
+   ╭─[graphql:5:8]
+   │
+ 5 │ query @undefinedDirective {
+   ·        ─────────┬────────  
+   ·                 ╰────────── Directive `@undefinedDirective` is refered to here, but never defined.
+───╯

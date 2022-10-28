@@ -541,7 +541,7 @@ node!(NonNullType, visit_non_null_type, ty, bang);
 
 #[derive(Clone, Debug)]
 pub struct Directives<T> {
-    pub directives: Vec<Directive<T>>,
+    pub directives: Vec<Arc<Directive<T>>>,
 }
 
 node!(Directives, visit_directives, directives);
@@ -553,7 +553,7 @@ pub struct Directive<T> {
     pub arguments: Option<Arc<Arguments<T>>>,
 }
 
-node!(Directive, visit_directive, at, name, arguments);
+node!(Arc<Directive>, visit_directive, at, name, arguments);
 
 /// The GraphQL Type system describes the capabilities of a GraphQL service and
 /// is used to determine if a requested operation is valid, to guarantee the

@@ -320,4 +320,25 @@ where
             .fragments
             .track(definition, node);
     }
+
+    fn visit_directive(&self, node: &'ast Arc<Directive<T>>, accumulator: &mut Self::Accumulator) {
+        let name = match node.name.ok() {
+            Some(name) => name,
+            None => return,
+        };
+
+        let definition = accumulator
+            .database
+            .directive_definitions_by_name(name.as_ref())
+            .next()
+            .cloned();
+
+        if let Some(definition) = definition {
+            accumulator
+                .database
+                .inference
+                .definition_for_directives
+                .insert(node, &definition);
+        }
+    }
 }

@@ -531,7 +531,7 @@ where
     wrom::recursive(|| many1(directive()).map(|directives| Directives { directives }))
 }
 
-pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Directive<T>, Error> + 'a
+pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Arc<Directive<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
@@ -546,5 +546,6 @@ where
                 name,
                 arguments,
             })
+            .map(Into::into)
     })
 }

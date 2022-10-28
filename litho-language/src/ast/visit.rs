@@ -68,7 +68,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_list_type, ListType);
     visit!(visit_non_null_type, NonNullType);
     visit!(visit_directives, Directives);
-    visit!(visit_directive, Directive);
+    visit!(visit_directive, Arc<Directive>);
     visit!(visit_type_system_document, TypeSystemDocument);
     visit!(visit_type_system_definition, TypeSystemDefinition);
     visit!(

@@ -1,1 +1,3 @@
+directive @example on SCALAR
+
 extend scalar @example
