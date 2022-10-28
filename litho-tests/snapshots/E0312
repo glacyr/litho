@@ -1,0 +1,7 @@
+[E0312] Error: Missing required argument.
+   ╭─[graphql:8:5]
+   │
+ 8 │     greeting
+   ·     ────┬───  
+   ·         ╰───── Argument `name` of type `String!` is required but not given here.
+───╯

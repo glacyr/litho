@@ -17,6 +17,7 @@ where
     let mut errors = vec![];
     document.traverse(&arguments::ArgumentNames(database), &mut errors);
     document.traverse(&arguments::ArgumentUniqueness(database), &mut errors);
+    document.traverse(&arguments::RequiredArguments(database), &mut errors);
     document.traverse(&values::EnumCoercion(database), &mut errors);
     document.traverse(&values::InputCoercion(database), &mut errors);
     document.traverse(&values::ObjectCoercion(database), &mut errors);

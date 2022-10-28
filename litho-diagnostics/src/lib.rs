@@ -463,6 +463,10 @@ diagnostics! {
         "Argument may be provided only once.",
         "Argument `{name}` is first given here ..." @ first,
         "... and later again here." @ second
+    },
+    E0312 => MissingRequiredArgument @ span + name, ty {
+        "Missing required argument.",
+        "Argument `{name}` of type `{ty}` is required but not given here." @ span
     }
 }
 

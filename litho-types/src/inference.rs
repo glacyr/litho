@@ -14,6 +14,16 @@ pub struct Inference<T> {
 }
 
 impl<T> Inference<T> {
+    pub fn arguments_definition_for_field(
+        &self,
+        field: &Arc<Field<T>>,
+    ) -> Option<&Arc<ArgumentsDefinition<T>>> {
+        self.field_definitions_by_field
+            .get(field)?
+            .arguments_definition
+            .as_ref()
+    }
+
     pub fn type_for_field(&self, field: &Arc<Field<T>>) -> Option<&Arc<Type<T>>> {
         self.field_definitions_by_field.get(field)?.ty.ok()
     }
