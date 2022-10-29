@@ -785,7 +785,7 @@ where
 {
     wrom::recursive(|| {
         opt(description())
-            .and(keyword("directive"))
+            .and_recognize(keyword("directive"))
             .and(
                 punctuator("@")
                     .recover(Missing::unary(Diagnostic::missing_directive_definition_at)),

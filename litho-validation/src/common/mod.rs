@@ -20,6 +20,10 @@ where
     document.traverse(&arguments::ArgumentUniqueness(database), &mut errors);
     document.traverse(&arguments::RequiredArguments(database), &mut errors);
     document.traverse(&directives::DirectivesAreDefined(database), &mut errors);
+    document.traverse(
+        &directives::DirectivesAreInValidLocations(database),
+        &mut errors,
+    );
     document.traverse(&values::EnumCoercion(database), &mut errors);
     document.traverse(&values::InputCoercion(database), &mut errors);
     document.traverse(&values::ObjectCoercion(database), &mut errors);

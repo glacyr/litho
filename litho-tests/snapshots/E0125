@@ -1,7 +1,7 @@
 [E0125] Error: Directive must not be self-referential.
    ╭─[graphql:1:33]
    │
- 1 │ directive @direct(arg: Boolean! @direct) on QUERY
+ 1 │ directive @direct(arg: Boolean! @direct) on QUERY | ARGUMENT_DEFINITION
    ·                                 ───┬───  
    ·                                    ╰───── Directive `direct` references itself here through directive `direct`.
 ───╯
@@ -10,7 +10,7 @@
 [E0125] Error: Directive must not be self-referential.
    ╭─[graphql:3:30]
    │
- 3 │ directive @foo(arg: Boolean! @bar) on QUERY
+ 3 │ directive @foo(arg: Boolean! @bar) on QUERY | ARGUMENT_DEFINITION
    ·                              ──┬─  
    ·                                ╰─── Directive `foo` references itself here through directive `bar`.
 ───╯
@@ -19,7 +19,7 @@
 [E0125] Error: Directive must not be self-referential.
    ╭─[graphql:4:30]
    │
- 4 │ directive @bar(arg: Boolean! @foo) on QUERY
+ 4 │ directive @bar(arg: Boolean! @foo) on QUERY | ARGUMENT_DEFINITION
    ·                              ──┬─  
    ·                                ╰─── Directive `bar` references itself here through directive `foo`.
 ───╯

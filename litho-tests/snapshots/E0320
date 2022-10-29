@@ -1,0 +1,7 @@
+[E0320] Error: Directive must be used in valid location.
+    ╭─[graphql:15:15]
+    │
+ 15 │ mutation Bar @example {
+    ·               ───┬───  
+    ·                  ╰───── Directive `@example` is refered to here in a `MUTATION` location, but can only be used in `QUERY | SUBSCRIPTION` location(s).
+────╯

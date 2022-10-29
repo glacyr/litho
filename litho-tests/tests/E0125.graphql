@@ -1,4 +1,4 @@
-directive @direct(arg: Boolean! @direct) on QUERY
+directive @direct(arg: Boolean! @direct) on QUERY | ARGUMENT_DEFINITION
 
-directive @foo(arg: Boolean! @bar) on QUERY
-directive @bar(arg: Boolean! @foo) on QUERY
+directive @foo(arg: Boolean! @bar) on QUERY | ARGUMENT_DEFINITION
+directive @bar(arg: Boolean! @foo) on QUERY | ARGUMENT_DEFINITION

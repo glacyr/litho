@@ -496,6 +496,10 @@ diagnostics! {
     E0319 => UndefinedDirective @ span + name {
         "Directive must be defined.",
         "Directive `@{name}` is refered to here, but never defined." @ span
+    },
+    E0320 => DirectiveInInvalidLocation @ span + name, location, locations {
+        "Directive must be used in valid location.",
+        "Directive `@{name}` is refered to here in a `{location}` location, but can only be used in `{locations}` location(s)." @ span
     }
 }
 

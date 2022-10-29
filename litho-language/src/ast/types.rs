@@ -1403,6 +1403,16 @@ pub struct DirectiveLocations<T> {
     pub locations: Vec<(Punctuator<T>, Recoverable<DirectiveLocation<T>>)>,
 }
 
+impl<T> DirectiveLocations<T> {
+    pub fn locations(&self) -> impl Iterator<Item = &DirectiveLocation<T>> {
+        self.first.ok().into_iter().chain(
+            self.locations
+                .iter()
+                .flat_map(|(_, location)| location.ok()),
+        )
+    }
+}
+
 node!(
     DirectiveLocations,
     visit_directive_locations,

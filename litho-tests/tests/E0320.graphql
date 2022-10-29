@@ -1,0 +1,17 @@
+directive @example on QUERY | SUBSCRIPTION
+
+type Query {
+    foo: Boolean!
+}
+
+type Mutation {
+    bar: Boolean!
+}
+
+query Foo @example {
+    foo
+}
+
+mutation Bar @example {
+    bar
+}

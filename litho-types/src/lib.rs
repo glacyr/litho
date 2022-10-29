@@ -1,5 +1,6 @@
 mod bindings;
 mod database;
+mod directives;
 mod fragments;
 mod indexer;
 mod inference;
@@ -13,6 +14,7 @@ mod usages;
 
 pub use bindings::Bindings;
 pub use database::Database;
+pub use directives::{DirectiveLocationKind, DirectiveTarget};
 pub use fragments::Fragments;
 pub use inference::Inference;
 pub use inferred::Inferred;
