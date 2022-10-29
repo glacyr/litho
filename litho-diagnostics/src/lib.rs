@@ -500,6 +500,11 @@ diagnostics! {
     E0320 => DirectiveInInvalidLocation @ span + name, location, locations {
         "Directive must be used in valid location.",
         "Directive `@{name}` is refered to here in a `{location}` location, but can only be used in `{locations}` location(s)." @ span
+    },
+    E0321 => DuplicateNonRepeatableDirective @ second + name {
+        "Non-repeatable directive must be unique per location.",
+        "Directive `@{name}` is first used here ..." @ first,
+        "... and later again here." @ second
     }
 }
 

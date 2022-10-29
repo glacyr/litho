@@ -24,6 +24,10 @@ where
         &directives::DirectivesAreInValidLocations(database),
         &mut errors,
     );
+    document.traverse(
+        &directives::DirectivesAreUniquePerLocation(database),
+        &mut errors,
+    );
     document.traverse(&values::EnumCoercion(database), &mut errors);
     document.traverse(&values::InputCoercion(database), &mut errors);
     document.traverse(&values::ObjectCoercion(database), &mut errors);

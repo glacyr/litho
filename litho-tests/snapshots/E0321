@@ -1,0 +1,9 @@
+[E0321] Error: Non-repeatable directive must be unique per location.
+    ╭─[graphql:12:27]
+    │
+ 12 │ query Bar @nonRepeatable @nonRepeatable {
+    ·            ──────┬──────  ──────┬──────  
+    ·                  ╰─────────────────────── Directive `@nonRepeatable` is first used here ...
+    ·                                 │        
+    ·                                 ╰──────── ... and later again here.
+────╯

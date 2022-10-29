@@ -1,0 +1,14 @@
+directive @repeatable repeatable on QUERY
+directive @nonRepeatable on QUERY
+
+type Query {
+    _: Boolean!
+}
+
+query Foo @repeatable @repeatable {
+    _
+}
+
+query Bar @nonRepeatable @nonRepeatable {
+    _
+}
