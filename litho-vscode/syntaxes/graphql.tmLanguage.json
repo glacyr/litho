@@ -40,7 +40,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.graphql",
-				"match": "\\b(query|mutation|subscription|fragment|on|extend|schema|scalar|type|implements|interface|union|enum|input|directive)\\b"
+				"match": "\\b(query|mutation|subscription|fragment|on|extend|schema|scalar|type|implements|interface|union|enum|input|directive|repeatable)\\b"
 			}]
 		},
 		"strings": {
