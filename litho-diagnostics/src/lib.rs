@@ -510,6 +510,10 @@ diagnostics! {
         "Variables must be unique per operation definition.",
         "Variable `${name}` is first used here ..." @ first,
         "... and later again here." @ second
+    },
+    E0323 => VariableMustBeInputType @ span + name, ty {
+        "Variables must be input types.",
+        "Variable `${name}` is defined here as type `{ty}`, which is not an input type." @ span
     }
 }
 

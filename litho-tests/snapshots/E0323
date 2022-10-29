@@ -1,0 +1,7 @@
+[E0323] Error: Variables must be input types.
+   ╭─[graphql:9:24]
+   │
+ 9 │ query Example($output: OutputType!, $input: String!) {
+   ·                        ─────┬─────  
+   ·                             ╰─────── Variable `$output` is defined here as type `OutputType!`, which is not an input type.
+───╯

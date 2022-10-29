@@ -1,0 +1,11 @@
+type OutputType {
+    _: String!
+}
+
+type Query {
+    _: String!
+}
+
+query Example($output: OutputType!, $input: String!) {
+    _
+}
