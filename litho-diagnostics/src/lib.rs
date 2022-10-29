@@ -505,6 +505,11 @@ diagnostics! {
         "Non-repeatable directive must be unique per location.",
         "Directive `@{name}` is first used here ..." @ first,
         "... and later again here." @ second
+    },
+    E0322 => DuplicateVariable @ second + name {
+        "Variables must be unique per operation definition.",
+        "Variable `${name}` is first used here ..." @ first,
+        "... and later again here." @ second
     }
 }
 

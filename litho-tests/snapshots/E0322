@@ -1,0 +1,9 @@
+[E0322] Error: Variables must be unique per operation definition.
+   ╭─[graphql:5:46]
+   │
+ 5 │ query example($foo: String!, $bar: String!, $foo: String!) {
+   ·                ─┬─                           ─┬─  
+   ·                 ╰───────────────────────────────── Variable `$foo` is first used here ...
+   ·                                               │   
+   ·                                               ╰─── ... and later again here.
+───╯

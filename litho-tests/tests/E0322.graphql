@@ -1,0 +1,7 @@
+type Query {
+    example(foo: String!, bar: String!): String!
+}
+
+query example($foo: String!, $bar: String!, $foo: String!) {
+    example(foo: $foo, bar: $bar)
+}

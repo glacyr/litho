@@ -9,6 +9,7 @@ use litho_types::Database;
 mod arguments;
 mod directives;
 mod values;
+mod variables;
 
 pub fn check<N, T>(document: &N, database: &Database<T>) -> Vec<Diagnostic<Span>>
 where
@@ -31,5 +32,6 @@ where
     document.traverse(&values::EnumCoercion(database), &mut errors);
     document.traverse(&values::InputCoercion(database), &mut errors);
     document.traverse(&values::ObjectCoercion(database), &mut errors);
+    document.traverse(&variables::VariableUniqueness(database), &mut errors);
     errors
 }
