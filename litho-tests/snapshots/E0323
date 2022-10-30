@@ -5,3 +5,21 @@
    ·                        ─────┬─────  
    ·                             ╰─────── Variable `$output` is defined here as type `OutputType!`, which is not an input type.
 ───╯
+
+
+[E0326] Error: Variables must be used.
+   ╭─[graphql:9:15]
+   │
+ 9 │ query Example($output: OutputType!, $input: String!) {
+   ·               ───┬───  
+   ·                  ╰───── Variable `$output` is defined here but never used.
+───╯
+
+
+[E0326] Error: Variables must be used.
+   ╭─[graphql:9:37]
+   │
+ 9 │ query Example($output: OutputType!, $input: String!) {
+   ·                                     ───┬──  
+   ·                                        ╰──── Variable `$input` is defined here but never used.
+───╯

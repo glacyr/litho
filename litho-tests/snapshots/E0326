@@ -1,0 +1,52 @@
+[E0317] Error: Fragment definition must not be cyclic.
+    ╭─[graphql:26:9]
+    │
+ 26 │     ... FooBar
+    ·         ───┬──  
+    ·            ╰──── Fragment `BarFoo` includes fragment `FooBar` here, which causes a cycle.
+────╯
+
+
+[E0317] Error: Fragment definition must not be cyclic.
+    ╭─[graphql:30:9]
+    │
+ 30 │     ... BarFoo
+    ·         ───┬──  
+    ·            ╰──── Fragment `FooBar` includes fragment `BarFoo` here, which causes a cycle.
+────╯
+
+
+[E0326] Error: Variables must be used.
+   ╭─[graphql:9:31]
+   │
+ 9 │ query Example($name: String!, $age: Int!) {
+   ·                               ──┬─  
+   ·                                 ╰─── Variable `$age` is defined here but never used.
+───╯
+
+
+[E0326] Error: Variables must be used.
+    ╭─[graphql:21:34]
+    │
+ 21 │ query Transitive($name: String!, $age: Int!) {
+    ·                                  ──┬─  
+    ·                                    ╰─── Variable `$age` is defined here but never used.
+────╯
+
+
+[E0326] Error: Variables must be used.
+    ╭─[graphql:33:14]
+    │
+ 33 │ query Cyclic($name: String!, $age: Int!) {
+    ·              ──┬──  
+    ·                ╰──── Variable `$name` is defined here but never used.
+────╯
+
+
+[E0326] Error: Variables must be used.
+    ╭─[graphql:33:30]
+    │
+ 33 │ query Cyclic($name: String!, $age: Int!) {
+    ·                              ──┬─  
+    ·                                ╰─── Variable `$age` is defined here but never used.
+────╯

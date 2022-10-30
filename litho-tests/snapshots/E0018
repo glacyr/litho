@@ -7,3 +7,12 @@
    ·                             │  
    ·                             ╰── ... must have a matching `)` here.
 ───╯
+
+
+[E0326] Error: Variables must be used.
+   ╭─[graphql:5:15]
+   │
+ 5 │ query Example($var: Boolean! {
+   ·               ──┬─  
+   ·                 ╰─── Variable `$var` is defined here but never used.
+───╯

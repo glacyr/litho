@@ -523,6 +523,10 @@ diagnostics! {
         "Operations must define variables for all transitively included fragments.",
         "Fragment `{fragment}` is used here, but it requires variable `${name}` to be defined ..." @ span,
         "... because it is used here." @ usage
+    },
+    E0326 => UnusedVariable @ span + name {
+        "Variables must be used.",
+        "Variable `${name}` is defined here but never used." @ span
     }
 }
 

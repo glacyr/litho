@@ -35,5 +35,6 @@ where
     document.traverse(&variables::VariableUniqueness(database), &mut errors);
     document.traverse(&variables::VariablesAreInputTypes(database), &mut errors);
     document.traverse(&variables::VariablesAreDefined(database), &mut errors);
+    document.traverse(&variables::VariablesAreUsed(database), &mut errors);
     errors
 }

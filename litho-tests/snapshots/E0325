@@ -40,3 +40,12 @@
     ·         ─┬─  
     ·          ╰─── Fragment `Foo` is used here, but it requires variable `$name` to be defined ...
 ────╯
+
+
+[E0326] Error: Variables must be used.
+    ╭─[graphql:33:14]
+    │
+ 33 │ query Cyclic($age: Int!) {
+    ·              ──┬─  
+    ·                ╰─── Variable `$age` is defined here but never used.
+────╯

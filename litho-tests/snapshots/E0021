@@ -5,3 +5,12 @@
    ·                            │ 
    ·                            ╰─ This default value here is missing a value.
 ───╯
+
+
+[E0326] Error: Variables must be used.
+   ╭─[graphql:5:15]
+   │
+ 5 │ query Example($value: Int =) {
+   ·               ───┬──  
+   ·                  ╰──── Variable `$value` is defined here but never used.
+───╯
