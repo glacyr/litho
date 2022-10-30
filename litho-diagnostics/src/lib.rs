@@ -514,6 +514,15 @@ diagnostics! {
     E0323 => VariableMustBeInputType @ span + name, ty {
         "Variables must be input types.",
         "Variable `${name}` is defined here as type `{ty}`, which is not an input type." @ span
+    },
+    E0324 => UndefinedVariable @ span + name {
+        "Variables must be defined before they can be used.",
+        "Variable `${name}` is used here but never defined." @ span
+    },
+    E0325 => UndefinedVariableInFragment @ span + fragment, name {
+        "Operations must define variables for all transitively included fragments.",
+        "Fragment `{fragment}` is used here, but it requires variable `${name}` to be defined ..." @ span,
+        "... because it is used here." @ usage
     }
 }
 

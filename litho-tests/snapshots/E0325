@@ -1,0 +1,42 @@
+[E0317] Error: Fragment definition must not be cyclic.
+    ╭─[graphql:26:9]
+    │
+ 26 │     ... FooBar
+    ·         ───┬──  
+    ·            ╰──── Fragment `BarFoo` includes fragment `FooBar` here, which causes a cycle.
+────╯
+
+
+[E0317] Error: Fragment definition must not be cyclic.
+    ╭─[graphql:30:9]
+    │
+ 30 │     ... BarFoo
+    ·         ───┬──  
+    ·            ╰──── Fragment `FooBar` includes fragment `BarFoo` here, which causes a cycle.
+────╯
+
+
+[E0325] Error: Operations must define variables for all transitively included fragments.
+    ╭─[graphql:10:9]
+    │
+  6 │     hello(name: $name, age: $age)
+    ·                 ──┬──  
+    ·                   ╰──── ... because it is used here.
+    · 
+ 10 │     ... Fragment
+    ·         ────┬───  
+    ·             ╰───── Fragment `Fragment` is used here, but it requires variable `$name` to be defined ...
+────╯
+
+
+[E0325] Error: Operations must define variables for all transitively included fragments.
+    ╭─[graphql:22:9]
+    │
+ 14 │     hello(name: $name, age: $age)
+    ·                 ──┬──  
+    ·                   ╰──── ... because it is used here.
+    · 
+ 22 │     ... Foo
+    ·         ─┬─  
+    ·          ╰─── Fragment `Foo` is used here, but it requires variable `$name` to be defined ...
+────╯

@@ -34,5 +34,6 @@ where
     document.traverse(&values::ObjectCoercion(database), &mut errors);
     document.traverse(&variables::VariableUniqueness(database), &mut errors);
     document.traverse(&variables::VariablesAreInputTypes(database), &mut errors);
+    document.traverse(&variables::VariablesAreDefined(database), &mut errors);
     errors
 }

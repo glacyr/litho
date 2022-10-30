@@ -1,0 +1,7 @@
+type Query {
+    hello(name: String!, age: Int!): String!
+}
+
+query Example($age: Int!) {
+    hello(name: $name, age: $age)
+}

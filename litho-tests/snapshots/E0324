@@ -1,0 +1,7 @@
+[E0324] Error: Variables must be defined before they can be used.
+   ╭─[graphql:6:17]
+   │
+ 6 │     hello(name: $name, age: $age)
+   ·                 ──┬──  
+   ·                   ╰──── Variable `$name` is used here but never defined.
+───╯

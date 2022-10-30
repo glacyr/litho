@@ -1,0 +1,35 @@
+type Query {
+    hello(name: String!, age: Int!): String!
+}
+
+fragment Fragment on Query {
+    hello(name: $name, age: $age)
+}
+
+query Example($age: Int!) {
+    ... Fragment
+}
+
+fragment Bar on Query {
+    hello(name: $name, age: $age)
+}
+
+fragment Foo on Query {
+    ... Bar
+}
+
+query Transitive($age: Int!) {
+    ... Foo
+}
+
+fragment BarFoo on Query {
+    ... FooBar
+}
+
+fragment FooBar on Query {
+    ... BarFoo
+}
+
+query Cyclic($age: Int!) {
+    ... FooBar
+}
