@@ -12,7 +12,7 @@ use tower_lsp::lsp_types::*;
 
 use crate::diagnostic::serialize_diagnostic;
 
-use super::{Document, Store};
+use super::{url_from_path, Document, Store};
 
 #[derive(Debug)]
 pub struct Workspace {
@@ -99,7 +99,7 @@ impl Workspace {
                 continue;
             }
 
-            let url = Url::from_file_path(entry.path()).map_err(|_| ())?;
+            let url = url_from_path(entry.path())?;
             self.populate_file(url)?;
         }
 
