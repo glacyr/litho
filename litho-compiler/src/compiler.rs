@@ -99,6 +99,8 @@ where
         for definition in result.0.definitions.iter() {
             self.definition_sources.insert(definition.id(), source_id);
 
+            definition_ids.insert(definition.id());
+
             if let Some(product) = definition.product() {
                 definition_ids.extend(self.graph.produce(definition.id(), product));
             }
