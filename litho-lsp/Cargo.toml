@@ -13,7 +13,6 @@ serde_json = { version = "*" }
 smol_str = "0.1.23"
 tokio = { version = "1.21.1", features = ["full"] }
 tower-lsp = "0.17.0"
-url-escape = "0.1.1"
 
 litho-compiler = { path = "../litho-compiler" }
 litho-diagnostics = { path = "../litho-diagnostics" }

@@ -4,7 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from "path";
-import { ExtensionContext } from "vscode";
+import * as url from "url";
+import { ExtensionContext, Uri } from "vscode";
 
 import {
   Executable,
@@ -43,6 +44,10 @@ export function activate(context: ExtensionContext) {
   const clientOptions: LanguageClientOptions = {
     // Register the server for plain text documents
     documentSelector: [{ scheme: "file", language: "graphql" }],
+    uriConverters: {
+      code2Protocol: (uri) => new url.URL(uri.toString(true)).toString(),
+      protocol2Code: (str) => Uri.parse(str),
+    },
   };
 
   // Create the language client and start the client.
