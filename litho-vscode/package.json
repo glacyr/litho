@@ -2,11 +2,11 @@
   "name": "litho",
   "publisher": "glacyr",
   "displayName": "Litho",
-  "description": "",
+  "description": "Zero-config GraphQL tooling for VS Code.",
   "icon": "icon.png",
   "preview": true,
   "repository": {
-    "url": "https://github.com/glacyr/litho/tree/main/litho-vscode"
+    "url": "https://litho.dev/"
   },
   "version": "0.0.16",
   "engines": {
