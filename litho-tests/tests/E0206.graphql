@@ -2,7 +2,12 @@ input Foo {
     foo: String!
 }
 
-type Example {
+type Query {
     ok(foo: Foo! = { foo: "Hello World" }): Int!
+    example(foo: Foo!): Int!
     error(foo: Foo! = 42): Int!
+}
+
+query Example($foo: Foo!) {
+    example(foo: $foo)
 }

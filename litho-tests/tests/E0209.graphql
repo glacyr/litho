@@ -3,7 +3,13 @@ enum FooBar {
     BAR
 }
 
-type Example {
+type Query {
     ok(foo: FooBar! = FOO): Int!
+    example(foo: FooBar!): Int!
     error(foo: FooBar! = FOOD): Int!
+}
+
+query Example($foo: FooBar!) {
+    ok: example(foo: $foo)
+    error: example(foo: 42)
 }

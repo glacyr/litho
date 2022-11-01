@@ -414,6 +414,10 @@ diagnostics! {
         "Enum values must exist in schema definition.",
         "Enum value `{value}` here is not a valid value for enum `{name}`." @ span
     },
+    E0210 => ExpectedEnumValue @ span + ty {
+        "Expected an enum value.",
+        "This should be a `{ty}` here." @ span
+    },
     E0300 => DuplicateOperationName @ second + name {
         "Operation definitions must be unique.",
         "Operation `{name}` is first defined here ..." @ first,
