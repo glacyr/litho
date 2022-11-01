@@ -1,0 +1,22 @@
+[E0327] Error: Variable must be compatible with usage.
+   ╭─[graphql:8:17]
+   │
+ 7 │ query InvalidType($age: Int!) {
+   ·                         ──┬─  
+   ·                           ╰─── Variable `$age` is defined here as type `Int!` ...
+ 8 │     hello(name: $age)
+   ·                 ──┬─  
+   ·                   ╰─── ... but is expected to be type `String!` here.
+───╯
+
+
+[E0327] Error: Variable must be compatible with usage.
+    ╭─[graphql:12:17]
+    │
+ 11 │ query NullableVariable($name: String) {
+    ·                               ───┬──  
+    ·                                  ╰──── Variable `$name` is defined here as type `String` ...
+ 12 │     hello(name: $name)
+    ·                 ──┬──  
+    ·                   ╰──── ... but is expected to be type `String!` here.
+────╯

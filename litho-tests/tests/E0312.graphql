@@ -1,9 +1,12 @@
 type Query {
     hello(name: String): String!
     greeting(name: String!): String!
+    default(name: String! = "Tim"): String!
 }
 
 query {
     hello
     greeting
+    default
+    error: default(name: null)
 }

@@ -527,6 +527,17 @@ diagnostics! {
     E0326 => UnusedVariable @ span + name {
         "Variables must be used.",
         "Variable `${name}` is defined here but never used." @ span
+    },
+    E0327 => IncompatibleVariable @ second + name, ty, expected {
+        "Variable must be compatible with usage.",
+        "Variable `${name}` is defined here as type `{ty}` ..." @ first,
+        "... but is expected to be type `{expected}` here." @ second
+    },
+    E0328 => IncompatibleVariableInFragment @ span + fragment, name, ty, expected {
+        "Variable must be compatible with usage.",
+        "Fragment `{fragment}` is used here ..." @ span,
+        "... and it requires variable `${name}` to be type `{expected}` here ..." @ second,
+        "... but variable `${name}` is defined here as type `{ty}`." @ first
     }
 }
 

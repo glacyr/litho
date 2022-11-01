@@ -12,6 +12,7 @@ pub struct Inference<T> {
     pub definition_for_arguments: Inferred<Arguments<T>, ArgumentsDefinition<T>>,
     pub definitions_for_arguments: Inferred<Argument<T>, InputValueDefinition<T>>,
     pub types_for_values: Inferred<Value<T>, Type<T>>,
+    pub default_value_for_values: Inferred<Value<T>, Value<T>>,
 }
 
 impl<T> Inference<T> {
@@ -46,6 +47,7 @@ impl<T> Default for Inference<T> {
             definition_for_arguments: Default::default(),
             definitions_for_arguments: Default::default(),
             types_for_values: Default::default(),
+            default_value_for_values: Default::default(),
         }
     }
 }

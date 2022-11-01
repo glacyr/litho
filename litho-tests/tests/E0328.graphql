@@ -1,0 +1,53 @@
+type Query {
+    hello(name: String!): String!
+    helloWithDefault(name: String! = "Tim"): String!
+    greeting(name: String): String!
+}
+
+query InvalidType($age: Int!) {
+    ... invalidType
+}
+
+fragment invalidType on Query {
+    hello(name: $age)
+}
+
+query NullableVariable($name: String) {
+    ... nullableVariable
+}
+
+fragment nullableVariable on Query {
+    hello(name: $name)
+}
+
+query NullableVariableWithDefault($name: String = "Tim") {
+    ... nullableVariableWithDefault
+}
+
+fragment nullableVariableWithDefault on Query {
+    hello(name: $name)
+}
+
+query NullableVariableWithArgumentDefault($name: String) {
+    ... nullableVariableWithArgumentDefault
+}
+
+fragment nullableVariableWithArgumentDefault on Query {
+    helloWithDefault(name: $name)
+}
+
+query NullableArgument($name: String!) {
+    ... nullableArgument
+}
+
+fragment nullableArgument on Query {
+    greeting(name: $name)
+}
+
+query NullableArgumentNull {
+    ... nullableArgumentNull
+}
+
+fragment nullableArgumentNull on Query {
+    helloWithDefault
+}

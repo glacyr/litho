@@ -41,6 +41,7 @@ pub trait Visit<'ast, T> {
     visit!(visit_alias, Alias);
     visit!(visit_arguments, Arc<Arguments>);
     visit!(visit_argument, Arc<Argument>);
+    visit!(post_visit_argument, Arc<Argument>);
     visit!(visit_fragment_spread, Arc<FragmentSpread>);
     visit!(post_visit_fragment_spread, Arc<FragmentSpread>);
     visit!(visit_inline_fragment, InlineFragment);

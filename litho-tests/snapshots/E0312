@@ -1,7 +1,16 @@
 [E0312] Error: Missing required argument.
-   ╭─[graphql:8:5]
+   ╭─[graphql:9:5]
    │
- 8 │     greeting
+ 9 │     greeting
    ·     ────┬───  
    ·         ╰───── Argument `name` of type `String!` is required but not given here.
 ───╯
+
+
+[E0200] Error: Expected a non-null value.
+    ╭─[graphql:11:26]
+    │
+ 11 │     error: default(name: null)
+    ·                          ──┬─  
+    ·                            ╰─── This should be a `String!` here.
+────╯

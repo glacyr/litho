@@ -29,15 +29,12 @@ where
 
         for definition in definition.definitions.iter() {
             if !names.contains(definition.name.as_ref()) {
-                match definition.ty.ok() {
-                    Some(ty) if ty.is_required() => {
-                        accumulator.push(Diagnostic::missing_required_argument(
-                            definition.name.as_ref().to_string(),
-                            definition.ty.to_string(),
-                            name.span(),
-                        ))
-                    }
-                    Some(_) | None => {}
+                if definition.is_required() {
+                    accumulator.push(Diagnostic::missing_required_argument(
+                        definition.name.as_ref().to_string(),
+                        definition.ty.to_string(),
+                        name.span(),
+                    ))
                 }
             }
         }

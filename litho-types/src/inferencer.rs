@@ -209,6 +209,41 @@ where
         }
     }
 
+    fn visit_argument(&self, node: &'ast Arc<Argument<T>>, accumulator: &mut Self::Accumulator) {
+        let ty = accumulator
+            .database
+            .inference
+            .definitions_for_arguments
+            .get(node)
+            .and_then(|def| {
+                let value = node.value.ok();
+                let default_value = def
+                    .default_value
+                    .as_ref()
+                    .and_then(|value| value.value.ok());
+
+                if let Some((value, default_value)) = value.zip(default_value) {
+                    accumulator
+                        .database
+                        .inference
+                        .default_value_for_values
+                        .insert(value, default_value)
+                }
+
+                def.ty.ok()
+            });
+
+        accumulator.value_type.push(ty.cloned());
+    }
+
+    fn post_visit_argument(
+        &self,
+        _node: &'ast Arc<Argument<T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.value_type.pop();
+    }
+
     fn post_visit_field(&self, _node: &'ast Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
         accumulator.stack.pop();
     }

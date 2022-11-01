@@ -220,7 +220,13 @@ pub struct Argument<T> {
     pub value: Recoverable<Arc<Value<T>>>,
 }
 
-node!(Arc<Argument>, visit_argument, name, colon, value);
+node!(
+    Arc<Argument>,
+    visit_argument + post_visit_argument,
+    name,
+    colon,
+    value
+);
 
 #[derive(Clone, Debug)]
 pub struct FragmentSpread<T> {
@@ -295,6 +301,10 @@ pub enum Value<T> {
 }
 
 impl<T> Value<T> {
+    pub fn is_variable(&self) -> bool {
+        matches!(self, Value::Variable(_))
+    }
+
     pub fn is_int(&self) -> bool {
         matches!(self, Value::IntValue(_))
     }
@@ -466,6 +476,13 @@ impl<T> Type<T> {
 
     pub fn is_required(&self) -> bool {
         matches!(self, Type::NonNull(_))
+    }
+
+    pub fn as_nullable<'a>(self: &'a Arc<Type<T>>) -> &'a Arc<Type<T>> {
+        match self.as_ref() {
+            Type::Named(_) | Type::List(_) => self,
+            Type::NonNull(ty) => ty.ty.as_nullable(),
+        }
     }
 
     pub fn list_value_type(&self) -> Option<&Arc<Type<T>>> {
@@ -1089,6 +1106,24 @@ pub struct InputValueDefinition<T> {
     pub ty: Recoverable<Arc<Type<T>>>,
     pub default_value: Option<DefaultValue<T>>,
     pub directives: Option<Directives<T>>,
+}
+
+impl<T> InputValueDefinition<T> {
+    pub fn is_required(&self) -> bool {
+        let ty = match self.ty.ok() {
+            Some(ty) if ty.is_required() => ty,
+            Some(_) | None => return false,
+        };
+
+        match self
+            .default_value
+            .as_ref()
+            .and_then(|value| value.value.ok())
+        {
+            Some(value) => ty.is_required() && value.is_null(),
+            None => ty.is_required(),
+        }
+    }
 }
 
 node!(
