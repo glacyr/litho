@@ -17,3 +17,13 @@ extend input InputExample {
     bar: String!
     bar: String!
 }
+
+interface InterfaceExample {
+    foo: String!
+    foo: String!
+}
+
+extend interface InterfaceExample {
+    bar: String!
+    bar: String!
+}

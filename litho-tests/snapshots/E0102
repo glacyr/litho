@@ -74,3 +74,27 @@
     ·     ─┬─  
     ·      ╰─── ... and later defines the same field again here.
 ────╯
+
+
+[E0102] Error: Field name must be unique.
+    ╭─[graphql:23:5]
+    │
+ 22 │     foo: String!
+    ·     ─┬─  
+    ·      ╰─── Field `foo` is first defined here ...
+ 23 │     foo: String!
+    ·     ─┬─  
+    ·      ╰─── ... and later defines the same field again here.
+────╯
+
+
+[E0102] Error: Field name must be unique.
+    ╭─[graphql:28:5]
+    │
+ 27 │     bar: String!
+    ·     ─┬─  
+    ·      ╰─── Field `bar` is first defined here ...
+ 28 │     bar: String!
+    ·     ─┬─  
+    ·      ╰─── ... and later defines the same field again here.
+────╯
