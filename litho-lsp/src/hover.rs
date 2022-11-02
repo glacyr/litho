@@ -5,7 +5,7 @@ use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::{Hover, HoverContents, MarkedString, Position};
 
-use super::{line_col_to_offset, Document, Printer};
+use super::{Document, Printer, Workspace};
 
 pub struct HoverProvider<'a> {
     document: &'a Document,
@@ -18,12 +18,11 @@ impl HoverProvider<'_> {
     }
 
     pub fn hover(&self, position: Position) -> Option<Hover> {
-        let offset = line_col_to_offset(self.document.text(), position.line, position.character);
+        let offset = Workspace::position_to_index(self.document.text(), position);
         let mut hover = None;
 
         self.document.ast().traverse(
             &HoverVisitor {
-                document: self.document,
                 database: self.database,
                 offset,
             },
@@ -35,7 +34,6 @@ impl HoverProvider<'_> {
 }
 
 struct HoverVisitor<'a> {
-    document: &'a Document,
     database: &'a Database<SmolStr>,
     offset: usize,
 }

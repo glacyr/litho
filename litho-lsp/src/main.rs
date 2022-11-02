@@ -14,7 +14,6 @@ mod paths;
 mod printer;
 mod references;
 mod store;
-mod util;
 mod workspace;
 
 use completion::CompletionProvider;
@@ -26,26 +25,12 @@ use paths::url_from_path;
 use printer::Printer;
 use references::ReferencesProvider;
 use store::Store;
-use util::{index_to_position, line_col_to_offset, span_to_range};
 use workspace::Workspace;
 
 #[derive(Debug)]
 struct Backend {
     client: Client,
     workspace: Mutex<Workspace>,
-}
-
-fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
-    match change.range {
-        Some(range) => {
-            let start = line_col_to_offset(&source, range.start.line, range.start.character);
-            let end = line_col_to_offset(&source, range.end.line, range.end.character);
-            source.replace_range(start..end, &change.text);
-        }
-        None => {}
-    }
-
-    source
 }
 
 impl Backend {
@@ -179,7 +164,9 @@ impl LanguageServer for Backend {
                 params
                     .content_changes
                     .into_iter()
-                    .fold(source.to_owned(), |source, change| apply(source, change))
+                    .fold(source.to_owned(), |source, change| {
+                        Workspace::apply(source, change)
+                    })
             })
         });
 

@@ -4,7 +4,7 @@ use litho_language::ast::*;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
-use super::{line_col_to_offset, Document, Printer, Workspace};
+use super::{Document, Printer, Workspace};
 
 pub struct CompletionProvider<'a> {
     document: &'a Document,
@@ -34,7 +34,7 @@ impl CompletionProvider<'_> {
     }
 
     pub fn completion(&self, position: Position) -> CompletionResponse {
-        let offset = line_col_to_offset(self.document.text(), position.line, position.character);
+        let offset = Workspace::position_to_index(self.document.text(), position);
         let mut items = vec![
             self.keyword("query"),
             self.keyword("mutation"),
@@ -47,7 +47,6 @@ impl CompletionProvider<'_> {
 
         self.document.ast().traverse(
             &CompletionVisitor {
-                document: self.document,
                 workspace: self.workspace,
                 offset,
             },
@@ -61,7 +60,6 @@ impl CompletionProvider<'_> {
 }
 
 struct CompletionVisitor<'a> {
-    document: &'a Document,
     workspace: &'a Workspace,
     offset: usize,
 }

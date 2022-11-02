@@ -25,10 +25,6 @@ impl Store {
         self.documents.get_mut(source_id)
     }
 
-    pub fn docs(&self) -> impl Iterator<Item = &Document> {
-        self.documents.values()
-    }
-
     pub fn insert(
         &mut self,
         id: SourceId,
@@ -38,7 +34,7 @@ impl Store {
         text: String,
     ) -> &Document {
         self.documents
-            .insert(id, Document::new(id, url, version, internal, text.as_ref()));
+            .insert(id, Document::new(url, version, internal, text.as_ref()));
 
         self.get(&id).unwrap()
     }
@@ -51,7 +47,7 @@ impl Store {
         let text = apply(document.text().to_owned());
         self.documents.insert(
             id,
-            Document::new(id, url, version, document.is_internal(), text.as_ref()),
+            Document::new(url, version, document.is_internal(), text.as_ref()),
         );
 
         text

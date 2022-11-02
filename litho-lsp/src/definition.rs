@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use litho_language::ast::*;
-use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
-use super::{line_col_to_offset, span_to_range, Document, Workspace};
+use super::{Document, Workspace};
 
 pub struct DefinitionProvider<'a> {
     document: &'a Document,
@@ -21,12 +20,11 @@ impl DefinitionProvider<'_> {
     }
 
     pub fn goto_definition(&self, position: Position) -> Option<GotoDefinitionResponse> {
-        let offset = line_col_to_offset(self.document.text(), position.line, position.character);
+        let offset = Workspace::position_to_index(self.document.text(), position);
         let mut definition = None;
 
         self.document.ast().traverse(
             &DefinitionVisitor {
-                document: self.document,
                 workspace: self.workspace,
                 offset,
             },
@@ -38,7 +36,6 @@ impl DefinitionProvider<'_> {
 }
 
 struct DefinitionVisitor<'a> {
-    document: &'a Document,
     workspace: &'a Workspace,
     offset: usize,
 }

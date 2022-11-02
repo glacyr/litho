@@ -5,7 +5,7 @@ use litho_types::Database;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
-use super::{index_to_position, Document};
+use super::{Document, Workspace};
 
 pub struct InlayHintProvider<'a> {
     document: &'a Document,
@@ -52,7 +52,10 @@ impl<'a> Visit<'a, SmolStr> for InlayHintVisitor<'a> {
                 label: InlayHintLabel::String(format!("{}", name)),
                 padding_left: Some(false),
                 padding_right: Some(true),
-                position: index_to_position(self.document.text(), node.braces.0.span().start),
+                position: Workspace::index_to_position(
+                    self.document.text(),
+                    node.braces.0.span().start,
+                ),
                 text_edits: None,
                 tooltip: None,
             })

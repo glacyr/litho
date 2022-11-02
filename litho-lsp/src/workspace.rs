@@ -47,10 +47,6 @@ impl Workspace {
             .map(|diagnostic| serialize_diagnostic(diagnostic, self))
     }
 
-    pub fn documents(&self) -> impl Iterator<Item = &Document> {
-        self.store.docs().filter(|doc| !doc.is_internal())
-    }
-
     pub fn database(&self) -> &Database<SmolStr> {
         self.compiler.database()
     }
@@ -168,7 +164,15 @@ impl Workspace {
         self.compiler.rebuild()
     }
 
-    pub fn index_to_position(&self, source: &str, index: usize) -> Position {
+    pub fn position_to_index(source: &str, position: Position) -> usize {
+        let line_offset = source
+            .split_inclusive("\n")
+            .take(position.line as usize)
+            .fold(0, |sum, line| sum + line.len());
+        line_offset + position.character as usize
+    }
+
+    pub fn index_to_position(source: &str, index: usize) -> Position {
         let mut line = 0;
         let mut character = 0;
 
@@ -188,8 +192,8 @@ impl Workspace {
         let source = self.store.get(&span.source_id)?.text();
 
         Some(Range {
-            start: self.index_to_position(source, span.start),
-            end: self.index_to_position(source, span.end),
+            start: Workspace::index_to_position(source, span.start),
+            end: Workspace::index_to_position(source, span.end),
         })
     }
 
@@ -204,5 +208,18 @@ impl Workspace {
 
     pub fn take_invalid(&mut self) -> HashSet<SourceId> {
         std::mem::take(&mut self.invalid)
+    }
+
+    pub fn apply(mut source: String, change: TextDocumentContentChangeEvent) -> String {
+        match change.range {
+            Some(range) => {
+                let start = Workspace::position_to_index(&source, range.start);
+                let end = Workspace::position_to_index(&source, range.end);
+                source.replace_range(start..end, &change.text);
+            }
+            None => {}
+        }
+
+        source
     }
 }

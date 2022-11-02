@@ -4,7 +4,7 @@ use litho_language::ast::*;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
 
-use super::{line_col_to_offset, Document, Workspace};
+use super::{Document, Workspace};
 
 pub struct ReferencesProvider<'a> {
     document: &'a Document,
@@ -20,12 +20,11 @@ impl ReferencesProvider<'_> {
     }
 
     pub fn references(&self, position: Position) -> Option<Vec<Location>> {
-        let offset = line_col_to_offset(self.document.text(), position.line, position.character);
+        let offset = Workspace::position_to_index(self.document.text(), position);
         let mut locations = vec![];
 
         self.document.ast().traverse(
             &ReferencesVisitor {
-                document: self.document,
                 workspace: self.workspace,
                 offset,
             },
@@ -37,7 +36,6 @@ impl ReferencesProvider<'_> {
 }
 
 struct ReferencesVisitor<'a> {
-    document: &'a Document,
     workspace: &'a Workspace,
     offset: usize,
 }
