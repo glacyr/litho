@@ -123,6 +123,27 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
         }
 
         match node.as_ref() {
+            Value::EnumValue(value) => {
+                let def = self
+                    .workspace
+                    .database()
+                    .inference
+                    .types_for_values
+                    .get(node)
+                    .and_then(|ty| ty.name())
+                    .and_then(|ty| {
+                        self.workspace
+                            .database()
+                            .enum_value_definitions_by_name(ty, value.0.as_ref())
+                            .next()
+                    });
+
+                accumulator.replace(GotoDefinitionResponse::Array(
+                    def.into_iter()
+                        .flat_map(|def| self.workspace.span_to_location(def.enum_value.span()))
+                        .collect(),
+                ));
+            }
             Value::Variable(_) => {
                 accumulator.replace(GotoDefinitionResponse::Array(
                     self.workspace
