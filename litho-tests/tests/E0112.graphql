@@ -5,3 +5,24 @@ interface Foo {
 type Example implements Foo {
     bar: String!
 }
+
+interface FooBar {
+    foo: String!
+}
+
+extend interface FooBar {
+    bar: String!
+}
+
+type FooBarExample {
+    foo: String!
+    super: String!
+}
+
+extend type FooBarExample implements SuperFooBar & FooBar
+
+interface SuperFooBar {
+    super: String!
+}
+
+extend interface FooBar implements SuperFooBar

@@ -5,3 +5,21 @@
    ·                         ─┬─  
    ·                          ╰─── Type `Example` implements interface `Foo` here, which requires that field `foo` is implemented.
 ───╯
+
+
+[E0112] Error: Type must implement field from interface.
+    ╭─[graphql:22:52]
+    │
+ 22 │ extend type FooBarExample implements SuperFooBar & FooBar
+    ·                                                    ───┬──  
+    ·                                                       ╰──── Type `FooBarExample` implements interface `FooBar` here, which requires that field `bar` is implemented.
+────╯
+
+
+[E0112] Error: Type must implement field from interface.
+    ╭─[graphql:28:36]
+    │
+ 28 │ extend interface FooBar implements SuperFooBar
+    ·                                    ─────┬─────  
+    ·                                         ╰─────── Type `FooBar` implements interface `SuperFooBar` here, which requires that field `super` is implemented.
+────╯
