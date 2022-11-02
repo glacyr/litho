@@ -10,6 +10,7 @@ where
     T: Eq + Hash,
 {
     database: &'a mut Database<T>,
+    var_scopes: Vec<Option<&'a VariableDefinitions<T>>>,
     stack: Vec<Option<T>>,
     value_type: Vec<Option<Arc<Type<T>>>>,
 }
@@ -21,6 +22,7 @@ where
     pub fn new(database: &'a mut Database<T>) -> InferenceState<'a, T> {
         InferenceState {
             database,
+            var_scopes: vec![],
             stack: vec![],
             value_type: vec![],
         }
@@ -62,6 +64,10 @@ where
             .insert(selection_set, &Arc::new(name.to_owned()));
 
         accumulator.stack.push(Some(name));
+
+        accumulator
+            .var_scopes
+            .push(node.variable_definitions.as_ref());
     }
 
     fn post_visit_operation_definition(
@@ -70,6 +76,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();
+        accumulator.var_scopes.pop();
     }
 
     fn visit_fragment_definition(
@@ -271,6 +278,26 @@ where
                 .inference
                 .types_for_values
                 .insert(node, ty);
+        }
+
+        if let Value::Variable(var) = node.as_ref() {
+            let definition = accumulator
+                .var_scopes
+                .last()
+                .and_then(|&scope| scope)
+                .and_then(|defs| {
+                    defs.variable_definitions
+                        .iter()
+                        .find(|def| def.variable.name.as_ref() == var.name.as_ref())
+                });
+
+            if let Some(definition) = definition {
+                accumulator
+                    .database
+                    .inference
+                    .definitions_for_variable
+                    .insert(node, definition);
+            }
         }
     }
 

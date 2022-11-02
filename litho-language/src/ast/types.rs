@@ -409,7 +409,7 @@ node!(
 #[derive(Clone, Debug)]
 pub struct VariableDefinitions<T> {
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
-    pub variable_definitions: Vec<VariableDefinition<T>>,
+    pub variable_definitions: Vec<Arc<VariableDefinition<T>>>,
 }
 
 node!(
@@ -429,7 +429,7 @@ pub struct VariableDefinition<T> {
 }
 
 node!(
-    VariableDefinition,
+    Arc<VariableDefinition>,
     visit_variable_definition + post_visit_variable_definition,
     variable,
     colon,

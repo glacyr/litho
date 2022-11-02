@@ -30,7 +30,7 @@ where
         let variable_definitions = variable_definitions
             .variable_definitions
             .iter()
-            .map(|def| (def.variable.name.as_ref(), def))
+            .map(|def| (def.variable.name.as_ref(), def.as_ref()))
             .collect();
 
         node.traverse(

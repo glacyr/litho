@@ -418,7 +418,7 @@ where
 }
 
 pub fn variable_definition<'a, T, I>(
-) -> impl RecoverableParser<I, VariableDefinition<T>, Error> + 'a
+) -> impl RecoverableParser<I, Arc<VariableDefinition<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>, Missing = Missing> + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
@@ -441,6 +441,7 @@ where
                     directives,
                 },
             )
+            .map(Into::into)
     })
 }
 

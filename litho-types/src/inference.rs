@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use litho_language::ast::*;
 
-use super::Inferred;
+use super::{Inferred, InferredMany};
 
 #[derive(Debug)]
 pub struct Inference<T> {
@@ -13,6 +13,7 @@ pub struct Inference<T> {
     pub definitions_for_arguments: Inferred<Argument<T>, InputValueDefinition<T>>,
     pub types_for_values: Inferred<Value<T>, Type<T>>,
     pub default_value_for_values: Inferred<Value<T>, Value<T>>,
+    pub definitions_for_variable: InferredMany<Value<T>, VariableDefinition<T>>,
 }
 
 impl<T> Inference<T> {
@@ -48,6 +49,7 @@ impl<T> Default for Inference<T> {
             definitions_for_arguments: Default::default(),
             types_for_values: Default::default(),
             default_value_for_values: Default::default(),
+            definitions_for_variable: Default::default(),
         }
     }
 }

@@ -116,4 +116,27 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
             }
         }
     }
+
+    fn visit_value(&self, node: &'a Arc<Value<SmolStr>>, accumulator: &mut Self::Accumulator) {
+        if !node.span().contains(self.offset) {
+            return;
+        }
+
+        match node.as_ref() {
+            Value::Variable(_) => {
+                accumulator.replace(GotoDefinitionResponse::Array(
+                    self.workspace
+                        .database()
+                        .inference
+                        .definitions_for_variable
+                        .get(node)
+                        .flat_map(|definition| {
+                            self.workspace.span_to_location(definition.variable.span())
+                        })
+                        .collect(),
+                ));
+            }
+            _ => {}
+        }
+    }
 }

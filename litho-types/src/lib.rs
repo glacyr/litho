@@ -17,7 +17,7 @@ pub use database::Database;
 pub use directives::{DirectiveLocationKind, DirectiveTarget};
 pub use fragments::Fragments;
 pub use inference::Inference;
-pub use inferred::Inferred;
+pub use inferred::{Inferred, InferredMany};
 pub use map::Map;
 pub use named::Named;
 pub use operations::Operations;
