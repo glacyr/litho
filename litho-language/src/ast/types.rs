@@ -993,12 +993,12 @@ node!(
 pub struct ImplementsInterfaces<T> {
     pub implements: Name<T>,
     pub ampersand: Option<Punctuator<T>>,
-    pub first: Recoverable<NamedType<T>>,
-    pub types: Vec<(Punctuator<T>, Recoverable<NamedType<T>>)>,
+    pub first: Recoverable<Arc<NamedType<T>>>,
+    pub types: Vec<(Punctuator<T>, Recoverable<Arc<NamedType<T>>>)>,
 }
 
 impl<T> ImplementsInterfaces<T> {
-    pub fn named_types(&self) -> impl Iterator<Item = &NamedType<T>> {
+    pub fn named_types(&self) -> impl Iterator<Item = &Arc<NamedType<T>>> {
         self.first
             .ok()
             .into_iter()

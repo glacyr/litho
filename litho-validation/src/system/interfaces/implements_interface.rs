@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::sync::Arc;
 
@@ -224,7 +224,6 @@ where
         implements_interfaces: &'a ImplementsInterfaces<T>,
     ) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
-        let mut visited = HashMap::<&T, &NamedType<T>>::new();
 
         for interface in implements_interfaces.named_types() {
             if interface.0.as_ref() == name {
@@ -236,8 +235,12 @@ where
                 continue;
             }
 
-            match visited.get(&interface.0.as_ref()) {
-                Some(exists) => {
+            match self
+                .0
+                .implemented_interfaces_by_name(name, interface.0.as_ref())
+                .next()
+            {
+                Some(exists) if !Arc::ptr_eq(exists, interface) => {
                     errors.push(Diagnostic::duplicate_implements_interface(
                         name.to_string(),
                         interface.0.as_ref().to_string(),
@@ -246,10 +249,8 @@ where
                     ));
                     continue;
                 }
-                None => {}
+                Some(_) | None => {}
             }
-
-            visited.insert(interface.0.as_ref(), interface);
 
             errors.extend(self.check_interface(name, implements_interfaces, interface));
         }

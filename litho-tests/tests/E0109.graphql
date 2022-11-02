@@ -5,3 +5,9 @@ interface Foo {
 type Example implements Foo & Foo {
     foo: String!
 }
+
+type ExtendedExample implements Foo {
+    foo: String!
+}
+
+extend type ExtendedExample implements Foo

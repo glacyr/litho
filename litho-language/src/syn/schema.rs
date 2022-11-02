@@ -307,12 +307,14 @@ where
     wrom::recursive(|| {
         keyword("implements")
             .and(opt(punctuator("&")))
-            .and(named_type().recover(Missing::unary(
+            .and(named_type().map(Into::into).recover(Missing::unary(
                 Diagnostic::missing_first_implements_interface,
             )))
-            .and(many0(punctuator("&").and(named_type().recover(
-                Missing::unary(Diagnostic::missing_second_implements_interface),
-            ))))
+            .and(many0(punctuator("&").and(
+                named_type().map(Into::into).recover(Missing::unary(
+                    Diagnostic::missing_second_implements_interface,
+                )),
+            )))
             .flatten()
             .map(
                 |(implements, ampersand, first, types)| ImplementsInterfaces {

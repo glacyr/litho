@@ -7,3 +7,16 @@
    ·                                │   
    ·                                ╰─── ... and later implements the same interface again here.
 ───╯
+
+
+[E0109] Error: Type must not implement same interface twice.
+    ╭─[graphql:13:40]
+    │
+  9 │ type ExtendedExample implements Foo {
+    ·                                 ─┬─  
+    ·                                  ╰─── Type `ExtendedExample` first implements interface `Foo` here ...
+    · 
+ 13 │ extend type ExtendedExample implements Foo
+    ·                                        ─┬─  
+    ·                                         ╰─── ... and later implements the same interface again here.
+────╯

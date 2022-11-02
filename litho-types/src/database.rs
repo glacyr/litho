@@ -207,7 +207,7 @@ where
             .chain(self.extensions.field_definitions.by_name(ty, name))
     }
 
-    pub fn implemented_interfaces(&self, ty: &T) -> impl Iterator<Item = &NamedType<T>> {
+    pub fn implemented_interfaces(&self, ty: &T) -> impl Iterator<Item = &Arc<NamedType<T>>> {
         let definitions = self
             .type_definitions_by_name(ty)
             .flat_map(|def| def.implements_interfaces());
@@ -218,6 +218,15 @@ where
         definitions
             .chain(extensions)
             .flat_map(|def| def.named_types())
+    }
+
+    pub fn implemented_interfaces_by_name<'a>(
+        &'a self,
+        ty: &T,
+        name: &'a T,
+    ) -> impl Iterator<Item = &Arc<NamedType<T>>> + 'a {
+        self.implemented_interfaces(ty)
+            .filter(move |interface| interface.0.as_ref() == name)
     }
 
     pub fn enum_value_definitions(
