@@ -26,6 +26,10 @@ where
             None => return,
         };
 
+        if matches!(ty.as_ref(), Type::List(_)) {
+            return;
+        }
+
         match ty.name() {
             Some(name) if name.borrow() == "Boolean" => return,
             _ => {}
