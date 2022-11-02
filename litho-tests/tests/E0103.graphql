@@ -5,3 +5,11 @@ type Example {
 extend type Example {
     foo: String!
 }
+
+input InputExample {
+    foo: String!
+}
+
+extend input InputExample {
+    foo: String!
+}

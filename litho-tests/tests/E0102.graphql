@@ -2,3 +2,18 @@ type Example {
     foo: String!
     foo: String!
 }
+
+extend type Example {
+    bar: String!
+    bar: String!
+}
+
+input InputExample {
+    foo: String!
+    foo: String!
+}
+
+extend input InputExample {
+    bar: String!
+    bar: String!
+}

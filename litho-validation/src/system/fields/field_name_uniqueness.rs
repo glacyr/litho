@@ -37,6 +37,40 @@ where
         }
     }
 
+    fn visit_input_object_type_extension(
+        &self,
+        node: &'a InputObjectTypeExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        let name = match node.name.ok() {
+            Some(name) => name,
+            None => return,
+        };
+
+        for field in node
+            .fields_definition
+            .iter()
+            .flat_map(|def| def.definitions.iter())
+        {
+            match self
+                .0
+                .input_value_definitions_by_name(name.0.as_ref(), field.name.as_ref())
+                .next()
+            {
+                Some(first) if !Arc::ptr_eq(first, field) => {
+                    accumulator.push(Diagnostic::duplicate_extended_field(
+                        name.0.as_ref().to_string(),
+                        field.name.as_ref().to_string(),
+                        first.name.span(),
+                        name.span(),
+                        field.name.span(),
+                    ))
+                }
+                _ => {}
+            }
+        }
+    }
+
     fn visit_fields_definition(
         &self,
         node: &'a FieldsDefinition<T>,
