@@ -31,7 +31,12 @@ pub fn main() {
         scalar Int
         scalar Float
         scalar String
-        scalar Boolean
+
+        enum Boolean {
+            false
+            true
+        }
+        
         scalar ID
         "#,
         )

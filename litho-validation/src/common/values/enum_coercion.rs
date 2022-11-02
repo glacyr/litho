@@ -26,6 +26,11 @@ where
             None => return,
         };
 
+        match ty.name() {
+            Some(name) if name.borrow() == "Boolean" => return,
+            _ => {}
+        }
+
         let definition = ty
             .name()
             .and_then(|name| self.0.type_definitions_by_name(name).next());
