@@ -13,3 +13,11 @@ input InputExample {
 extend input InputExample {
     foo: String!
 }
+
+interface InterfaceExample {
+    foo: String!
+}
+
+extend interface InterfaceExample {
+    foo: String!
+}

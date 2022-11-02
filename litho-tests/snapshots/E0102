@@ -88,6 +88,21 @@
 ────╯
 
 
+[E0103] Error: Field name must be unique across extended types.
+    ╭─[graphql:28:5]
+    │
+ 26 │ extend interface InterfaceExample {
+    ·                  ────────┬───────  
+    ·                          ╰───────── ... gets extended here ...
+ 27 │     bar: String!
+    ·     ─┬─  
+    ·      ╰─── Type `InterfaceExample` first defines field `bar` here, ...
+ 28 │     bar: String!
+    ·     ─┬─  
+    ·      ╰─── ... and later defines the same field again here.
+────╯
+
+
 [E0102] Error: Field name must be unique.
     ╭─[graphql:28:5]
     │
