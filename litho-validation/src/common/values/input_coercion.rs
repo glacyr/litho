@@ -72,9 +72,8 @@ where
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_value(&self, node: &'a Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
-        let ty = match self.0.inference.types_for_values.get(&node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = self.0.inference.types_for_values.get(&node) else {
+            return
         };
 
         accumulator.extend(self.check_ty(&ty, node))

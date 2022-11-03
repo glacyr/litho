@@ -20,10 +20,8 @@ where
         node: &'a Arc<OperationDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        if node.name.is_none() {
-            if self.0.operations.len() > 1 {
-                accumulator.push(Diagnostic::lone_anonymous_operation(node.span()));
-            }
+        if node.name.is_none() && self.0.operations.len() > 1 {
+            accumulator.push(Diagnostic::lone_anonymous_operation(node.span()));
         }
     }
 }

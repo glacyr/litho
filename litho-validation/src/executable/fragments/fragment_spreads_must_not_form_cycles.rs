@@ -20,9 +20,8 @@ where
         node: &'a Arc<FragmentDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.fragment_name.ok() {
-            Some(name) => name.as_ref(),
-            None => return,
+        let Some(name) = node.fragment_name.ok().map(AsRef::as_ref) else {
+            return
         };
 
         node.traverse(

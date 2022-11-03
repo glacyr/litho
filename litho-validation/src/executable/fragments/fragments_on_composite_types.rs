@@ -20,18 +20,15 @@ where
         node: &'a Arc<FragmentDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.fragment_name.ok() {
-            Some(name) => name.as_ref(),
-            None => return,
+        let Some(name) = node.fragment_name.ok().map(AsRef::as_ref) else {
+            return
         };
 
-        let ty = match node
+        let Some(ty) = node
             .type_condition
             .ok()
-            .and_then(|cond| cond.named_type.ok())
-        {
-            Some(ty) => ty,
-            None => return,
+            .and_then(|cond| cond.named_type.ok()) else {
+            return
         };
 
         match self.0.type_definitions_by_name(ty.0.as_ref()).next() {

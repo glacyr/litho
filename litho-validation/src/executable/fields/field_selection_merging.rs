@@ -19,9 +19,8 @@ where
         set: &'a Arc<SelectionSet<T>>,
         fields: &mut HashMap<&'a T, Vec<(&'a T, &'a Arc<Field<T>>)>>,
     ) {
-        let ty = match self.0.inference.type_by_selection_set.get(set) {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = self.0.inference.type_by_selection_set.get(set) else {
+            return
         };
 
         for selection in set.selections.iter() {

@@ -195,13 +195,11 @@ where
                     .insert(arguments, definition);
 
                 for argument in arguments.items.iter() {
-                    let definition = match definition
+                    let Some(definition) = definition
                         .definitions
                         .iter()
-                        .find(|def| def.name.as_ref() == argument.name.as_ref())
-                    {
-                        Some(definition) => definition,
-                        None => continue,
+                        .find(|def| def.name.as_ref() == argument.name.as_ref()) else {
+                        continue
                     };
 
                     accumulator
@@ -366,14 +364,12 @@ where
         node: &'ast Arc<FragmentSpread<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let definition = match accumulator
+        let Some(definition) = accumulator
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next()
-        {
-            Some(definition) => definition,
-            None => return,
+            .next() else {
+            return
         };
 
         accumulator
@@ -384,9 +380,8 @@ where
     }
 
     fn visit_directive(&self, node: &'ast Arc<Directive<T>>, accumulator: &mut Self::Accumulator) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         let definition = accumulator

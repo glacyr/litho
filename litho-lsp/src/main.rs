@@ -38,9 +38,8 @@ impl Backend {
         let mut workspace = self.workspace.lock().await;
 
         for id in workspace.take_invalid() {
-            let document = match workspace.document_by_id(id) {
-                Some(document) => document,
-                None => continue,
+            let Some(document) = workspace.document_by_id(id) else {
+                continue
             };
 
             if document.is_internal() {
@@ -175,11 +174,9 @@ impl LanguageServer for Backend {
 
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let workspace = self.workspace.lock().await;
-        let document =
-            match workspace.document(&params.text_document_position_params.text_document.uri) {
-                Some(document) => document,
-                None => return Ok(None),
-            };
+        let Some(document) = workspace.document(&params.text_document_position_params.text_document.uri) else {
+            return Ok(None)
+        };
 
         Ok(HoverProvider::new(document, workspace.database())
             .hover(params.text_document_position_params.position))
@@ -190,11 +187,9 @@ impl LanguageServer for Backend {
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let workspace = self.workspace.lock().await;
-        let document =
-            match workspace.document(&params.text_document_position_params.text_document.uri) {
-                Some(document) => document,
-                None => return Ok(None),
-            };
+        let Some(document) = workspace.document(&params.text_document_position_params.text_document.uri) else {
+            return Ok(None)
+        };
 
         Ok(DefinitionProvider::new(document, &workspace)
             .goto_definition(params.text_document_position_params.position))
@@ -202,9 +197,8 @@ impl LanguageServer for Backend {
 
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace.document(&params.text_document_position.text_document.uri) {
-            Some(document) => document,
-            None => return Ok(None),
+        let Some(document) = workspace.document(&params.text_document_position.text_document.uri) else {
+            return Ok(None)
         };
 
         Ok(Some(
@@ -215,9 +209,8 @@ impl LanguageServer for Backend {
 
     async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace.document(&params.text_document_position.text_document.uri) {
-            Some(document) => document,
-            None => return Ok(None),
+        let Some(document) = workspace.document(&params.text_document_position.text_document.uri) else {
+            return Ok(None)
         };
 
         Ok(ReferencesProvider::new(document, &workspace)
@@ -228,9 +221,8 @@ impl LanguageServer for Backend {
 impl Backend {
     pub async fn inlay_hint(&self, params: InlayHintParams) -> Result<Vec<InlayHint>> {
         let workspace = self.workspace.lock().await;
-        let document = match workspace.document(&params.text_document.uri) {
-            Some(document) => document,
-            None => return Ok(vec![]),
+        let Some(document) = workspace.document(&params.text_document.uri) else {
+            return Ok(vec![])
         };
 
         Ok(InlayHintProvider::new(document, workspace.database())

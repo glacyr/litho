@@ -20,9 +20,8 @@ where
         node: &'a Arc<SelectionSet<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let ty = match self.0.inference.type_by_selection_set.get(node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = self.0.inference.type_by_selection_set.get(node) else {
+            return
         };
 
         if !self.0.is_composite_type(ty) {

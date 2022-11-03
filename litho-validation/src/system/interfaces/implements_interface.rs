@@ -270,14 +270,12 @@ where
         node: &'a Arc<TypeDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let ty = match node.name().ok() {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = node.name().ok() else {
+            return
         };
 
-        let implements_interfaces = match node.implements_interfaces() {
-            Some(interfaces) => interfaces,
-            None => return,
+        let Some(implements_interfaces) = node.implements_interfaces() else {
+            return
         };
 
         accumulator.extend(self.check_type(ty.as_ref(), implements_interfaces))
@@ -288,14 +286,12 @@ where
         node: &'a Arc<TypeExtension<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let ty = match node.name() {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = node.name() else {
+            return
         };
 
-        let implements_interfaces = match node.implements_interfaces() {
-            Some(interfaces) => interfaces,
-            None => return,
+        let Some(implements_interfaces) = node.implements_interfaces() else {
+            return
         };
 
         accumulator.extend(self.check_type(ty, implements_interfaces))

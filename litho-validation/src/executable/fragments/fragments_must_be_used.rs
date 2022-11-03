@@ -20,17 +20,15 @@ where
         node: &'a Arc<FragmentDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.fragment_name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.fragment_name.ok() else {
+            return
         };
 
-        match self.0.usages.fragments.usages(node).next() {
-            Some(_) => {}
-            None => accumulator.push(Diagnostic::unused_fragment_definition(
+        if self.0.usages.fragments.usages(node).next().is_none() {
+            accumulator.push(Diagnostic::unused_fragment_definition(
                 name.as_ref().to_string(),
                 name.span(),
-            )),
+            ));
         }
     }
 }

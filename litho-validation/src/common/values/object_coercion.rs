@@ -21,9 +21,8 @@ where
             return;
         }
 
-        let ty = match self.0.inference.types_for_values.get(&node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = self.0.inference.types_for_values.get(&node) else {
+            return
         };
 
         let ty = match ty.as_ref() {
@@ -48,9 +47,8 @@ where
                 }
             };
 
-            let ty = match field.ty.ok() {
-                Some(ty) => ty,
-                None => continue,
+            let Some(ty) = field.ty.ok() else {
+                continue
             };
 
             if !ty.is_required() {

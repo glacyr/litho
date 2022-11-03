@@ -20,18 +20,19 @@ where
         node: &'a Arc<FragmentDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        match node.fragment_name.ok() {
-            Some(name) => match self.0.fragments.by_name(name.as_ref()).next() {
-                Some(first) if !Arc::ptr_eq(first, node) => {
-                    accumulator.push(Diagnostic::duplicate_fragment_name(
-                        name.as_ref().to_string(),
-                        first.fragment_name.span(),
-                        node.fragment_name.span(),
-                    ))
-                }
-                _ => {}
-            },
-            None => {}
+        let Some(name) = node.fragment_name.ok() else {
+            return
+        };
+
+        match self.0.fragments.by_name(name.as_ref()).next() {
+            Some(first) if !Arc::ptr_eq(first, node) => {
+                accumulator.push(Diagnostic::duplicate_fragment_name(
+                    name.as_ref().to_string(),
+                    first.fragment_name.span(),
+                    node.fragment_name.span(),
+                ))
+            }
+            _ => {}
         }
     }
 }

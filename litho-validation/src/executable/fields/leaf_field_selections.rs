@@ -16,24 +16,20 @@ where
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_field(&self, node: &'a Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
-        let name = match self
+        let Some(name) = self
             .0
             .inference
             .type_for_field(node)
-            .and_then(|ty| ty.name())
-        {
-            Some(name) => name,
-            None => return,
+            .and_then(|ty| ty.name()) else {
+            return
         };
 
-        let ty = match self.0.type_definitions_by_name(name).next() {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = self.0.type_definitions_by_name(name).next() else {
+            return
         };
 
-        let field_name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(field_name) = node.name.ok() else {
+            return
         };
 
         let diagnostic = match (!ty.is_scalar_like(), node.selection_set.is_some()) {

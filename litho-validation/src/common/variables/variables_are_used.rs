@@ -67,9 +67,8 @@ where
             return;
         }
 
-        let definition = match self.0.fragments.by_name(node.fragment_name.as_ref()).next() {
-            Some(definition) => definition,
-            None => return,
+        let Some(definition) = self.0.fragments.by_name(node.fragment_name.as_ref()).next() else {
+            return
         };
 
         definition.traverse(

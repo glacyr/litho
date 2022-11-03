@@ -19,18 +19,16 @@ where
         let mut seen = HashMap::<&T, &Directive<T>>::new();
 
         for directive in node.directives.iter() {
-            let definition = match self.0.inference.definition_for_directive(directive) {
-                Some(definition) => definition,
-                None => continue,
+            let Some(definition) = self.0.inference.definition_for_directive(directive) else {
+                return
             };
 
             if definition.repeatable.is_some() {
                 continue;
             }
 
-            let name = match definition.name.ok() {
-                Some(name) => name,
-                None => continue,
+            let Some(name) = definition.name.ok() else {
+                continue
             };
 
             match seen.get(name.as_ref()) {

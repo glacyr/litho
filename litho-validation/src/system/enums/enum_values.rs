@@ -53,9 +53,8 @@ where
         node: &'a EnumTypeDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         if let Some(values) = node.values_definition.as_ref() {
@@ -83,9 +82,8 @@ where
         node: &'a EnumTypeExtension<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         if let Some(values) = node.values_definition.as_ref() {

@@ -22,9 +22,8 @@ where
         node: &'a Arc<OperationDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let variable_definitions = match node.variable_definitions.as_ref() {
-            Some(definitions) => definitions,
-            None => return,
+        let Some(variable_definitions) = node.variable_definitions.as_ref() else {
+            return
         };
 
         let variable_definitions = variable_definitions
@@ -58,14 +57,12 @@ where
 
     let location_default_value = database.inference.default_value_for_values.get(value);
 
-    let actual = match definition.ty.ok() {
-        Some(ty) => ty,
-        None => return true,
+    let Some(actual) = definition.ty.ok() else {
+        return true
     };
 
-    let expected = match database.inference.types_for_values.get(value) {
-        Some(ty) => ty,
-        None => return true,
+    let Some(expected) = database.inference.types_for_values.get(value) else {
+        return true
     };
 
     let expected_nullable = match (definition_default_value, location_default_value) {
@@ -121,19 +118,16 @@ where
             _ => return,
         };
 
-        let definition = match self.variable_definitions.get(variable.name.as_ref()) {
-            Some(definition) => definition,
-            None => return,
+        let Some(definition) = self.variable_definitions.get(variable.name.as_ref()) else {
+            return
         };
 
-        let actual = match definition.ty.ok() {
-            Some(ty) => ty,
-            None => return,
+        let Some(actual) = definition.ty.ok() else {
+            return
         };
 
-        let expected = match self.database.inference.types_for_values.get(node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(expected) = self.database.inference.types_for_values.get(node) else {
+            return
         };
 
         if !is_variable_usage_allowed(self.database, definition, node) {
@@ -152,14 +146,12 @@ where
         node: &'a Arc<FragmentSpread<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let definition = match self
+        let Some(definition) = self
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next()
-        {
-            Some(definition) => definition,
-            None => return,
+            .next() else {
+            return
         };
 
         definition.traverse(
@@ -198,19 +190,16 @@ where
             _ => return,
         };
 
-        let definition = match self.variable_definitions.get(variable.name.as_ref()) {
-            Some(definition) => definition,
-            None => return,
+        let Some(definition) = self.variable_definitions.get(variable.name.as_ref()) else {
+            return
         };
 
-        let actual = match definition.ty.ok() {
-            Some(ty) => ty,
-            None => return,
+        let Some(actual) = definition.ty.ok() else {
+            return
         };
 
-        let expected = match self.database.inference.types_for_values.get(node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(expected) = self.database.inference.types_for_values.get(node) else {
+            return
         };
 
         if !is_variable_usage_allowed(self.database, definition, node) {
@@ -235,14 +224,12 @@ where
             return;
         }
 
-        let definition = match self
+        let Some(definition) = self
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next()
-        {
-            Some(definition) => definition,
-            None => return,
+            .next() else {
+            return
         };
 
         definition.traverse(

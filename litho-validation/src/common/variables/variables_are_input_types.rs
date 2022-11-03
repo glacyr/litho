@@ -19,14 +19,12 @@ where
         node: &'a VariableDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let ty = match node.ty.ok() {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = node.ty.ok() else {
+            return
         };
 
-        let name = match ty.name() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = ty.name() else {
+            return
         };
 
         if self.0.type_exists(name) && !self.0.is_input_type(name) {

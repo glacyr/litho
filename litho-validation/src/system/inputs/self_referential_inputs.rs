@@ -52,9 +52,8 @@ where
         node: &'a InputObjectTypeDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         for field in node

@@ -22,9 +22,8 @@ where
             return false;
         }
 
-        let definition = match self.0.directive_definitions_by_name(ty).next() {
-            Some(definition) => definition,
-            None => return false,
+        let Some(definition) = self.0.directive_definitions_by_name(ty).next() else {
+            return false
         };
 
         visited.push(ty);
@@ -63,9 +62,8 @@ where
         node: &'a Arc<DirectiveDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         for arg in node

@@ -99,9 +99,8 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
             return;
         }
 
-        let values = match node.values_definition.as_ref() {
-            Some(values) => values,
-            None => return,
+        let Some(values) = node.values_definition.as_ref() else {
+            return
         };
 
         for value in values.definitions.iter() {

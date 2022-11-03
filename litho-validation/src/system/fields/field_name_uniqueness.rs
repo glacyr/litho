@@ -42,9 +42,8 @@ where
         node: &'a InputObjectTypeExtension<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         for field in node
@@ -97,9 +96,8 @@ where
         node: &'a ObjectTypeExtension<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         for field in node
@@ -131,9 +129,8 @@ where
         node: &'a InterfaceTypeExtension<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let name = match node.name.ok() {
-            Some(name) => name,
-            None => return,
+        let Some(name) = node.name.ok() else {
+            return
         };
 
         for field in node

@@ -21,9 +21,8 @@ where
             return;
         }
 
-        let ty = match self.0.inference.types_for_values.get(&node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(ty) = self.0.inference.types_for_values.get(&node) else {
+            return
         };
 
         if matches!(ty.as_ref(), Type::List(_)) {
@@ -52,9 +51,8 @@ where
             }
         };
 
-        let ty = match ty.name() {
-            Some(name) => name,
-            None => return,
+        let Some(ty) = ty.name() else {
+            return
         };
 
         if self

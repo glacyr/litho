@@ -21,9 +21,8 @@ where
         node: &'a Arc<SelectionSet<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let parent_type = match self.0.inference.type_by_selection_set.get(node) {
-            Some(ty) => ty,
-            None => return,
+        let Some(parent_type) = self.0.inference.type_by_selection_set.get(node) else {
+            return
         };
 
         for selection in node.selections.iter() {
@@ -47,9 +46,8 @@ where
                 },
             };
 
-            let fragment_type = match type_condition.named_type.ok() {
-                Some(name) => name,
-                None => continue,
+            let Some(fragment_type) = type_condition.named_type.ok() else {
+                continue
             };
 
             if !self.0.type_exists(fragment_type.0.as_ref()) {

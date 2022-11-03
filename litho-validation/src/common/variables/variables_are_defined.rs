@@ -70,14 +70,12 @@ where
         node: &'a Arc<FragmentSpread<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let definition = match self
+        let Some(definition) = self
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next()
-        {
-            Some(definition) => definition,
-            None => return,
+            .next() else {
+            return
         };
 
         definition.traverse(
@@ -132,14 +130,12 @@ where
             return;
         }
 
-        let definition = match self
+        let Some(definition) = self
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next()
-        {
-            Some(definition) => definition,
-            None => return,
+            .next() else {
+            return
         };
 
         definition.traverse(

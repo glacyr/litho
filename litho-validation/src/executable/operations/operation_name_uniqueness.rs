@@ -20,18 +20,19 @@ where
         node: &'a Arc<OperationDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        match node.name.as_ref() {
-            Some(name) => match self.0.operations.by_name(name.as_ref()).next() {
-                Some(first) if !Arc::ptr_eq(first, node) => {
-                    accumulator.push(Diagnostic::duplicate_operation_name(
-                        name.as_ref().to_string(),
-                        first.name.span(),
-                        node.name.span(),
-                    ))
-                }
-                _ => {}
-            },
-            None => {}
+        let Some(name) = node.name.as_ref() else {
+            return
+        };
+
+        match self.0.operations.by_name(name.as_ref()).next() {
+            Some(first) if !Arc::ptr_eq(first, node) => {
+                accumulator.push(Diagnostic::duplicate_operation_name(
+                    name.as_ref().to_string(),
+                    first.name.span(),
+                    node.name.span(),
+                ))
+            }
+            _ => {}
         }
     }
 }
