@@ -7,8 +7,10 @@ use ignore::WalkBuilder;
 use litho_compiler::Compiler;
 use litho_language::lex::{SourceId, SourceMap, Span};
 use litho_types::Database;
+use lsp_types::request::InlayHintRefreshRequest;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::*;
+use tower_lsp::Client;
 
 use crate::diagnostic::serialize_diagnostic;
 
@@ -16,6 +18,7 @@ use super::{url_from_path, Document, Store};
 
 #[derive(Debug)]
 pub struct Workspace {
+    client: Client,
     store: Store,
     source_map: SourceMap<Url>,
     compiler: Compiler<SmolStr>,
@@ -23,13 +26,18 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new() -> Workspace {
+    pub fn new(client: Client) -> Workspace {
         Workspace {
+            client,
             store: Store::new(),
             source_map: SourceMap::new(),
             compiler: Compiler::new(),
             invalid: HashSet::new(),
         }
+    }
+
+    pub fn client(&self) -> &Client {
+        &self.client
     }
 
     pub fn document_by_id(&self, id: SourceId) -> Option<&Document> {
@@ -51,12 +59,12 @@ impl Workspace {
         self.compiler.database()
     }
 
-    pub fn mutate<F, O>(&mut self, mutation: F) -> O
+    pub async fn mutate<F, O>(&mut self, mutation: F) -> O
     where
         F: FnOnce(&mut Workspace) -> O,
     {
         let result = mutation(self);
-        self.rebuild();
+        self.rebuild().await;
         result
     }
 
@@ -160,8 +168,9 @@ impl Workspace {
         Ok(())
     }
 
-    pub fn rebuild(&mut self) {
-        self.compiler.rebuild()
+    pub async fn rebuild(&mut self) {
+        self.compiler.rebuild();
+        self.check_all().await;
     }
 
     pub fn position_to_index(source: &str, position: Position) -> usize {
@@ -221,5 +230,30 @@ impl Workspace {
         }
 
         source
+    }
+
+    pub async fn check_all(&mut self) {
+        for id in self.take_invalid() {
+            let Some(document) = self.document_by_id(id) else {
+                continue
+            };
+
+            if document.is_internal() {
+                continue;
+            }
+
+            self.client
+                .publish_diagnostics(
+                    document.url().to_owned(),
+                    self.diagnostics(id).collect(),
+                    document.version(),
+                )
+                .await;
+        }
+
+        let _ = self
+            .client
+            .send_request::<InlayHintRefreshRequest>(())
+            .await;
     }
 }
