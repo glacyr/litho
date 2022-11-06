@@ -1,4 +1,5 @@
 use std::hash::Hash;
+use std::sync::Arc;
 
 use litho_language::ast::*;
 
@@ -13,6 +14,7 @@ where
     pub input_value_definitions: Named<T, InputValueDefinition<T>>,
     pub enum_value_definitions: Named<T, EnumValueDefinition<T>>,
     pub union_member_types: Named<T, NamedType<T>>,
+    pub schema_directives: Vec<Arc<Directive<T>>>,
 }
 
 impl<T> Default for Bindings<T>
@@ -25,6 +27,7 @@ where
             input_value_definitions: Default::default(),
             enum_value_definitions: Default::default(),
             union_member_types: Default::default(),
+            schema_directives: Default::default(),
         }
     }
 }

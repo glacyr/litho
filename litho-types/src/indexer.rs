@@ -25,6 +25,32 @@ where
         }
     }
 
+    fn visit_schema_definition(
+        &self,
+        node: &'ast SchemaDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.definitions.schema_directives.extend(
+            node.directives
+                .iter()
+                .flat_map(|directives| directives.directives.iter())
+                .cloned(),
+        )
+    }
+
+    fn visit_schema_extension(
+        &self,
+        node: &'ast SchemaExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        accumulator.extensions.schema_directives.extend(
+            node.directives
+                .iter()
+                .flat_map(|directives| directives.directives.iter())
+                .cloned(),
+        )
+    }
+
     fn visit_type_definition(
         &self,
         node: &'ast Arc<TypeDefinition<T>>,

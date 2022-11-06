@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::Arc;
+use std::time::Duration;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::{DefinitionId, Document};
@@ -24,6 +25,13 @@ where
     document_diagnostics: HashMap<SourceId, Vec<Diagnostic<Span>>>,
     graph: DepGraph<DefinitionId, Dependency<T>>,
     database: Database<T>,
+    imports: HashMap<String, ResolvedImport<T>>,
+}
+
+#[derive(Debug)]
+pub struct ResolvedImport<T> {
+    source: Result<T, String>,
+    document: Document<T>,
 }
 
 impl<T> Compiler<T>
@@ -38,6 +46,7 @@ where
             document_diagnostics: Default::default(),
             graph: DepGraph::new(),
             database: Database::new(),
+            imports: HashMap::new(),
         }
     }
 
@@ -54,6 +63,40 @@ impl<T> Compiler<T>
 where
     T: Eq + Clone + Hash + Borrow<str> + ToString,
 {
+    pub fn imports(&self) -> &HashMap<String, Duration> {
+        self.database.imports()
+    }
+
+    pub fn update_resolved_imports(&mut self, imports: HashMap<String, Result<T, String>>)
+    where
+        T: for<'a> From<&'a str> + for<'a> PartialEq<&'a str>,
+    {
+        self.imports
+            .retain(|url, ResolvedImport { source, .. }| imports.get(url) == Some(&source));
+
+        for (url, source) in imports.into_iter() {
+            if self.imports.contains_key(&url) {
+                continue;
+            }
+
+            self.imports.insert(
+                url,
+                ResolvedImport {
+                    document: source
+                        .as_ref()
+                        .ok()
+                        .map(|text| {
+                            Document::parse_from_str(SourceId::default(), text.borrow())
+                                .unwrap_or_default()
+                                .0
+                        })
+                        .unwrap_or_default(),
+                    source,
+                },
+            );
+        }
+    }
+
     pub fn diagnostics(&self, source_id: SourceId) -> impl Iterator<Item = &Diagnostic<Span>> {
         let document_diagnostics = self
             .document_diagnostics
@@ -164,11 +207,23 @@ where
     where
         T: From<&'static str>,
     {
-        self.database = self
-            .documents
-            .values()
-            .map(AsRef::as_ref)
-            .collect::<Database<_>>();
+        self.database = Database::with_imports(
+            self.documents.values().map(AsRef::as_ref),
+            &self
+                .imports
+                .iter()
+                .map(|(url, import)| {
+                    (
+                        url.to_owned(),
+                        import
+                            .source
+                            .as_ref()
+                            .map(|_| &import.document)
+                            .map_err(ToOwned::to_owned),
+                    )
+                })
+                .collect(),
+        );
 
         for document in self.documents.values() {
             for definition in document.definitions.iter() {

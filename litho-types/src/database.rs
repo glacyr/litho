@@ -1,6 +1,9 @@
+use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
+use std::time::Duration;
 
 use litho_language::ast::*;
 use multimap::MultiMap;
@@ -21,6 +24,7 @@ where
     pub fragments: Fragments<T>,
     pub usages: Usages<T>,
     pub interface_implementations: MultiMap<T, T>,
+    pub imports: HashMap<String, Duration>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
@@ -39,6 +43,7 @@ where
             fragments: Default::default(),
             usages: Default::default(),
             interface_implementations: Default::default(),
+            imports: Default::default(),
             directive_definitions_by_name: Default::default(),
             type_definitions_by_name: Default::default(),
             type_extensions_by_name: Default::default(),
@@ -53,15 +58,18 @@ where
     pub fn new() -> Database<T> {
         Default::default()
     }
-}
 
-impl<'a, T> FromIterator<&'a Document<T>> for Database<T>
-where
-    T: From<&'static str> + Clone + Eq + Hash + 'a,
-{
-    fn from_iter<I>(iter: I) -> Self
+    pub fn imports(&self) -> &HashMap<String, Duration> {
+        &self.imports
+    }
+
+    pub fn with_imports<'a, I>(
+        iter: I,
+        imports: &HashMap<String, Result<&'a Document<T>, String>>,
+    ) -> Self
     where
         I: IntoIterator<Item = &'a Document<T>>,
+        T: Borrow<str> + Clone + Eq + From<&'static str> + Hash + ToString + 'a,
     {
         let mut database = Database::new();
         let docs = iter.into_iter().collect::<Vec<_>>();
@@ -70,11 +78,61 @@ where
             document.traverse(&Indexer, &mut database);
         }
 
+        let directives = database
+            .schema_directives()
+            .flat_map(|directive| {
+                let Some(name) = directive.name.ok() else {
+                return None
+            };
+
+                if name.as_ref().borrow() != "litho" {
+                    return None;
+                }
+
+                let Some(url) = directive
+                .arguments
+                .iter()
+                .flat_map(|args| args.items.iter())
+                .find(|arg| arg.name.as_ref().borrow() == "url")
+                .and_then(|arg| arg.value.ok()) else {
+                return None
+            };
+
+                let Value::StringValue(url) = url.as_ref() else {
+                return None
+            };
+
+                Some((url.to_string(), Duration::from_secs(60)))
+            })
+            .collect::<HashMap<_, _>>();
+
+        for url in directives.keys() {
+            let Some(Ok(document)) = imports.get(url) else {
+                continue
+            };
+
+            document.traverse(&Indexer, &mut database);
+        }
+
+        database.imports = directives;
+
         for document in docs.iter() {
             document.traverse(&Inferencer, &mut InferenceState::new(&mut database));
         }
 
         database
+    }
+}
+
+impl<'a, T> FromIterator<&'a Document<T>> for Database<T>
+where
+    T: Borrow<str> + Clone + Eq + From<&'static str> + Hash + ToString + 'a,
+{
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a Document<T>>,
+    {
+        Database::with_imports(iter, &Default::default())
     }
 }
 
@@ -276,5 +334,12 @@ where
         std::iter::once(ty)
             .chain(self.union_member_types(ty).map(|ty| ty.0.as_ref()))
             .chain(self.interface_implementations(ty))
+    }
+
+    pub fn schema_directives(&self) -> impl Iterator<Item = &Arc<Directive<T>>> {
+        self.definitions
+            .schema_directives
+            .iter()
+            .chain(self.extensions.schema_directives.iter())
     }
 }

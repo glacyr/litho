@@ -1,39 +1,50 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
+use std::sync::Arc;
 
 use ignore::types::TypesBuilder;
 use ignore::WalkBuilder;
 use litho_compiler::Compiler;
 use litho_language::lex::{SourceId, SourceMap, Span};
 use litho_types::Database;
-use lsp_types::request::InlayHintRefreshRequest;
 use smol_str::SmolStr;
+use tokio::sync::Mutex;
 use tower_lsp::lsp_types::*;
 use tower_lsp::Client;
 
 use crate::diagnostic::serialize_diagnostic;
 
-use super::{url_from_path, Document, Store};
+use super::{url_from_path, Document, Importer, Store};
 
-#[derive(Debug)]
 pub struct Workspace {
     client: Client,
     store: Store,
     source_map: SourceMap<Url>,
     compiler: Compiler<SmolStr>,
     invalid: HashSet<SourceId>,
+    importer: Importer,
 }
 
 impl Workspace {
-    pub fn new(client: Client) -> Workspace {
+    pub fn new(client: Client, importer: Importer) -> Workspace {
         Workspace {
             client,
             store: Store::new(),
             source_map: SourceMap::new(),
             compiler: Compiler::new(),
             invalid: HashSet::new(),
+            importer,
         }
+    }
+
+    pub async fn importer_register(&mut self, workspace: &Arc<Mutex<Workspace>>) {
+        self.importer.register(Arc::downgrade(workspace)).await;
+    }
+
+    pub async fn update_imports(&mut self, imports: HashMap<String, Result<SmolStr, String>>) {
+        self.compiler.update_resolved_imports(imports);
+        self.rebuild().await;
     }
 
     pub fn client(&self) -> &Client {
@@ -170,6 +181,7 @@ impl Workspace {
 
     pub async fn rebuild(&mut self) {
         self.compiler.rebuild();
+        self.importer.update(self.compiler.imports()).await;
         self.check_all().await;
     }
 
@@ -250,10 +262,5 @@ impl Workspace {
                 )
                 .await;
         }
-
-        let _ = self
-            .client
-            .send_request::<InlayHintRefreshRequest>(())
-            .await;
     }
 }

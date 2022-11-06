@@ -10,7 +10,6 @@ use super::{
     Workspace,
 };
 
-#[derive(Debug)]
 pub struct Server {
     workspace: Arc<Mutex<Workspace>>,
 }
@@ -26,6 +25,11 @@ impl Server {
 #[tower_lsp::async_trait]
 impl LanguageServer for Server {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        {
+            let mut workspace = self.workspace.lock().await;
+            workspace.importer_register(&self.workspace).await;
+        }
+
         self.workspace
             .lock()
             .await

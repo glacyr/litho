@@ -35,6 +35,7 @@ warp-server = ["warp"]
 [workspace]
 members = [
 	"copa",
+    "dbounce",
 	"kono-aspect",
 	"kono-executor",
 	"kono-introspection",
@@ -42,6 +43,7 @@ members = [
 	"kono-schema",
     "litho-compiler",
     "litho-diagnostics",
+    "litho-import",
     "litho-language",
     "litho-lsp",
     "litho-tests",
