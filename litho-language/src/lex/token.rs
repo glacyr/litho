@@ -65,6 +65,10 @@ impl<T> Error<T> {
 pub struct Name<T>(RawToken<T>);
 
 impl<T> Name<T> {
+    pub fn new(source: T) -> Name<T> {
+        Name(RawToken::name(source))
+    }
+
     pub fn span(&self) -> Span {
         self.0.span
     }
@@ -99,6 +103,10 @@ impl<T> AsRef<T> for Name<T> {
 pub struct Punctuator<T>(RawToken<T>);
 
 impl<T> Punctuator<T> {
+    pub fn new(source: T) -> Punctuator<T> {
+        Punctuator(RawToken::punctuator(source))
+    }
+
     pub fn span(&self) -> Span {
         self.0.span
     }
@@ -213,6 +221,12 @@ impl<T> From<RawToken<T>> for Token<T> {
             TokenKind::StringValue => Token::StringValue(StringValue(raw)),
             _ => unreachable!("All other token types should have been ignored by the lexer."),
         }
+    }
+}
+
+impl<T> From<Name<T>> for Token<T> {
+    fn from(name: Name<T>) -> Self {
+        Token::Name(name)
     }
 }
 

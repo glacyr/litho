@@ -11,6 +11,24 @@ pub struct RawToken<T> {
     pub span: Span,
 }
 
+impl<T> RawToken<T> {
+    pub fn name(source: T) -> RawToken<T> {
+        RawToken {
+            kind: TokenKind::Name,
+            source,
+            span: Default::default(),
+        }
+    }
+
+    pub fn punctuator(source: T) -> RawToken<T> {
+        RawToken {
+            kind: TokenKind::Punctuator,
+            source,
+            span: Default::default(),
+        }
+    }
+}
+
 impl<T> RawToken<T>
 where
     T: PartialEq,

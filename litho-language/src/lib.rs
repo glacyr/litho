@@ -2,6 +2,7 @@
 
 pub mod ast;
 pub mod chk;
+pub mod fmt;
 pub mod lex;
 pub mod syn;
 
