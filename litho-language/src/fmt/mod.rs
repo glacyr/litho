@@ -1,11 +1,13 @@
 mod common;
 mod executable;
 mod macros;
+mod measurer;
 mod schema;
 mod tokens;
 mod types;
 
-pub use types::{Format, Formatter};
+pub use measurer::Measurer;
+pub use types::{Format, Formatter, Shape};
 
 #[cfg(test)]
 mod tests {
@@ -25,10 +27,13 @@ mod tests {
             query: HelloQuery
             mutation: HelloMutation
         }
-        
-        type Example {
-            complex(\"Abc\" nested: Boolean! = false, \"Hello\" example: Int!): Hello!
-        }
+
+        \"\"\"
+        Long description
+            Some additional
+       This is weird
+       \"\"\"
+        type Example
         ",
         )
         .unwrap()

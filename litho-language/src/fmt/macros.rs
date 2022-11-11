@@ -4,7 +4,7 @@ macro_rules! format_token {
         where
             T: Borrow<str>,
         {
-            fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+            fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
                 W: Write,
             {
@@ -22,13 +22,24 @@ macro_rules! format_enum {
         where
             T: Borrow<str>,
         {
-            fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+            fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
                 W: Write,
             {
                 match self {
                     $(
-                        $ident::$variant(node) => node.format(formatter),
+                        $ident::$variant(node) => node.format_collapsed(formatter),
+                    )*
+                }
+            }
+
+            fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+            where
+                W: Write,
+            {
+                match self {
+                    $(
+                        $ident::$variant(node) => node.format_expanded(formatter),
                     )*
                 }
             }
@@ -37,6 +48,14 @@ macro_rules! format_enum {
                 match self {
                     $(
                         $ident::$variant(node) => node.expands(),
+                    )*
+                }
+            }
+
+            fn can_expand(&self) -> bool {
+                match self {
+                    $(
+                        $ident::$variant(node) => node.can_expand(),
                     )*
                 }
             }
@@ -52,7 +71,7 @@ macro_rules! format_definitions {
         where
             T: Borrow<str>,
         {
-            fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+            fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
                 W: Write,
             {
@@ -70,7 +89,7 @@ macro_rules! format_unit {
         where
             T: Borrow<str>,
         {
-            fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+            fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
                 W: Write,
             {

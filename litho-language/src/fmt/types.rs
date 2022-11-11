@@ -4,6 +4,8 @@ use std::sync::Arc;
 
 use crate::ast::*;
 
+use super::Measurer;
+
 pub struct Shape {
     indent: usize,
     range: Range<usize>,
@@ -107,6 +109,10 @@ where
                 self.squeeze(|formatter| formatter.push(","))?;
             }
 
+            if Measurer::measure(&item, self.shape.range.len()).is_err() {
+                self.line()?;
+            }
+
             item.format(self)?;
         }
 
@@ -173,12 +179,36 @@ where
 pub trait Format {
     fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
+        W: Write,
+    {
+        let expanded = self.expands()
+            || (self.can_expand() && Measurer::measure(self, formatter.shape.range.len()).is_err());
+
+        match expanded {
+            true => self.format_expanded(formatter),
+            false => self.format_collapsed(formatter),
+        }
+    }
+
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
         W: Write;
+
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        self.format_collapsed(formatter)
+    }
 
     fn format_to_string(&self, line_width: usize) -> String {
         let mut string = String::new();
         let _ = self.format(&mut Formatter::new(&mut string, line_width));
         string
+    }
+
+    fn can_expand(&self) -> bool {
+        false
     }
 
     fn expands(&self) -> bool {
@@ -191,7 +221,7 @@ where
     A: Format,
     B: Format,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -199,21 +229,28 @@ where
         self.1.format(formatter)?;
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        self.0.expands() || self.1.expands()
-    }
 }
 
 impl<T> Format for &T
 where
     T: Format,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
-        (*self).format(formatter)
+        (*self).format_collapsed(formatter)
+    }
+
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        (*self).format_expanded(formatter)
+    }
+
+    fn can_expand(&self) -> bool {
+        (*self).can_expand()
     }
 
     fn expands(&self) -> bool {
@@ -225,11 +262,22 @@ impl<T> Format for Arc<T>
 where
     T: Format,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
-        self.as_ref().format(formatter)
+        self.as_ref().format_collapsed(formatter)
+    }
+
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        self.as_ref().format_expanded(formatter)
+    }
+
+    fn can_expand(&self) -> bool {
+        self.as_ref().can_expand()
     }
 
     fn expands(&self) -> bool {
@@ -241,12 +289,22 @@ impl<T> Format for Option<T>
 where
     T: Format,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
         match self {
-            Some(value) => value.format(formatter),
+            Some(value) => value.format_collapsed(formatter),
+            None => Ok(()),
+        }
+    }
+
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        match self {
+            Some(value) => value.format_expanded(formatter),
             None => Ok(()),
         }
     }
@@ -257,18 +315,35 @@ where
             None => false,
         }
     }
+
+    fn can_expand(&self) -> bool {
+        match self {
+            Some(value) => value.can_expand(),
+            None => false,
+        }
+    }
 }
 
 impl<T> Format for Recoverable<T>
 where
     T: Format,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
         match self {
-            Recoverable::Present(present) => present.format(formatter),
+            Recoverable::Present(present) => present.format_collapsed(formatter),
+            Recoverable::Missing(_) => Ok(()),
+        }
+    }
+
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        match self {
+            Recoverable::Present(present) => present.format_expanded(formatter),
             Recoverable::Missing(_) => Ok(()),
         }
     }
@@ -276,6 +351,13 @@ where
     fn expands(&self) -> bool {
         match self {
             Recoverable::Present(value) => value.expands(),
+            Recoverable::Missing(_) => false,
+        }
+    }
+
+    fn can_expand(&self) -> bool {
+        match self {
+            Recoverable::Present(value) => value.can_expand(),
             Recoverable::Missing(_) => false,
         }
     }

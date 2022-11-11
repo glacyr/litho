@@ -15,7 +15,7 @@ impl<T> Format for OperationDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -32,7 +32,7 @@ impl<T> Format for SelectionSet<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -60,7 +60,7 @@ impl<T> Format for Field<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -81,7 +81,7 @@ impl<T> Format for Alias<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -95,7 +95,7 @@ impl<T> Format for FragmentSpread<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -114,7 +114,7 @@ impl<T> Format for FragmentDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -135,7 +135,7 @@ impl<T> Format for TypeCondition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -149,7 +149,7 @@ impl<T> Format for InlineFragment<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -169,7 +169,7 @@ impl<T> Format for VariableDefinitions<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -197,7 +197,7 @@ impl<T> Format for VariableDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -218,7 +218,7 @@ impl<T> Format for DefaultValue<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -238,7 +238,7 @@ impl<T> Format for ListType<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -253,7 +253,7 @@ impl<T> Format for NonNullType<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {

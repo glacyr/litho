@@ -30,7 +30,7 @@ impl<T> Format for SchemaDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -44,41 +44,21 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for RootOperationTypeDefinitions<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
         self.braces.0.format(formatter)?;
-        formatter.line()?;
-        formatter.indent(|formatter| {
-            self.definitions
-                .ok()
-                .into_iter()
-                .flatten()
-                .map(|def| {
-                    def.format(formatter)?;
-                    formatter.line()?;
-                    Ok(())
-                })
-                .collect()
-        })?;
-        formatter.line()?;
+        formatter
+            .indent(|formatter| formatter.each_line(self.definitions.ok().into_iter().flatten()))?;
         self.braces.1.format(formatter)?;
         Ok(())
-    }
-
-    fn expands(&self) -> bool {
-        true
     }
 }
 
@@ -86,7 +66,7 @@ impl<T> Format for RootOperationTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -102,7 +82,7 @@ impl<T> Format for SchemaExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -111,10 +91,6 @@ where
         self.type_definitions.format(formatter)?;
 
         Ok(())
-    }
-
-    fn expands(&self) -> bool {
-        true
     }
 }
 
@@ -142,7 +118,7 @@ impl<T> Format for ScalarTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -155,17 +131,13 @@ where
         self.directives.format(formatter)?;
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for ScalarTypeExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -174,17 +146,13 @@ where
         self.directives.format(formatter)?;
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for ObjectTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -199,17 +167,13 @@ where
         self.fields_definition.format(formatter)?;
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for ImplementsInterfaces<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -225,17 +189,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for FieldsDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -250,7 +210,7 @@ impl<T> Format for FieldDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -268,17 +228,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for ArgumentsDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -304,7 +260,7 @@ impl<T> Format for InputValueDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -332,7 +288,7 @@ impl<T> Format for ObjectTypeExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -344,17 +300,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for InterfaceTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -370,17 +322,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for InterfaceTypeExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -398,7 +346,7 @@ impl<T> Format for UnionTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -413,17 +361,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for UnionMemberTypes<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -459,7 +403,7 @@ impl<T> Format for UnionTypeExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -470,17 +414,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for EnumTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -495,17 +435,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for EnumValuesDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -515,17 +451,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for EnumValueDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -539,17 +471,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        self.description.is_some() || self.directives.is_some()
-    }
 }
 
 impl<T> Format for EnumTypeExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -560,17 +488,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for InputObjectTypeDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -585,17 +509,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for InputFieldsDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -605,17 +525,13 @@ where
 
         Ok(())
     }
-
-    fn expands(&self) -> bool {
-        true
-    }
 }
 
 impl<T> Format for InputObjectTypeExtension<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -632,7 +548,7 @@ impl<T> Format for DirectiveDefinition<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
@@ -654,7 +570,7 @@ impl<T> Format for DirectiveLocations<T>
 where
     T: Borrow<str>,
 {
-    fn format<W>(&self, formatter: &mut Formatter<W>) -> Result
+    fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
         W: Write,
     {
