@@ -24,7 +24,7 @@ where
         W: Write,
     {
         self.parens.0.format(formatter)?;
-        formatter.squeeze(|formatter| formatter.each(self.items.iter()))?;
+        formatter.squeeze(|formatter| formatter.each_comma(self.items.iter()))?;
         formatter.squeeze(|formatter| self.parens.1.format(formatter))?;
         Ok(())
     }

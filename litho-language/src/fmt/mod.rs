@@ -1,4 +1,5 @@
 mod common;
+mod diff;
 mod executable;
 mod macros;
 mod measurer;
@@ -6,6 +7,7 @@ mod schema;
 mod tokens;
 mod types;
 
+pub use diff::Diff;
 pub use measurer::Measurer;
 pub use types::{Format, Formatter, Shape};
 
@@ -34,6 +36,8 @@ mod tests {
        This is weird
        \"\"\"
         type Example
+
+        query example { id }
         ",
         )
         .unwrap()

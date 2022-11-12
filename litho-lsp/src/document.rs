@@ -1,11 +1,13 @@
 use std::sync::Arc;
 
+use litho_language::lex::SourceId;
 use litho_language::Document as Ast;
 use smol_str::SmolStr;
 use tower_lsp::lsp_types::Url;
 
 #[derive(Debug)]
 pub struct Document {
+    source_id: SourceId,
     url: Url,
     version: Option<i32>,
     internal: bool,
@@ -14,14 +16,25 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn new(url: Url, version: Option<i32>, internal: bool, text: &str) -> Document {
+    pub fn new(
+        source_id: SourceId,
+        url: Url,
+        version: Option<i32>,
+        internal: bool,
+        text: &str,
+    ) -> Document {
         Document {
+            source_id,
             url,
             version,
             internal,
             text: text.into(),
             ast: None,
         }
+    }
+
+    pub fn source_id(&self) -> SourceId {
+        self.source_id
     }
 
     pub fn url(&self) -> &Url {

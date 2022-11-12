@@ -23,7 +23,7 @@ where
         self.name.format(formatter)?;
         formatter.squeeze(|formatter| self.variable_definitions.format(formatter))?;
         self.directives.format(formatter)?;
-        self.selection_set.format(formatter)?;
+        self.selection_set.format_expanded(formatter)?;
         Ok(())
     }
 }
@@ -37,20 +37,29 @@ where
         W: Write,
     {
         self.braces.0.format(formatter)?;
+        formatter.each(self.selections.iter())?;
+        self.braces.1.format(formatter)?;
 
-        if self.expands() {
-            formatter.indent(|formatter| formatter.each_line(self.selections.iter()))?;
-        } else {
-            formatter.indent(|formatter| formatter.each(self.selections.iter()))?;
-        }
+        Ok(())
+    }
 
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        self.braces.0.format(formatter)?;
+        formatter.indent(|formatter| formatter.each_line(self.selections.iter()))?;
         self.braces.1.format(formatter)?;
 
         Ok(())
     }
 
     fn expands(&self) -> bool {
-        self.selections.iter().any(Format::expands)
+        self.selections.len() > 1 || self.selections.iter().any(Format::expands)
+    }
+
+    fn can_expand(&self) -> bool {
+        true
     }
 }
 
@@ -86,7 +95,7 @@ where
         W: Write,
     {
         self.name.format(formatter)?;
-        self.colon.format(formatter)?;
+        formatter.squeeze(|formatter| self.colon.format(formatter))?;
         Ok(())
     }
 }
@@ -122,7 +131,7 @@ where
         self.fragment_name.format(formatter)?;
         self.type_condition.format(formatter)?;
         self.directives.format(formatter)?;
-        self.selection_set.format(formatter)?;
+        self.selection_set.format_expanded(formatter)?;
         Ok(())
     }
 

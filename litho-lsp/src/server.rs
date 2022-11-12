@@ -6,8 +6,8 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::LanguageServer;
 
 use super::{
-    CompletionProvider, DefinitionProvider, HoverProvider, InlayHintProvider, ReferencesProvider,
-    Workspace,
+    CompletionProvider, DefinitionProvider, FormattingProvider, HoverProvider, InlayHintProvider,
+    ReferencesProvider, Workspace,
 };
 
 pub struct Server {
@@ -58,6 +58,7 @@ impl LanguageServer for Server {
                 definition_provider: Some(OneOf::Left(true)),
                 inlay_hint_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
+                document_formatting_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             ..Default::default()
@@ -191,6 +192,17 @@ impl LanguageServer for Server {
 
         Ok(ReferencesProvider::new(document, &workspace)
             .references(params.text_document_position.position))
+    }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let workspace = self.workspace.lock().await;
+        let Some(document) = workspace.document(&params.text_document.uri) else {
+            return Ok(None)
+        };
+
+        Ok(Some(
+            FormattingProvider::new(document, &workspace).formatting(),
+        ))
     }
 }
 

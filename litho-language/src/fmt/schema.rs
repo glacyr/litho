@@ -371,6 +371,8 @@ where
     where
         W: Write,
     {
+        self.eq.format(formatter)?;
+
         if self.expands() {
             formatter.indent(|formatter| {
                 for ty in self.named_types() {
