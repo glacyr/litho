@@ -203,7 +203,7 @@ pub enum TokenKind {
     ///
     /// _Source: [Sec. 2.9.4 String Value](https://spec.graphql.org/October2021/#sec-String-Value)_
     #[regex(r#""([^"\\]|\\"|\\\\)*""#)]
-    #[regex("\"\"\"(?:[^\"\"\"])*\"\"\"")]
+    #[regex(r#""""([^"]|"[^"]|""[^"])*""""#)]
     StringValue,
 
     /// Any unrecognized token ends up being consumed by this rule.
@@ -295,5 +295,9 @@ mod tests {
             &[TokenKind::StringValue, TokenKind::StringValue],
         );
         test_equals(" \"\"\"block\"\"\" ", &[TokenKind::StringValue]);
+        test_equals(
+            " \"\"\"block with \" inside\"\"\" ",
+            &[TokenKind::StringValue],
+        );
     }
 }
