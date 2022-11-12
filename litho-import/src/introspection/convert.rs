@@ -91,6 +91,12 @@ where
     for<'a> T: From<&'a str>,
 {
     fn retrospect(self) -> Option<TypeDefinition<T>> {
+        match self.name.as_ref().map(String::as_str)? {
+            "Int" | "Float" | "String" | "Boolean" | "ID" => return None,
+            name if name.starts_with("__") => return None,
+            _ => {}
+        }
+
         match self.kind {
             introspection::TypeKind::Enum => {
                 Some(TypeDefinition::EnumTypeDefinition(self.retrospect()?))
