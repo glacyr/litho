@@ -193,24 +193,30 @@ where
                     .inference
                     .definition_for_arguments
                     .insert(arguments, definition);
-
-                for argument in arguments.items.iter() {
-                    let Some(definition) = definition
-                        .definitions
-                        .iter()
-                        .find(|def| def.name.as_ref() == argument.name.as_ref()) else {
-                        continue
-                    };
-
-                    accumulator
-                        .database
-                        .inference
-                        .definitions_for_arguments
-                        .insert(argument, definition);
-                }
             }
         } else {
             accumulator.stack.push(None);
+        }
+    }
+
+    fn visit_arguments(&self, node: &'ast Arc<Arguments<T>>, accumulator: &mut Self::Accumulator) {
+        let Some(definition) = accumulator.database.inference.definition_for_arguments.get(&node) else {
+            return
+        };
+
+        for argument in node.items.iter() {
+            let Some(definition) = definition
+                .definitions
+                .iter()
+                .find(|def| def.name.as_ref() == argument.name.as_ref()) else {
+                continue
+            };
+
+            accumulator
+                .database
+                .inference
+                .definitions_for_arguments
+                .insert(argument, definition);
         }
     }
 
@@ -390,12 +396,26 @@ where
             .next()
             .cloned();
 
-        if let Some(definition) = definition {
+        let Some(definition) = definition else {
+            return
+        };
+
+        accumulator
+            .database
+            .inference
+            .definition_for_directives
+            .insert(node, &definition);
+
+        if let Some((arguments, definition)) = node
+            .arguments
+            .as_ref()
+            .zip(definition.arguments_definition.as_ref())
+        {
             accumulator
                 .database
                 .inference
-                .definition_for_directives
-                .insert(node, &definition);
+                .definition_for_arguments
+                .insert(arguments, definition);
         }
     }
 }
