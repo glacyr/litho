@@ -45,7 +45,10 @@ export function activate(context: vscode.ExtensionContext) {
   // Options to control the language client
   const clientOptions: LanguageClientOptions = {
     // Register the server for plain text documents
-    documentSelector: [{ scheme: "file", language: "graphql" }],
+    documentSelector: [
+      { scheme: "file", language: "graphql" },
+      { scheme: "litho", language: "graphql" },
+    ],
     uriConverters: {
       code2Protocol: (uri) => {
         const result = new url.URL(uri.toString(true));
