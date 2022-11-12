@@ -141,8 +141,8 @@ where
 
         Some(EnumValuesDefinition {
             braces: (
-                Punctuator::new(T::from("(")),
-                Recoverable::Present(Punctuator::new(T::from(")"))),
+                Punctuator::new(T::from("{")),
+                Recoverable::Present(Punctuator::new(T::from("}"))),
             ),
             definitions: self
                 .into_iter()

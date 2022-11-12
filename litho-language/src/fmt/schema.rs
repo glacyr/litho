@@ -477,6 +477,7 @@ where
             description.format(formatter)?;
         }
 
+        formatter.line()?;
         self.enum_value.format(formatter)?;
         self.directives.format(formatter)?;
 

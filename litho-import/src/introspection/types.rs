@@ -110,7 +110,7 @@ pub struct Directive {
     pub locations: Vec<DirectiveLocation>,
     pub args: Vec<InputValue>,
 
-    #[serde(rename = "isRepeatable")]
+    #[serde(default, rename = "isRepeatable")]
     pub is_repeatable: bool,
 }
 
