@@ -163,6 +163,25 @@ impl<T> StringValue<T> {
     }
 }
 
+impl<T> StringValue<T>
+where
+    for<'a> T: From<&'a str>,
+{
+    pub fn block<S>(value: S) -> StringValue<T>
+    where
+        S: Borrow<str>,
+    {
+        StringValue(RawToken {
+            kind: TokenKind::StringValue,
+            source: T::from(&format!(
+                r#""""{}""""#,
+                value.borrow().replace(r#"""""#, "\"\"\"")
+            )),
+            span: Default::default(),
+        })
+    }
+}
+
 impl<T> ToString for StringValue<T>
 where
     T: ToString,

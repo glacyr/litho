@@ -1,4 +1,12 @@
+use std::collections::HashMap;
 use std::future::Future;
+
+use litho_language::fmt::Format;
+use litho_language::Document;
+
+mod introspection;
+
+use introspection::Response;
 
 pub trait Importer {
     type Error: ToString;
@@ -9,9 +17,38 @@ pub trait Importer {
     fn import<'a, T>(&'a self, path: &'a str) -> Self::Future<'a, T>;
 }
 
-pub async fn import<T>(_path: &str) -> Result<T, String>
+pub async fn import<T>(url: &str) -> Result<T, String>
 where
     T: for<'a> From<&'a str>,
 {
-    Ok(T::from(""))
+    let mut params = HashMap::new();
+    params.insert("query", include_str!("../introspection.graphql"));
+    params.insert("operationName", "IntrospectionQuery");
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(url)
+        .json(&params)
+        .send()
+        .await
+        .map_err(|err| err.to_string())?;
+    let json = response
+        .json::<Response>()
+        .await
+        .map_err(|err| err.to_string())?;
+
+    let node: Document<String> = json.data.schema.into();
+
+    Ok(T::from(&node.format_to_string(80)))
+}
+
+#[cfg(test)]
+mod tests {
+    #[tokio::test]
+    async fn test_import() {
+        let result = super::import::<String>("https://api.spacex.land/graphql")
+            .await
+            .unwrap();
+        eprintln!("{}", result);
+    }
 }
