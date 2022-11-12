@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use tokio::sync::Mutex;
-use tower_lsp::jsonrpc::Result;
+use tower_lsp::jsonrpc::{Error, Result};
 use tower_lsp::lsp_types::*;
 use tower_lsp::LanguageServer;
 
 use super::{
     CompletionProvider, DefinitionProvider, FormattingProvider, HoverProvider, InlayHintProvider,
-    ReferencesProvider, Workspace,
+    ReferencesProvider, TextDocumentContentParams, Workspace,
 };
 
 pub struct Server {
@@ -216,5 +216,14 @@ impl Server {
         Ok(InlayHintProvider::new(document, workspace.database())
             .inlay_hints()
             .collect())
+    }
+
+    pub async fn text_document_content(&self, params: TextDocumentContentParams) -> Result<String> {
+        let workspace = self.workspace.lock().await;
+        let Some(document) = workspace.document(&params.url) else {
+            return Err(Error::invalid_params("File doesn't exist."))
+        };
+
+        Ok(document.text().to_string())
     }
 }

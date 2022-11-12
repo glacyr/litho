@@ -39,6 +39,12 @@ where
     pub fn get(&self, key: &T) -> Option<SourceId> {
         self.map.get(key).cloned()
     }
+
+    pub fn remove(&mut self, key: &T) -> Option<SourceId> {
+        let id = self.map.remove(key)?;
+        self.reverse_map.remove(&id);
+        Some(id)
+    }
 }
 
 impl<T> SourceMap<T>
@@ -78,7 +84,7 @@ mod display {
         T: Debug,
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            self.reverse_map.fmt(f)
+            self.map.fmt(f)
         }
     }
 
@@ -87,7 +93,7 @@ mod display {
         T: Debug,
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            self.reverse_map.fmt(f)
+            self.map.fmt(f)
         }
     }
 }

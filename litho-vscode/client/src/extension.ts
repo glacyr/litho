@@ -5,9 +5,10 @@
 
 import * as path from "path";
 import * as url from "url";
-import { ExtensionContext, Uri } from "vscode";
+import * as vscode from "vscode";
 
 import {
+  Disposable,
   Executable,
   LanguageClient,
   LanguageClientOptions,
@@ -16,8 +17,9 @@ import {
 } from "vscode-languageclient/node";
 
 let client: LanguageClient;
+let textDocumentContentProvider: Disposable;
 
-export function activate(context: ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join(process.platform === "win32" ? "litho-lsp.exe" : "litho-lsp")
@@ -45,10 +47,30 @@ export function activate(context: ExtensionContext) {
     // Register the server for plain text documents
     documentSelector: [{ scheme: "file", language: "graphql" }],
     uriConverters: {
-      code2Protocol: (uri) => new url.URL(uri.toString(true)).toString(),
-      protocol2Code: (str) => Uri.parse(str),
+      code2Protocol: (uri) => {
+        const result = new url.URL(uri.toString(true));
+        result.search = new URLSearchParams(result.searchParams).toString();
+        return result.toString();
+      },
+      protocol2Code: (str) => vscode.Uri.parse(str),
     },
   };
+
+  const provider = new (class implements vscode.TextDocumentContentProvider {
+    provideTextDocumentContent(
+      uri: vscode.Uri,
+      token: vscode.CancellationToken
+    ): vscode.ProviderResult<string> {
+      return client.sendRequest(
+        "textDocument/content",
+        { url: clientOptions.uriConverters.code2Protocol(uri) },
+        token
+      );
+    }
+  })();
+
+  textDocumentContentProvider =
+    vscode.workspace.registerTextDocumentContentProvider("litho", provider);
 
   // Create the language client and start the client.
   client = new LanguageClient("litho", "Litho", serverOptions, clientOptions);
@@ -58,6 +80,7 @@ export function activate(context: ExtensionContext) {
 }
 
 export function deactivate(): Thenable<void> | undefined {
+  textDocumentContentProvider?.dispose();
   if (!client) {
     return undefined;
   }

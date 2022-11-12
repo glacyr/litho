@@ -20,9 +20,10 @@ use super::{url_from_path, Document, Importer, Store};
 pub struct Workspace {
     client: Client,
     store: Store,
-    source_map: SourceMap<Url>,
+    pub source_map: SourceMap<Url>,
     compiler: Compiler<SmolStr>,
     invalid: HashSet<SourceId>,
+    imports: HashMap<Url, SmolStr>,
     importer: Importer,
 }
 
@@ -34,6 +35,7 @@ impl Workspace {
             source_map: SourceMap::new(),
             compiler: Compiler::new(),
             invalid: HashSet::new(),
+            imports: HashMap::new(),
             importer,
         }
     }
@@ -43,6 +45,46 @@ impl Workspace {
     }
 
     pub async fn update_imports(&mut self, imports: HashMap<String, Result<SmolStr, String>>) {
+        let imports = imports
+            .into_iter()
+            .flat_map(|(url, result)| {
+                Some((
+                    Url::parse_with_params(
+                        "litho://import.litho.dev/imported.graphql",
+                        &[("url", &url)],
+                    )
+                    .ok()?,
+                    (url, result),
+                ))
+            })
+            .collect::<HashMap<_, _>>();
+
+        self.imports
+            .keys()
+            .filter(|url| !imports.contains_key(url))
+            .cloned()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .for_each(|url| {
+                self.imports.remove(&url);
+                self.remove_file(&url);
+            });
+
+        let imports = imports
+            .into_iter()
+            .map(|(url, (source, result))| match result {
+                Ok(text) if self.imports.get(&url) == Some(&text) => {
+                    (source, Ok(self.source_map.get_or_insert(url)))
+                }
+                Ok(text) => {
+                    self.populate_file_contents(url.clone(), None, true, text.to_string());
+                    self.imports.insert(url.clone(), text);
+                    (source, Ok(self.source_map.get_or_insert(url)))
+                }
+                Err(error) => (source, Err(error)),
+            })
+            .collect();
+
         self.compiler.update_resolved_imports(imports);
         self.rebuild().await;
     }
@@ -81,7 +123,7 @@ impl Workspace {
 
     pub fn populate_inflection(&mut self) {
         self.populate_file_contents(
-            Url::parse("litho://inflection.graphql").unwrap(),
+            Url::parse("litho://std.litho.dev/inflection.graphql").unwrap(),
             None,
             true,
             include_str!("../std/introspection.graphql").to_owned(),
@@ -90,7 +132,7 @@ impl Workspace {
 
     pub fn populate_scalars(&mut self) {
         self.populate_file_contents(
-            Url::parse("litho://scalars.graphql").unwrap(),
+            Url::parse("litho://std.litho.dev/scalars.graphql").unwrap(),
             None,
             true,
             include_str!("../std/scalars.graphql").to_owned(),
@@ -143,7 +185,7 @@ impl Workspace {
         let id = self.source_map.get_or_insert(url.to_owned());
 
         self.invalid
-            .extend(self.compiler.replace_document(id, &text));
+            .extend(self.compiler.replace_document(id, &text, internal));
 
         self.store.insert(id, url, version, internal, text);
         self.store
@@ -161,7 +203,7 @@ impl Workspace {
         let text = self.store.update(id, url, version, update);
 
         self.invalid
-            .extend(self.compiler.replace_document(id, &text));
+            .extend(self.compiler.replace_document(id, &text, false));
 
         self.store
             .get_mut(&id)
@@ -170,13 +212,19 @@ impl Workspace {
     }
 
     pub fn refresh_file(&mut self, url: Url) -> Result<(), ()> {
-        let id = self.source_map.get_or_insert(url.to_owned());
-
-        self.invalid.extend(self.compiler.remove_document(id));
-        self.store.remove(&id);
+        self.remove_file(&url);
         self.populate_file(url)?;
 
         Ok(())
+    }
+
+    pub fn remove_file(&mut self, url: &Url) {
+        let Some(id) = self.source_map.remove(url) else {
+            return
+        };
+
+        self.invalid.extend(self.compiler.remove_document(id));
+        self.store.remove(&id);
     }
 
     pub async fn rebuild(&mut self) {

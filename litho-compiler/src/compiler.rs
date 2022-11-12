@@ -21,17 +21,11 @@ where
 {
     definition_diagnostics: HashMap<DefinitionId, Vec<Diagnostic<Span>>>,
     definition_sources: HashMap<DefinitionId, SourceId>,
-    documents: HashMap<SourceId, Arc<Document<T>>>,
+    documents: HashMap<SourceId, (Arc<Document<T>>, bool)>,
     document_diagnostics: HashMap<SourceId, Vec<Diagnostic<Span>>>,
     graph: DepGraph<DefinitionId, Dependency<T>>,
     database: Database<T>,
-    imports: HashMap<String, ResolvedImport<T>>,
-}
-
-#[derive(Debug)]
-pub struct ResolvedImport<T> {
-    source: Result<T, String>,
-    document: Document<T>,
+    imports: HashMap<String, Result<SourceId, String>>,
 }
 
 impl<T> Compiler<T>
@@ -55,7 +49,7 @@ where
     }
 
     pub fn document(&self, source_id: SourceId) -> Option<&Arc<Document<T>>> {
-        self.documents.get(&source_id)
+        self.documents.get(&source_id).map(|(doc, _)| doc)
     }
 }
 
@@ -67,34 +61,11 @@ where
         self.database.imports()
     }
 
-    pub fn update_resolved_imports(&mut self, imports: HashMap<String, Result<T, String>>)
+    pub fn update_resolved_imports(&mut self, imports: HashMap<String, Result<SourceId, String>>)
     where
         T: for<'a> From<&'a str> + for<'a> PartialEq<&'a str>,
     {
-        self.imports
-            .retain(|url, ResolvedImport { source, .. }| imports.get(url) == Some(&source));
-
-        for (url, source) in imports.into_iter() {
-            if self.imports.contains_key(&url) {
-                continue;
-            }
-
-            self.imports.insert(
-                url,
-                ResolvedImport {
-                    document: source
-                        .as_ref()
-                        .ok()
-                        .map(|text| {
-                            Document::parse_from_str(SourceId::default(), text.borrow())
-                                .unwrap_or_default()
-                                .0
-                        })
-                        .unwrap_or_default(),
-                    source,
-                },
-            );
-        }
+        self.imports = imports;
     }
 
     pub fn diagnostics(&self, source_id: SourceId) -> impl Iterator<Item = &Diagnostic<Span>> {
@@ -109,7 +80,7 @@ where
             .documents
             .get(&source_id)
             .into_iter()
-            .flat_map(|document| document.definitions.iter())
+            .flat_map(|document| document.0.definitions.iter())
             .flat_map(|definition| {
                 self.definition_diagnostics
                     .get(&definition.id())
@@ -120,17 +91,27 @@ where
         document_diagnostics.chain(definition_diagnostics)
     }
 
-    pub fn replace_document(&mut self, source_id: SourceId, text: &str) -> HashSet<SourceId>
+    pub fn replace_document(
+        &mut self,
+        source_id: SourceId,
+        text: &str,
+        is_import: bool,
+    ) -> HashSet<SourceId>
     where
         T: for<'a> From<&'a str> + for<'b> PartialEq<&'b str>,
     {
         let mut source_ids = self.remove_document(source_id);
-        source_ids.extend(self.add_document(source_id, text));
+        source_ids.extend(self.add_document(source_id, text, is_import));
 
         source_ids
     }
 
-    pub fn add_document(&mut self, source_id: SourceId, text: &str) -> HashSet<SourceId>
+    pub fn add_document(
+        &mut self,
+        source_id: SourceId,
+        text: &str,
+        is_import: bool,
+    ) -> HashSet<SourceId>
     where
         T: for<'a> From<&'a str> + for<'b> PartialEq<&'b str>,
     {
@@ -153,7 +134,8 @@ where
             }
         }
 
-        self.documents.insert(source_id, Arc::new(result.0));
+        self.documents
+            .insert(source_id, (Arc::new(result.0), is_import));
         self.document_diagnostics.insert(source_id, diagnostics);
 
         self.invalidate(definition_ids)
@@ -166,7 +148,7 @@ where
 
         for definition in document
             .as_ref()
-            .map(|document| document.definitions.iter())
+            .map(|document| document.0.definitions.iter())
             .into_iter()
             .flatten()
         {
@@ -178,7 +160,7 @@ where
 
         for definition in document
             .as_ref()
-            .map(|document| document.definitions.iter())
+            .map(|document| document.0.definitions.iter())
             .into_iter()
             .flatten()
         {
@@ -208,25 +190,12 @@ where
         T: From<&'static str>,
     {
         self.database = Database::with_imports(
-            self.documents.values().map(AsRef::as_ref),
-            &self
-                .imports
-                .iter()
-                .map(|(url, import)| {
-                    (
-                        url.to_owned(),
-                        import
-                            .source
-                            .as_ref()
-                            .map(|_| &import.document)
-                            .map_err(ToOwned::to_owned),
-                    )
-                })
-                .collect(),
+            self.documents.values().map(|(doc, _)| doc.as_ref()),
+            &Default::default(),
         );
 
         for document in self.documents.values() {
-            for definition in document.definitions.iter() {
+            for definition in document.0.definitions.iter() {
                 self.definition_diagnostics
                     .entry(definition.id())
                     .or_insert_with(|| check(definition, &self.database));
