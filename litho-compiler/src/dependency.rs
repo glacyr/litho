@@ -4,9 +4,6 @@ use litho_language::ast::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Dependency<T> {
-    Query,
-    Mutation,
-    Subscription,
     Schema,
     Type(T),
     Directive(T),
@@ -43,14 +40,10 @@ where
 
     fn visit_operation_definition(
         &self,
-        node: &'a Arc<OperationDefinition<T>>,
+        _node: &'a Arc<OperationDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        accumulator.push(match node.ty {
-            Some(OperationType::Query(_)) | None => Dependency::Query,
-            Some(OperationType::Mutation(_)) => Dependency::Mutation,
-            Some(OperationType::Subscription(_)) => Dependency::Subscription,
-        })
+        accumulator.push(Dependency::Schema)
     }
 
     fn visit_named_type(&self, node: &'a NamedType<T>, accumulator: &mut Self::Accumulator) {

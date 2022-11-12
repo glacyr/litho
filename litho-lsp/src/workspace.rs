@@ -23,6 +23,7 @@ pub struct Workspace {
     pub source_map: SourceMap<Url>,
     compiler: Compiler<SmolStr>,
     invalid: HashSet<SourceId>,
+    last_imports: HashMap<String, Result<SmolStr, String>>,
     imports: HashMap<Url, SmolStr>,
     importer: Importer,
 }
@@ -35,6 +36,7 @@ impl Workspace {
             source_map: SourceMap::new(),
             compiler: Compiler::new(),
             invalid: HashSet::new(),
+            last_imports: HashMap::new(),
             imports: HashMap::new(),
             importer,
         }
@@ -45,6 +47,12 @@ impl Workspace {
     }
 
     pub async fn update_imports(&mut self, imports: HashMap<String, Result<SmolStr, String>>) {
+        if self.last_imports == imports {
+            return;
+        }
+
+        self.last_imports = imports.clone();
+
         let imports = imports
             .into_iter()
             .flat_map(|(url, result)| {
@@ -66,6 +74,7 @@ impl Workspace {
             .collect::<Vec<_>>()
             .into_iter()
             .for_each(|url| {
+                eprintln!("Should remove import: {}.", url.to_string());
                 self.imports.remove(&url);
                 self.remove_file(&url);
             });
@@ -293,7 +302,8 @@ impl Workspace {
     }
 
     pub async fn check_all(&mut self) {
-        for id in self.take_invalid() {
+        let invalid = self.take_invalid();
+        for id in invalid {
             let Some(document) = self.document_by_id(id) else {
                 continue
             };

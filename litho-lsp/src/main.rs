@@ -22,7 +22,7 @@ use definition::DefinitionProvider;
 use document::Document;
 use formatting::FormattingProvider;
 use hover::HoverProvider;
-use importer::{ImportQueue, Importer};
+use importer::{Importer, ImporterPool};
 use inlay_hint::InlayHintProvider;
 use paths::url_from_path;
 use printer::Printer;
@@ -37,17 +37,17 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (mut queue, queue_worker) = ImportQueue::new();
+    let (mut pool, pool_worker) = ImporterPool::new();
 
     let (service, socket) =
-        LspService::build(move |client| Server::new(Workspace::new(client, queue.importer())))
+        LspService::build(move |client| Server::new(Workspace::new(client, pool.importer())))
             .custom_method("textDocument/inlayHint", Server::inlay_hint)
             .custom_method("textDocument/content", Server::text_document_content)
             .finish();
 
     join(
         tower_lsp::Server::new(stdin, stdout, socket).serve(service),
-        queue_worker,
+        pool_worker.work(),
     )
     .await;
 }
