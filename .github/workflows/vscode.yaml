@@ -61,6 +61,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install Rust Stable
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        components: rustfmt
     - name: Download target ${{ matrix.target }}
       run: rustup target add ${{ matrix.target }}
     - name: Install GCC ${{ matrix.gcc }}

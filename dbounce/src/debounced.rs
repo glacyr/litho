@@ -71,12 +71,12 @@ mod tests {
     #[tokio::test]
     async fn test_debounce() {
         let (mut sender, receiver) = channel(1024);
-        let mut receiver = debounced(receiver, Duration::from_secs(2));
+        let mut receiver = debounced(receiver, Duration::from_millis(100));
 
         join(
             async move {
                 for i in 0..10 {
-                    let _ = sleep(Duration::from_millis(4000)).await;
+                    let _ = sleep(Duration::from_millis(200)).await;
                     let _ = sender.send(i).await;
                 }
 
