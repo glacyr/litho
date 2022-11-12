@@ -239,13 +239,18 @@ where
         W: Write,
     {
         self.parens.0.format(formatter)?;
+        formatter.squeeze(|formatter| formatter.each_comma(self.definitions.iter()))?;
+        self.parens.1.format(formatter)?;
 
-        if self.expands() {
-            formatter.indent(|formatter| formatter.each_line_comma(self.definitions.iter()))?;
-        } else {
-            formatter.squeeze(|formatter| formatter.each_comma(self.definitions.iter()))?;
-        }
+        Ok(())
+    }
 
+    fn format_expanded<W>(&self, formatter: &mut Formatter<W>) -> Result
+    where
+        W: Write,
+    {
+        self.parens.0.format(formatter)?;
+        formatter.indent(|formatter| formatter.each_line_comma(self.definitions.iter()))?;
         self.parens.1.format(formatter)?;
 
         Ok(())
@@ -253,6 +258,10 @@ where
 
     fn expands(&self) -> bool {
         self.definitions.iter().any(Format::expands)
+    }
+
+    fn can_expand(&self) -> bool {
+        true
     }
 }
 
