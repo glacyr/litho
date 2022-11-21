@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use litho_language::lex::SourceId;
-use tower_lsp::lsp_types::Url;
+use lsp_types::Url;
 
 use super::Document;
 

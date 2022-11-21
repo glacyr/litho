@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use litho_language::ast::*;
 use litho_types::Database;
+use lsp_types::{Hover, HoverContents, MarkedString, Position};
 use smol_str::SmolStr;
-use tower_lsp::lsp_types::{Hover, HoverContents, MarkedString, Position};
 
 use super::{Document, Printer, Workspace};
 

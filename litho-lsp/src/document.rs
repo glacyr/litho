@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use litho_language::lex::SourceId;
 use litho_language::Document as Ast;
+use lsp_types::Url;
 use smol_str::SmolStr;
-use tower_lsp::lsp_types::Url;
 
 #[derive(Debug)]
 pub struct Document {

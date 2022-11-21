@@ -45,6 +45,7 @@ members = [
     "litho-import",
     "litho-language",
     "litho-lsp",
+    "litho-lsp-wasm",
     "litho-tests",
     "litho-types",
 	"litho-validation",

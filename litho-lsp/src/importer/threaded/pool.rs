@@ -1,7 +1,7 @@
 use futures::channel::mpsc::{channel, Receiver, Sender};
 use futures::StreamExt;
 
-use super::{Importer, ImporterWorker};
+use super::{ImporterWorker, ThreadedImporter};
 
 pub struct ImporterPool(Sender<ImporterWorker>);
 
@@ -12,8 +12,8 @@ impl ImporterPool {
         (ImporterPool(sender), ImporterPoolWorker(receiver))
     }
 
-    pub fn importer(&mut self) -> Importer {
-        let (importer, worker) = Importer::new();
+    pub fn importer(&mut self) -> ThreadedImporter {
+        let (importer, worker) = ThreadedImporter::new();
 
         self.0.try_send(worker).unwrap();
 

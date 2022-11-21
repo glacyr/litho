@@ -1,49 +1,53 @@
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::Read;
-use std::sync::Arc;
+use std::future::Future;
+use std::pin::Pin;
 
-use ignore::types::TypesBuilder;
-use ignore::WalkBuilder;
 use litho_compiler::Compiler;
 use litho_language::lex::{SourceId, SourceMap, Span};
 use litho_types::Database;
+use lsp_types::*;
 use smol_str::SmolStr;
-use tokio::sync::Mutex;
-use tower_lsp::lsp_types::*;
-use tower_lsp::Client;
 
 use crate::diagnostic::serialize_diagnostic;
 
-use super::{url_from_path, Document, Importer, Store};
+use super::{Document, Importer, Store};
+
+type DiagnosticsSink = Box<
+    dyn Fn(Url, Vec<Diagnostic>, Option<i32>) -> Pin<Box<dyn Future<Output = ()> + Send>>
+        + Sync
+        + Send,
+>;
 
 pub struct Workspace {
-    client: Client,
+    diagnostics_sink: DiagnosticsSink,
     store: Store,
     pub source_map: SourceMap<Url>,
     compiler: Compiler<SmolStr>,
     invalid: HashSet<SourceId>,
     last_imports: HashMap<String, Result<SmolStr, String>>,
     imports: HashMap<Url, SmolStr>,
-    importer: Importer,
+    importer: Box<dyn Importer + Send + Sync>,
 }
 
 impl Workspace {
-    pub fn new(client: Client, importer: Importer) -> Workspace {
+    pub fn new<I>(diagnostics_sink: DiagnosticsSink, importer: I) -> Workspace
+    where
+        I: Importer + Send + Sync + 'static,
+    {
         Workspace {
-            client,
+            diagnostics_sink,
             store: Store::new(),
             source_map: SourceMap::new(),
             compiler: Compiler::new(),
             invalid: HashSet::new(),
             last_imports: HashMap::new(),
             imports: HashMap::new(),
-            importer,
+            importer: Box::new(importer),
         }
     }
 
-    pub async fn importer_register(&mut self, workspace: &Arc<Mutex<Workspace>>) {
-        self.importer.register(Arc::downgrade(workspace)).await;
+    pub fn importer(&mut self) -> &mut Box<dyn Importer + Send + Sync> {
+        &mut self.importer
     }
 
     pub async fn update_imports(&mut self, imports: HashMap<String, Result<SmolStr, String>>) {
@@ -74,7 +78,6 @@ impl Workspace {
             .collect::<Vec<_>>()
             .into_iter()
             .for_each(|url| {
-                eprintln!("Should remove import: {}.", url.to_string());
                 self.imports.remove(&url);
                 self.remove_file(&url);
             });
@@ -96,10 +99,6 @@ impl Workspace {
 
         self.compiler.update_resolved_imports(imports);
         self.rebuild().await;
-    }
-
-    pub fn client(&self) -> &Client {
-        &self.client
     }
 
     pub fn document_by_id(&self, id: SourceId) -> Option<&Document> {
@@ -148,42 +147,6 @@ impl Workspace {
         );
     }
 
-    pub fn populate_root(&mut self, url: Url) -> Result<(), ()> {
-        let mut types = TypesBuilder::new();
-        types.add("GraphQL", "*.graphql").unwrap();
-
-        let path = url.to_file_path().map_err(|_| ())?;
-        let walk = WalkBuilder::new(path)
-            .types(types.select("GraphQL").build().unwrap())
-            .follow_links(false)
-            .build();
-
-        for entry in walk {
-            let entry = entry.map_err(|_| ())?;
-
-            if entry.path().is_dir() {
-                continue;
-            }
-
-            let url = url_from_path(entry.path())?;
-            self.populate_file(url)?;
-        }
-
-        Ok(())
-    }
-
-    pub fn populate_file(&mut self, url: Url) -> Result<(), ()> {
-        let path = url.to_file_path().map_err(|_| ())?;
-        let mut file = File::open(path).map_err(|_| ())?;
-        let mut text = String::new();
-
-        file.read_to_string(&mut text).map_err(|_| ())?;
-
-        self.populate_file_contents(url, None, false, text);
-
-        Ok(())
-    }
-
     pub fn populate_file_contents(
         &mut self,
         url: Url,
@@ -218,13 +181,6 @@ impl Workspace {
             .get_mut(&id)
             .into_iter()
             .for_each(|doc| doc.ast = self.compiler.document(id).cloned());
-    }
-
-    pub fn refresh_file(&mut self, url: Url) -> Result<(), ()> {
-        self.remove_file(&url);
-        self.populate_file(url)?;
-
-        Ok(())
     }
 
     pub fn remove_file(&mut self, url: &Url) {
@@ -312,13 +268,12 @@ impl Workspace {
                 continue;
             }
 
-            self.client
-                .publish_diagnostics(
-                    document.url().to_owned(),
-                    self.diagnostics(id).collect(),
-                    document.version(),
-                )
-                .await;
+            (self.diagnostics_sink)(
+                document.url().to_owned(),
+                self.diagnostics(id).collect(),
+                document.version(),
+            )
+            .await;
         }
     }
 }

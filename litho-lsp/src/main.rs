@@ -7,14 +7,16 @@ mod diagnostic;
 mod document;
 mod formatting;
 mod hover;
-mod importer;
+pub mod importer;
 mod inlay_hint;
-mod paths;
+mod lock;
 mod printer;
 mod references;
 mod server;
+pub mod sources;
 mod store;
 mod text_document_content;
+mod tower;
 mod workspace;
 
 use completion::CompletionProvider;
@@ -22,14 +24,16 @@ use definition::DefinitionProvider;
 use document::Document;
 use formatting::FormattingProvider;
 use hover::HoverProvider;
-use importer::{Importer, ImporterPool};
+pub use importer::{Importer, ImporterCallback};
 use inlay_hint::InlayHintProvider;
-use paths::url_from_path;
+use lock::Lock;
 use printer::Printer;
 use references::ReferencesProvider;
 use server::Server;
+pub use sources::SourceRoot;
 use store::Store;
 use text_document_content::TextDocumentContentParams;
+use tower::TowerServer;
 use workspace::Workspace;
 
 #[tokio::main]
@@ -37,13 +41,26 @@ async fn main() {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (mut pool, pool_worker) = ImporterPool::new();
+    let (mut pool, pool_worker) = importer::threaded::ImporterPool::new();
 
-    let (service, socket) =
-        LspService::build(move |client| Server::new(Workspace::new(client, pool.importer())))
-            .custom_method("textDocument/inlayHint", Server::inlay_hint)
-            .custom_method("textDocument/content", Server::text_document_content)
-            .finish();
+    let (service, socket) = LspService::build(move |client| {
+        TowerServer::new(
+            client.clone(),
+            Workspace::new(
+                Box::new(move |url, diagnostics, version| {
+                    let client = client.clone();
+
+                    Box::pin(async move {
+                        let _ = client.publish_diagnostics(url, diagnostics, version).await;
+                    })
+                }),
+                pool.importer(),
+            ),
+        )
+    })
+    .custom_method("textDocument/inlayHint", TowerServer::inlay_hint)
+    .custom_method("textDocument/content", TowerServer::text_document_content)
+    .finish();
 
     join(
         tower_lsp::Server::new(stdin, stdout, socket).serve(service),

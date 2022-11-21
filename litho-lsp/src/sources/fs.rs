@@ -1,8 +1,55 @@
-use lsp_types::Url;
-
+use std::fs::File;
+use std::io::Read;
 use std::path::{Component, Path, Prefix};
 
-// This is copied from rust-analyzer.
+use ignore::types::TypesBuilder;
+use ignore::WalkBuilder;
+use lsp_types::Url;
+
+use super::SourceRoot;
+
+pub struct FileSystem;
+
+impl SourceRoot for FileSystem {
+    type Error = ();
+
+    fn walk(&self, url: &Url) -> Result<Vec<Url>, Self::Error> {
+        let mut types = TypesBuilder::new();
+        types.add("GraphQL", "*.graphql").unwrap();
+
+        let path = url.to_file_path().map_err(|_| ())?;
+        let walk = WalkBuilder::new(path)
+            .types(types.select("GraphQL").build().unwrap())
+            .follow_links(false)
+            .build();
+
+        let mut results = vec![];
+
+        for entry in walk {
+            let entry = entry.map_err(|_| ())?;
+
+            if entry.path().is_dir() {
+                continue;
+            }
+
+            let url = url_from_path(entry.path())?;
+            results.push(url);
+        }
+
+        Ok(results)
+    }
+
+    fn read(&self, url: &Url) -> Result<String, Self::Error> {
+        let path = url.to_file_path().map_err(|_| ())?;
+        let mut file = File::open(path).map_err(|_| ())?;
+        let mut text = String::new();
+
+        file.read_to_string(&mut text).map_err(|_| ())?;
+
+        Ok(text)
+    }
+}
+
 pub fn url_from_path<P>(path: P) -> Result<Url, ()>
 where
     P: AsRef<Path>,

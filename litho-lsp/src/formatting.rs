@@ -1,5 +1,5 @@
 use litho_language::fmt::Diff;
-use tower_lsp::lsp_types::TextEdit;
+use lsp_types::TextEdit;
 
 use super::{Document, Workspace};
 

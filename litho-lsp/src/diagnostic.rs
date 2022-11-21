@@ -1,5 +1,5 @@
 use litho_language::lex::Span;
-use tower_lsp::lsp_types::*;
+use lsp_types::*;
 
 use super::Workspace;
 

@@ -1,44 +1,76 @@
 use std::sync::Arc;
 
-use tokio::sync::Mutex;
-use tower_lsp::jsonrpc::{Error, Result};
-use tower_lsp::lsp_types::*;
-use tower_lsp::LanguageServer;
+use lsp_types::*;
 
 use super::{
     CompletionProvider, DefinitionProvider, FormattingProvider, HoverProvider, InlayHintProvider,
-    ReferencesProvider, TextDocumentContentParams, Workspace,
+    Lock, ReferencesProvider, SourceRoot, TextDocumentContentParams, Workspace,
 };
 
-pub struct Server {
-    workspace: Arc<Mutex<Workspace>>,
+type Result<T> = std::result::Result<T, ()>;
+
+pub struct Server<S, W> {
+    source_root: S,
+    workspace: Arc<W>,
 }
 
-impl Server {
-    pub fn new(workspace: Workspace) -> Server {
+impl<S, W> Server<S, W>
+where
+    S: SourceRoot<Error = ()>,
+    W: Lock<Workspace> + 'static,
+{
+    pub fn new(source_root: S, workspace: W) -> Server<S, W> {
         Server {
-            workspace: Arc::new(Mutex::new(workspace)),
+            source_root,
+            workspace: Arc::new(workspace),
         }
     }
-}
 
-#[tower_lsp::async_trait]
-impl LanguageServer for Server {
-    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-        {
-            let mut workspace = self.workspace.lock().await;
-            workspace.importer_register(&self.workspace).await;
+    pub fn populate_root(&self, workspace: &mut Workspace, url: Url) -> Result<()> {
+        for url in self.source_root.walk(&url)? {
+            let _ = self.populate_file(workspace, url);
         }
 
-        self.workspace
-            .lock()
-            .await
+        Ok(())
+    }
+
+    pub fn populate_file(&self, workspace: &mut Workspace, url: Url) -> Result<()> {
+        let text = self.source_root.read(&url)?;
+        workspace.populate_file_contents(url, None, false, text);
+
+        Ok(())
+    }
+
+    pub fn refresh_file(&self, workspace: &mut Workspace, url: Url) -> Result<()> {
+        workspace.remove_file(&url);
+        self.populate_file(workspace, url)
+    }
+
+    pub async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        let weak = Arc::downgrade(&self.workspace);
+        let mut workspace = self.workspace.lock().await;
+        workspace
+            .importer()
+            .register(Box::new(move |imports| {
+                let weak = weak.clone();
+
+                Box::pin(async move {
+                    let Some(workspace) = weak.upgrade() else {
+                        return
+                    };
+
+                    workspace.lock().await.update_imports(imports).await;
+                })
+            }))
+            .await;
+
+        workspace
             .mutate(|workspace| {
                 workspace.populate_inflection();
                 workspace.populate_scalars();
 
                 if let Some(root_uri) = params.root_uri {
-                    let _ = workspace.populate_root(root_uri);
+                    let _ = self.populate_root(workspace, root_uri);
                 }
             })
             .await;
@@ -65,33 +97,13 @@ impl LanguageServer for Server {
         })
     }
 
-    async fn initialized(&self, _: InitializedParams) {
-        let _ = self
-            .workspace
-            .lock()
-            .await
-            .client()
-            .register_capability(vec![Registration {
-                id: "watch-workspace".to_owned(),
-                method: "workspace/didChangeWatchedFiles".to_owned(),
-                register_options: Some(
-                    serde_json::to_value(DidChangeWatchedFilesRegistrationOptions {
-                        watchers: vec![FileSystemWatcher {
-                            kind: None,
-                            glob_pattern: "**/*.graphql".to_owned(),
-                        }],
-                    })
-                    .unwrap(),
-                ),
-            }])
-            .await;
-    }
+    pub async fn initialized(&self, _: InitializedParams) {}
 
-    async fn shutdown(&self) -> Result<()> {
+    pub async fn shutdown(&self) -> Result<()> {
         Ok(())
     }
 
-    async fn did_open(&self, params: DidOpenTextDocumentParams) {
+    pub async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let url = params.text_document.uri;
 
         self.workspace
@@ -108,29 +120,31 @@ impl LanguageServer for Server {
             .await;
     }
 
-    async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
+    #[cfg(feature = "fs")]
+    pub async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
         self.workspace
             .lock()
             .await
             .mutate(|workspace| {
                 for change in params.changes {
-                    let _ = workspace.refresh_file(change.uri);
+                    let _ = self.refresh_file(workspace, change.uri);
                 }
             })
             .await;
     }
 
-    async fn did_close(&self, params: DidCloseTextDocumentParams) {
+    #[cfg(feature = "fs")]
+    pub async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let url = params.text_document.uri;
 
         let _ = self
             .workspace
             .lock()
             .await
-            .mutate(|workspace| workspace.refresh_file(url));
+            .mutate(|workspace| self.refresh_file(workspace, url));
     }
 
-    async fn did_change(&self, params: DidChangeTextDocumentParams) {
+    pub async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let url = params.text_document.uri;
 
         self.workspace
@@ -149,7 +163,7 @@ impl LanguageServer for Server {
             .await;
     }
 
-    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+    pub async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document_position_params.text_document.uri) else {
             return Ok(None)
@@ -159,7 +173,7 @@ impl LanguageServer for Server {
             .hover(params.text_document_position_params.position))
     }
 
-    async fn goto_definition(
+    pub async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
@@ -172,7 +186,7 @@ impl LanguageServer for Server {
             .goto_definition(params.text_document_position_params.position))
     }
 
-    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+    pub async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document_position.text_document.uri) else {
             return Ok(None)
@@ -184,7 +198,7 @@ impl LanguageServer for Server {
         ))
     }
 
-    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+    pub async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document_position.text_document.uri) else {
             return Ok(None)
@@ -194,7 +208,10 @@ impl LanguageServer for Server {
             .references(params.text_document_position.position))
     }
 
-    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+    pub async fn formatting(
+        &self,
+        params: DocumentFormattingParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document.uri) else {
             return Ok(None)
@@ -204,9 +221,7 @@ impl LanguageServer for Server {
             FormattingProvider::new(document, &workspace).formatting(),
         ))
     }
-}
 
-impl Server {
     pub async fn inlay_hint(&self, params: InlayHintParams) -> Result<Vec<InlayHint>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document.uri) else {
@@ -221,7 +236,7 @@ impl Server {
     pub async fn text_document_content(&self, params: TextDocumentContentParams) -> Result<String> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.url) else {
-            return Err(Error::invalid_params("File doesn't exist."))
+            return Err(())
         };
 
         Ok(document.text().to_string())

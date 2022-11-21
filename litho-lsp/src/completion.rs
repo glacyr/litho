@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use litho_language::ast::*;
+use lsp_types::*;
 use smol_str::SmolStr;
-use tower_lsp::lsp_types::*;
 
 use super::{Document, Printer, Workspace};
 

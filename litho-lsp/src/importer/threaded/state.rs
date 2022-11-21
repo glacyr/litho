@@ -8,7 +8,7 @@ use futures::future::join;
 use futures::{SinkExt, StreamExt};
 use tokio::sync::Mutex;
 
-use crate::Workspace;
+use crate::ImporterCallback;
 
 use super::{Import, ImportWorker};
 
@@ -19,7 +19,7 @@ pub struct ImporterState {
 }
 
 impl ImporterState {
-    pub fn new(workspace: Weak<Mutex<Workspace>>) -> (ImporterState, ImporterStateWorker) {
+    pub fn new(callback: ImporterCallback) -> (ImporterState, ImporterStateWorker) {
         let (sender, receiver) = channel(1024);
         let (refresh_sender, refresh_receiver) = channel(1024);
 
@@ -34,7 +34,7 @@ impl ImporterState {
             },
             ImporterStateWorker {
                 imports: weak_imports,
-                workspace,
+                callback,
                 workers: receiver,
                 refresh: refresh_receiver,
             },
@@ -67,7 +67,7 @@ impl ImporterState {
 
 pub struct ImporterStateWorker {
     imports: Weak<Mutex<HashMap<String, Import>>>,
-    workspace: Weak<Mutex<Workspace>>,
+    callback: ImporterCallback,
     workers: Receiver<ImportWorker>,
     refresh: Receiver<()>,
 }
@@ -79,10 +79,6 @@ impl ImporterStateWorker {
                 .for_each_concurrent(None, |worker| worker.work()),
             async move {
                 while let Some(_) = self.refresh.next().await {
-                    let Some(workspace) = self.workspace.upgrade() else {
-                        return
-                    };
-
                     let Some(imports) = self.imports.upgrade() else {
                         return
                     };
@@ -99,7 +95,7 @@ impl ImporterStateWorker {
                         results.insert(url.clone(), result.clone());
                     }
 
-                    workspace.lock().await.update_imports(results).await;
+                    (self.callback)(results).await;
                 }
             },
         )
