@@ -1,25 +1,25 @@
 use std::sync::Arc;
 
+use futures::lock::Mutex;
 use lsp_types::*;
 
 use super::{
     CompletionProvider, DefinitionProvider, FormattingProvider, HoverProvider, InlayHintProvider,
-    Lock, ReferencesProvider, SourceRoot, TextDocumentContentParams, Workspace,
+    ReferencesProvider, SourceRoot, TextDocumentContentParams, Workspace,
 };
 
 type Result<T> = std::result::Result<T, ()>;
 
-pub struct Server<S, W> {
+pub struct Server<S> {
     source_root: S,
-    workspace: Arc<W>,
+    workspace: Arc<Mutex<Workspace>>,
 }
 
-impl<S, W> Server<S, W>
+impl<S> Server<S>
 where
     S: SourceRoot<Error = ()>,
-    W: Lock<Workspace> + 'static,
 {
-    pub fn new(source_root: S, workspace: W) -> Server<S, W> {
+    pub fn new(source_root: S, workspace: Mutex<Workspace>) -> Server<S> {
         Server {
             source_root,
             workspace: Arc::new(workspace),

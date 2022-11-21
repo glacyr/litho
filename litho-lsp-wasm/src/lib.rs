@@ -33,7 +33,7 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn create_server() -> *mut Server<(), Mutex<Workspace>> {
+pub fn create_server() -> *mut Server<()> {
     let workspace = Workspace::new(
         Box::new(|url, diagnostics, version| {
             Box::pin(async move {
@@ -53,10 +53,7 @@ pub fn create_server() -> *mut Server<(), Mutex<Workspace>> {
 }
 
 #[wasm_bindgen]
-pub async unsafe fn server_message(
-    server: *mut Server<(), Mutex<Workspace>>,
-    request: &str,
-) -> String {
+pub async unsafe fn server_message(server: *mut Server<()>, request: &str) -> String {
     let request: Request = serde_json::from_str(request).unwrap();
     let response = match request {
         Request::Initialize(params) => {
@@ -81,6 +78,6 @@ pub async unsafe fn server_message(
 }
 
 #[wasm_bindgen]
-pub fn destroy_server(server: *mut Server<(), Mutex<Workspace>>) {
+pub fn destroy_server(server: *mut Server<()>) {
     unsafe { Box::from_raw(server) };
 }

@@ -1,5 +1,5 @@
+use futures::lock::Mutex;
 use lsp_types::*;
-use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::{Error, Result};
 use tower_lsp::{Client, LanguageServer};
 
@@ -8,7 +8,7 @@ use super::{Server, TextDocumentContentParams, Workspace};
 
 pub struct TowerServer {
     client: Client,
-    server: Server<FileSystem, Mutex<Workspace>>,
+    server: Server<FileSystem>,
 }
 
 impl TowerServer {
