@@ -138,7 +138,9 @@ where
             .insert(source_id, (Arc::new(result.0), is_import));
         self.document_diagnostics.insert(source_id, diagnostics);
 
-        self.invalidate(definition_ids)
+        let mut set = self.invalidate(definition_ids);
+        set.insert(source_id);
+        set
     }
 
     pub fn remove_document(&mut self, source_id: SourceId) -> HashSet<SourceId> {
