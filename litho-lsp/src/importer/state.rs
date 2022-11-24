@@ -1,16 +1,15 @@
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use std::time::Duration;
 
 use futures::channel::mpsc::{channel, Receiver, Sender};
 use futures::future::join;
+use futures::lock::Mutex;
 use futures::{SinkExt, StreamExt};
-use tokio::sync::Mutex;
-
-use crate::ImporterCallback;
 
 use super::{Import, ImportWorker};
+
+use crate::{Imports, Workspace};
 
 pub struct ImporterState {
     imports: Arc<Mutex<HashMap<String, Import>>>,
@@ -19,7 +18,7 @@ pub struct ImporterState {
 }
 
 impl ImporterState {
-    pub fn new(callback: ImporterCallback) -> (ImporterState, ImporterStateWorker) {
+    pub fn new(workspace: Weak<Mutex<Workspace>>) -> (ImporterState, ImporterStateWorker) {
         let (sender, receiver) = channel(1024);
         let (refresh_sender, refresh_receiver) = channel(1024);
 
@@ -34,14 +33,14 @@ impl ImporterState {
             },
             ImporterStateWorker {
                 imports: weak_imports,
-                callback,
+                workspace,
                 workers: receiver,
                 refresh: refresh_receiver,
             },
         )
     }
 
-    pub async fn update(&mut self, imports: HashMap<String, Duration>) {
+    pub async fn update(&mut self, imports: Imports) {
         let mut self_imports = self.imports.lock().await;
 
         self_imports.retain(|url, _| imports.contains_key(url));
@@ -67,7 +66,7 @@ impl ImporterState {
 
 pub struct ImporterStateWorker {
     imports: Weak<Mutex<HashMap<String, Import>>>,
-    callback: ImporterCallback,
+    workspace: Weak<Mutex<Workspace>>,
     workers: Receiver<ImportWorker>,
     refresh: Receiver<()>,
 }
@@ -95,7 +94,11 @@ impl ImporterStateWorker {
                         results.insert(url.clone(), result.clone());
                     }
 
-                    (self.callback)(results).await;
+                    let Some(workspace) = self.workspace.upgrade() else {
+                        return
+                    };
+
+                    workspace.lock().await.update_imports(results).await;
                 }
             },
         )

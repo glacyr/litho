@@ -26,6 +26,6 @@ litho-types = { path = "../litho-types" }
 litho-validation = { path = "../litho-validation" }
 
 [features]
-default = ["dbounce", "tower-lsp", "tokio", "fs", "threaded"]
+default = ["dbounce", "tower-lsp", "tokio", "fs", "importer"]
 fs = ["ignore"]
-threaded = ["litho-import"]
+importer = ["litho-import"]

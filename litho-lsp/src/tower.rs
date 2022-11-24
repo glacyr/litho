@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use futures::lock::Mutex;
 use lsp_types::*;
 use tower_lsp::jsonrpc::{Error, Result};
@@ -12,8 +14,8 @@ pub struct TowerServer {
 }
 
 impl TowerServer {
-    pub fn new(client: Client, workspace: Workspace) -> TowerServer {
-        let server = Server::new(FileSystem, Mutex::new(workspace));
+    pub fn new(client: Client, workspace: Arc<Mutex<Workspace>>) -> TowerServer {
+        let server = Server::new(FileSystem, workspace);
         TowerServer { client, server }
     }
 }
@@ -46,8 +48,6 @@ impl LanguageServer for TowerServer {
                 ),
             }])
             .await;
-
-        eprintln!("initialized");
 
         self.server.initialized(params).await
     }

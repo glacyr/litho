@@ -4,7 +4,7 @@ mod diagnostic;
 mod document;
 mod formatting;
 mod hover;
-pub mod importer;
+mod imports;
 mod inlay_hint;
 mod printer;
 mod references;
@@ -19,12 +19,15 @@ use definition::DefinitionProvider;
 use document::Document;
 use formatting::FormattingProvider;
 use hover::HoverProvider;
-pub use importer::{Importer, ImporterCallback};
+use imports::{Imports, ResolvedImports};
 use inlay_hint::InlayHintProvider;
 use printer::Printer;
 use references::ReferencesProvider;
 pub use server::Server;
 pub use sources::SourceRoot;
 use store::Store;
-use text_document_content::TextDocumentContentParams;
-pub use workspace::Workspace;
+pub use text_document_content::TextDocumentContentParams;
+pub use workspace::{Workspace, WorkspaceUpdate};
+
+#[cfg(feature = "importer")]
+pub mod importer;

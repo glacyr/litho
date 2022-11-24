@@ -19,10 +19,10 @@ impl<S> Server<S>
 where
     S: SourceRoot<Error = ()>,
 {
-    pub fn new(source_root: S, workspace: Mutex<Workspace>) -> Server<S> {
+    pub fn new(source_root: S, workspace: Arc<Mutex<Workspace>>) -> Server<S> {
         Server {
             source_root,
-            workspace: Arc::new(workspace),
+            workspace,
         }
     }
 
@@ -47,23 +47,7 @@ where
     }
 
     pub async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-        let weak = Arc::downgrade(&self.workspace);
         let mut workspace = self.workspace.lock().await;
-        workspace
-            .importer()
-            .register(Box::new(move |imports| {
-                let weak = weak.clone();
-
-                Box::pin(async move {
-                    let Some(workspace) = weak.upgrade() else {
-                        return
-                    };
-
-                    workspace.lock().await.update_imports(imports).await;
-                })
-            }))
-            .await;
-
         workspace
             .mutate(|workspace| {
                 workspace.populate_inflection();

@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
-use std::future::Future;
-use std::pin::Pin;
+use std::sync::Arc;
 
+use futures::channel::mpsc::Sender;
+use futures::lock::Mutex;
+use futures::SinkExt;
 use litho_compiler::Compiler;
 use litho_language::lex::{SourceId, SourceMap, Span};
 use litho_types::Database;
@@ -10,47 +12,41 @@ use smol_str::SmolStr;
 
 use crate::diagnostic::serialize_diagnostic;
 
-use super::{Document, Importer, Store};
+use super::{Document, Imports, ResolvedImports, Store};
 
-type DiagnosticsSink = Box<
-    dyn Fn(Url, Vec<Diagnostic>, Option<i32>) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Sync
-        + Send,
->;
+pub enum WorkspaceUpdate {
+    Diagnostics {
+        url: Url,
+        diagnostics: Vec<Diagnostic>,
+        version: Option<i32>,
+    },
+    Imports(Imports),
+}
 
 pub struct Workspace {
-    diagnostics_sink: DiagnosticsSink,
+    sink: Sender<WorkspaceUpdate>,
     store: Store,
     pub source_map: SourceMap<Url>,
     compiler: Compiler<SmolStr>,
     invalid: HashSet<SourceId>,
-    last_imports: HashMap<String, Result<SmolStr, String>>,
+    last_imports: ResolvedImports,
     imports: HashMap<Url, SmolStr>,
-    importer: Box<dyn Importer + Send + Sync>,
 }
 
 impl Workspace {
-    pub fn new<I>(diagnostics_sink: DiagnosticsSink, importer: I) -> Workspace
-    where
-        I: Importer + Send + Sync + 'static,
-    {
-        Workspace {
-            diagnostics_sink,
+    pub fn new(sink: Sender<WorkspaceUpdate>) -> Arc<Mutex<Workspace>> {
+        Arc::new(Mutex::new(Workspace {
+            sink,
             store: Store::new(),
             source_map: SourceMap::new(),
             compiler: Compiler::new(),
             invalid: HashSet::new(),
-            last_imports: HashMap::new(),
+            last_imports: ResolvedImports::new(),
             imports: HashMap::new(),
-            importer: Box::new(importer),
-        }
+        }))
     }
 
-    pub fn importer(&mut self) -> &mut Box<dyn Importer + Send + Sync> {
-        &mut self.importer
-    }
-
-    pub async fn update_imports(&mut self, imports: HashMap<String, Result<SmolStr, String>>) {
+    pub async fn update_imports(&mut self, imports: ResolvedImports) {
         if self.last_imports == imports {
             return;
         }
@@ -194,7 +190,10 @@ impl Workspace {
 
     pub async fn rebuild(&mut self) {
         self.compiler.rebuild();
-        self.importer.update(self.compiler.imports()).await;
+        let _ = self
+            .sink
+            .send(WorkspaceUpdate::Imports(self.compiler.imports().clone()))
+            .await;
         self.check_all().await;
     }
 
@@ -268,12 +267,14 @@ impl Workspace {
                 continue;
             }
 
-            (self.diagnostics_sink)(
-                document.url().to_owned(),
-                self.diagnostics(id).collect(),
-                document.version(),
-            )
-            .await;
+            let _ = self
+                .sink
+                .send(WorkspaceUpdate::Diagnostics {
+                    url: document.url().to_owned(),
+                    diagnostics: self.diagnostics(id).collect(),
+                    version: document.version(),
+                })
+                .await;
         }
     }
 }
