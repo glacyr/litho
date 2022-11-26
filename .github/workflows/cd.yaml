@@ -50,16 +50,18 @@ jobs:
       if: ${{ matrix.gcc }}
     - name: Build Litho LSP
       run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
+      working-directory: "target/${{ matrix.target }}/release"
     - name: Package Litho LSP
-      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "target/${{ matrix.target }}/release/litho-lsp"
+      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp"
       if: runner.os != 'Windows'
+      working-directory: "target/${{ matrix.target }}/release"
     - name: Package Litho LSP
-      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "target/${{ matrix.target }}/release/litho-lsp.exe"
+      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
       if: runner.os == 'Windows'
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.target }}
-        path: "litho-lsp-beta-${{ matrix.target }}.tar.gz"
+        path: "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.tar.gz"
 
   publish:
     runs-on: ubuntu-latest
@@ -69,7 +71,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: artifacts
-      - run: aws s3 sync ./artifacts s3://litho-downloads/litho-lsp/beta/
+      - run: aws s3 cp ./artifacts/*/*.tar.gz s3://litho-downloads/litho-lsp/beta/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
