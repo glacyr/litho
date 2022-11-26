@@ -58,7 +58,7 @@ jobs:
       if: runner.os == 'Windows'
     - uses: actions/upload-artifact@v2
       with:
-        name: ${{ env.target }}
+        name: ${{ matrix.target }}
         path: "litho-lsp-beta-${{ matrix.target }}.tar.gz"
 
   publish:
