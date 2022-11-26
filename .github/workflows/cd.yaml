@@ -55,7 +55,7 @@ jobs:
       if: runner.os != 'Windows'
     - name: Package Litho LSP
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "target/${{ matrix.target }}/release/litho-lsp.exe"
-      if: runner.os != 'Windows'
+      if: runner.os == 'Windows'
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ env.target }}
