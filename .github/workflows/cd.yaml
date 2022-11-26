@@ -50,7 +50,6 @@ jobs:
       if: ${{ matrix.gcc }}
     - name: Build Litho LSP
       run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
-      working-directory: "target/${{ matrix.target }}/release"
     - name: Package Litho LSP
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp"
       if: runner.os != 'Windows'
@@ -58,6 +57,7 @@ jobs:
     - name: Package Litho LSP
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
       if: runner.os == 'Windows'
+      working-directory: "target/${{ matrix.target }}/release"
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.target }}
