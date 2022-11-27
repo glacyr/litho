@@ -77,7 +77,7 @@ jobs:
 
     - name: Package Litho LSP for WASM
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.wasm"
-      if: runner.os == 'wasm32-unknown-unknown'
+      if: matrix.target == 'wasm32-unknown-unknown'
       working-directory: "target/${{ matrix.target }}/release"
     
     - name: Package Litho LSP on Windows
