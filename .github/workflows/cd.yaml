@@ -1,14 +1,13 @@
 name: cd
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  release:
+    types:
+      - created
 
 env:
   CARGO_TERM_COLOR: always
-  LITHO_VERSION: beta
+  LITHO_VERSION: ${github.ref_name}
 
 jobs:
   build:
@@ -35,7 +34,6 @@ jobs:
             target: "aarch64-apple-darwin"
           - os: ubuntu-latest
             target: "wasm32-unknown-unknown"
-            package: "litho-lsp-wasm"
 
     runs-on: ${{ matrix.os }}
 
