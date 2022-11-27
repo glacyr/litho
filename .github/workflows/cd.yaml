@@ -7,7 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  LITHO_VERSION: ${github.ref_name}
+  LITHO_VERSION: ${{ github.ref_name }}
 
 jobs:
   build:
