@@ -14,8 +14,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            target: "x86_64-pc-windows-msvc"
+          # - os: windows-latest
+          #   target: "x86_64-pc-windows-msvc"
           # - os: windows-latest
           #   target: "i686-pc-windows-msvc"
           # - os: windows-latest
@@ -32,6 +32,9 @@ jobs:
           #   target: "x86_64-apple-darwin"
           # - os: macos-latest
           #   target: "aarch64-apple-darwin"
+          - os: ubuntu-latest
+            target: "wasm32-unknown-unknown"
+            package: "litho-lsp-wasm"
 
     runs-on: ${{ matrix.os }}
 
@@ -50,18 +53,32 @@ jobs:
       if: ${{ matrix.gcc }}
     - name: Build Litho LSP
       run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
+
     - name: Package Litho LSP
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp"
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && matrix.target != 'wasm32-unknown-unknown'
       working-directory: "target/${{ matrix.target }}/release"
-    - name: Package Litho LSP
+
+    - name: Rename Litho LSP for WASM
+      run: mv "target/${{ matrix.target }}/release/litho_lsp_wasm.wasm" "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.wasm"
+      if: matrix.target == 'wasm32-unknown-unknown'
+    
+    - name: Package Litho LSP on Windows
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
       if: runner.os == 'Windows'
       working-directory: "target/${{ matrix.target }}/release"
+    
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.target }}
         path: "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.tar.gz"
+      if: matrix.target != 'wasm32-unknown-unknown'
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.target }}
+        path: "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.wasm"
+      if: matrix.target == 'wasm32-unknown-unknown'
 
   publish:
     runs-on: ubuntu-latest
