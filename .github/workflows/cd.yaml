@@ -8,30 +8,31 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  LITHO_VERSION: beta
 
 jobs:
   build:
     strategy:
       matrix:
         include:
-          # - os: windows-latest
-          #   target: "x86_64-pc-windows-msvc"
-          # - os: windows-latest
-          #   target: "i686-pc-windows-msvc"
-          # - os: windows-latest
-          #   target: "aarch64-pc-windows-msvc"
+          - os: windows-latest
+            target: "x86_64-pc-windows-msvc"
+          - os: windows-latest
+            target: "i686-pc-windows-msvc"
+          - os: windows-latest
+            target: "aarch64-pc-windows-msvc"
           - os: ubuntu-latest
             target: "x86_64-unknown-linux-gnu"
           - os: ubuntu-latest
             target: "aarch64-unknown-linux-gnu"
             gcc: "gcc-aarch64-linux-gnu"
-          # - os: ubuntu-latest
-          #   target: "arm-unknown-linux-gnueabihf"
-          #   gcc: "gcc-arm-linux-gnueabihf"
-          # - os: macos-latest
-          #   target: "x86_64-apple-darwin"
-          # - os: macos-latest
-          #   target: "aarch64-apple-darwin"
+          - os: ubuntu-latest
+            target: "arm-unknown-linux-gnueabihf"
+            gcc: "gcc-arm-linux-gnueabihf"
+          - os: macos-latest
+            target: "x86_64-apple-darwin"
+          - os: macos-latest
+            target: "aarch64-apple-darwin"
           - os: ubuntu-latest
             target: "wasm32-unknown-unknown"
             package: "litho-lsp-wasm"
@@ -61,7 +62,7 @@ jobs:
       if: matrix.target == 'wasm32-unknown-unknown'
 
     - name: Package Litho LSP
-      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp"
+      run: tar -czvf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp"
       if: runner.os != 'Windows' && matrix.target != 'wasm32-unknown-unknown'
       working-directory: "target/${{ matrix.target }}/release"
 
@@ -71,24 +72,24 @@ jobs:
       working-directory: "target/${{ matrix.target }}/release"
 
     - name: Package Litho LSP for WASM
-      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.wasm"
+      run: tar -czvf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.wasm"
       if: matrix.target == 'wasm32-unknown-unknown'
       working-directory: "target/${{ matrix.target }}/release"
 
     - name: Package Litho LSP
-      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp"
+      run: tar -czvf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp"
       if: runner.os != 'Windows' && matrix.target != 'wasm32-unknown-unknown'
       working-directory: "target/${{ matrix.target }}/release"
     
     - name: Package Litho LSP on Windows
-      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
+      run: tar -czvf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
       if: runner.os == 'Windows'
       working-directory: "target/${{ matrix.target }}/release"
     
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.target }}
-        path: "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.tar.gz"
+        path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
 
   publish:
     runs-on: ubuntu-latest
@@ -98,7 +99,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: artifacts
-      - run: find ./artifacts/ -name "*.tar.gz" -exec aws s3 cp {} s3://litho-downloads/litho-lsp/beta/ \;
+      - run: find ./artifacts/ -name "*.tar.gz" -exec aws s3 cp {} s3://litho-downloads/litho-lsp/${{ env.LITHO_VERSION }}/ \;
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
