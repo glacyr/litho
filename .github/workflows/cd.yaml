@@ -58,7 +58,7 @@ jobs:
     
     - name: Build Litho LSP for WASM
       run: cargo build --package litho-lsp-wasm --release --target ${{ matrix.target }}
-      if: matrix.target != 'wasm32-unknown-unknown'
+      if: matrix.target == 'wasm32-unknown-unknown'
 
     - name: Package Litho LSP
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp"
