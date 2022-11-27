@@ -66,8 +66,19 @@ jobs:
       working-directory: "target/${{ matrix.target }}/release"
 
     - name: Rename Litho LSP for WASM
-      run: mv "target/${{ matrix.target }}/release/litho_lsp_wasm.wasm" "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.wasm"
+      run: mv "litho_lsp_wasm.wasm" "litho-lsp.wasm"
       if: matrix.target == 'wasm32-unknown-unknown'
+      working-directory: "target/${{ matrix.target }}/release"
+
+    - name: Package Litho LSP
+      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho_lsp_wasm.wasm"
+      if: runner.os != 'Windows' && matrix.target != 'wasm32-unknown-unknown'
+      working-directory: "target/${{ matrix.target }}/release"
+
+    - name: Package Litho LSP for WASM
+      run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.wasm"
+      if: runner.os == 'wasm32-unknown-unknown'
+      working-directory: "target/${{ matrix.target }}/release"
     
     - name: Package Litho LSP on Windows
       run: tar -czvf "litho-lsp-beta-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
@@ -78,13 +89,6 @@ jobs:
       with:
         name: ${{ matrix.target }}
         path: "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.tar.gz"
-      if: matrix.target != 'wasm32-unknown-unknown'
-    
-    - uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.target }}
-        path: "target/${{ matrix.target }}/release/litho-lsp-beta-${{ matrix.target }}.wasm"
-      if: matrix.target == 'wasm32-unknown-unknown'
 
   publish:
     runs-on: ubuntu-latest
@@ -94,7 +98,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           path: artifacts
-      - run: aws s3 cp ./artifacts/*/* s3://litho-downloads/litho-lsp/beta/
+      - run: aws s3 cp ./artifacts/*/*.tar.gz s3://litho-downloads/litho-lsp/beta/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
