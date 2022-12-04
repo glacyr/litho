@@ -6,5 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-detuple = { path = "../detuple" }
 nom = "7.1.1"
+zipped = "0.1.0"

@@ -104,7 +104,7 @@ where
             .and(root_operation_type_definitions().recover(Missing::unary(
                 Diagnostic::missing_root_operation_type_definitions,
             )))
-            .flatten()
+            .unzip()
             .map(
                 |(description, schema, directives, type_definitions)| SchemaDefinition {
                     description,
@@ -152,7 +152,7 @@ where
             .and(named_type().recover(Missing::unary(
                 Diagnostic::missing_root_operation_type_definition_named_type,
             )))
-            .flatten()
+            .unzip()
             .map(
                 |(operation_type, colon, named_type)| RootOperationTypeDefinition {
                     operation_type,
@@ -173,7 +173,7 @@ where
             .and(keyword("schema"))
             .and(opt(directives()))
             .and(opt(root_operation_type_definitions()))
-            .flatten()
+            .unzip()
             .map(
                 |(extend, schema, directives, type_definitions)| SchemaExtension {
                     extend_schema: (extend, schema),
@@ -231,7 +231,7 @@ where
                 Diagnostic::missing_scalar_type_definition_name,
             )))
             .and(opt(directives()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, scalar, name, directives)| ScalarTypeDefinition {
                     description,
@@ -258,7 +258,7 @@ where
             .and(directives().recover(Missing::unary(
                 Diagnostic::missing_scalar_type_extension_directives,
             )))
-            .flatten()
+            .unzip()
             .map(|(extend, scalar, name, directives)| ScalarTypeExtension {
                 extend_scalar: (extend, scalar),
                 name,
@@ -282,7 +282,7 @@ where
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, ty, name, implements_interfaces, directives, fields_definition)| {
                     ObjectTypeDefinition {
@@ -315,7 +315,7 @@ where
                     Diagnostic::missing_second_implements_interface,
                 )),
             )))
-            .flatten()
+            .unzip()
             .map(
                 |(implements, ampersand, first, types)| ImplementsInterfaces {
                     implements,
@@ -360,7 +360,7 @@ where
             )
             .and(ty().recover(Missing::unary(Diagnostic::missing_field_definition_type)))
             .and(opt(directives()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, name, arguments_definition, colon, ty, directives)| {
                     FieldDefinition {
@@ -413,7 +413,7 @@ where
             )))
             .and(opt(default_value()))
             .and(opt(directives()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, name, colon, ty, default_value, directives)| InputValueDefinition {
                     description,
@@ -442,7 +442,7 @@ where
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(extend, ty, name, implements_interfaces, directives, fields_definition)| {
                     ObjectTypeExtension {
@@ -472,7 +472,7 @@ where
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(
                     description,
@@ -508,7 +508,7 @@ where
             .and(opt(implements_interfaces()))
             .and(opt(directives()))
             .and(opt(fields_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(
                     extend,
@@ -544,7 +544,7 @@ where
             )))
             .and(opt(directives()))
             .and(opt(union_member_types()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, union_kw, name, directives, member_types)| UnionTypeDefinition {
                     description,
@@ -577,7 +577,7 @@ where
                         .recover(Missing::unary(Diagnostic::missing_second_union_member_type)),
                 ),
             ))
-            .flatten()
+            .unzip()
             .map(|(eq, pipe, first, types)| UnionMemberTypes {
                 eq,
                 pipe,
@@ -601,7 +601,7 @@ where
             )))
             .and(opt(directives()))
             .and(opt(union_member_types()))
-            .flatten()
+            .unzip()
             .map(
                 |(extend, union_kw, name, directives, member_types)| UnionTypeExtension {
                     extend_union: (extend, union_kw),
@@ -627,7 +627,7 @@ where
             )))
             .and(opt(directives()))
             .and(opt(enum_values_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, enum_kw, name, directives, values_definition)| EnumTypeDefinition {
                     description,
@@ -670,7 +670,7 @@ where
         opt(description())
             .and_recognize(enum_value())
             .and(opt(directives()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, enum_value, directives)| EnumValueDefinition {
                     description,
@@ -692,7 +692,7 @@ where
             .and(named_type().recover(Missing::unary(Diagnostic::missing_enum_type_extension_name)))
             .and(opt(directives()))
             .and(opt(enum_values_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(extend, enum_kw, name, directives, values_definition)| EnumTypeExtension {
                     extend_enum: (extend, enum_kw),
@@ -718,7 +718,7 @@ where
             )))
             .and(opt(directives()))
             .and(opt(input_fields_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(description, input, name, directives, fields_definition)| {
                     InputObjectTypeDefinition {
@@ -767,7 +767,7 @@ where
             )))
             .and(opt(directives()))
             .and(opt(input_fields_definition()))
-            .flatten()
+            .unzip()
             .map(
                 |(extend, input, name, directives, fields_definition)| InputObjectTypeExtension {
                     extend_input: (extend, input),
@@ -800,7 +800,7 @@ where
             .and(directive_locations().recover(Missing::unary(
                 Diagnostic::missing_directive_definition_locations,
             )))
-            .flatten()
+            .unzip()
             .map(
                 |(
                     description,
@@ -841,7 +841,7 @@ where
             .and(many0(punctuator("|").and(directive_location().recover(
                 Missing::unary(Diagnostic::missing_second_directive_location),
             ))))
-            .flatten()
+            .unzip()
             .map(|(on, pipe, first, locations)| DirectiveLocations {
                 on,
                 pipe,

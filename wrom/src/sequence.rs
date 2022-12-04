@@ -19,5 +19,5 @@ where
     first
         .and(second)
         .and_recover(third, move |(left, _)| recovery(left))
-        .flatten()
+        .unzip()
 }

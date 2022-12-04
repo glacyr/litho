@@ -58,7 +58,7 @@ where
             .and(selection_set().map(Into::into).recover(Missing::unary(
                 Diagnostic::missing_operation_definition_selection_set,
             )))
-            .flatten()
+            .unzip()
             .map(
                 |(ty, name, variable_definitions, directives, selection_set)| OperationDefinition {
                     ty: Some(ty),
@@ -130,7 +130,7 @@ where
                 .and(opt(arguments().map(Into::into)))
                 .and(opt(directives()))
                 .and(opt(selection_set().map(Into::into)))
-                .flatten()
+                .unzip()
                 .map(
                     |(alias, name, arguments, directives, selection_set)| Field {
                         alias: Some(alias),
@@ -144,7 +144,7 @@ where
                 .and(opt(arguments().map(Into::into)))
                 .and(opt(directives()))
                 .and(opt(selection_set().map(Into::into)))
-                .flatten()
+                .unzip()
                 .map(
                     |(name, arguments, directives, selection_set): (Name<T>, _, _, _)| Field {
                         alias: None,
@@ -198,7 +198,7 @@ where
         name()
             .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_argument_colon)))
             .and(value().recover(Missing::unary(Diagnostic::missing_argument_value)))
-            .flatten()
+            .unzip()
             .map(|(name, colon, value)| Argument { name, colon, value })
             .map(Into::into)
     })
@@ -213,7 +213,7 @@ where
         punctuator("...")
             .and(name_unless("on"))
             .and(opt(directives()))
-            .flatten()
+            .unzip()
             .map(|(dots, fragment_name, directives)| FragmentSpread {
                 dots,
                 fragment_name,
@@ -235,7 +235,7 @@ where
             .and(selection_set().map(Into::into).recover(Missing::unary(
                 Diagnostic::missing_inline_fragment_selection_set,
             )))
-            .flatten()
+            .unzip()
             .map(
                 |(dots, type_condition, directives, selection_set)| InlineFragment {
                     dots,
@@ -266,7 +266,7 @@ where
                     .map(Into::into)
                     .recover(Missing::Unary(Diagnostic::missing_fragment_selection_set)),
             )
-            .flatten()
+            .unzip()
             .map(
                 |(fragment, fragment_name, type_condition, directives, selection_set)| {
                     FragmentDefinition {
@@ -392,7 +392,7 @@ where
         name()
             .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_object_field_colon)))
             .and(value().recover(Missing::unary(Diagnostic::missing_object_field_value)))
-            .flatten()
+            .unzip()
             .map(|(name, colon, value)| ObjectField { name, colon, value })
     })
 }
@@ -409,7 +409,7 @@ where
             .and_recover(punctuator(")"), |(left, _)| {
                 Missing::binary(Diagnostic::missing_variable_definitions_closing_parenthesis)(left)
             })
-            .flatten()
+            .unzip()
             .map(|(left, variable_definitions, right)| VariableDefinitions {
                 parens: (left, right),
                 variable_definitions,
@@ -431,7 +431,7 @@ where
             .and(ty().recover(Missing::unary(Diagnostic::missing_variable_definition_type)))
             .and(opt(default_value()))
             .and(opt(directives()))
-            .flatten()
+            .unzip()
             .map(
                 |(variable, colon, ty, default_value, directives)| VariableDefinition {
                     variable,
@@ -541,7 +541,7 @@ where
         punctuator("@")
             .and(name().recover(Missing::unary(Diagnostic::missing_directive_name)))
             .and(opt(arguments().map(Into::into)))
-            .flatten()
+            .unzip()
             .map(|(at, name, arguments)| Directive {
                 at,
                 name,

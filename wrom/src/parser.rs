@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use detuple::FromNested;
+use zipped::UnzipFrom;
 
 use nom::error::{ErrorKind, ParseError};
 use nom::multi::many_till;
@@ -21,11 +21,11 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
         Recover(self, missing)
     }
 
-    fn flatten(self) -> Flatten<Self, O>
+    fn unzip(self) -> Unzip<Self, O>
     where
         Self: Sized,
     {
-        Flatten(self, PhantomData)
+        Unzip(self, PhantomData)
     }
 
     fn and<P>(self, parser: P) -> And<Self, P>
@@ -237,9 +237,9 @@ where
     }
 }
 
-pub struct Flatten<P, O>(P, PhantomData<O>);
+pub struct Unzip<P, O>(P, PhantomData<O>);
 
-impl<I, E, P, O> Recognizer<I, E> for Flatten<P, O>
+impl<I, E, P, O> Recognizer<I, E> for Unzip<P, O>
 where
     P: Recognizer<I, E>,
 {
@@ -248,9 +248,9 @@ where
     }
 }
 
-impl<I, N, E, P, O> RecoverableParser<I, N, E> for Flatten<P, O>
+impl<I, N, E, P, O> RecoverableParser<I, N, E> for Unzip<P, O>
 where
-    N: FromNested<O>,
+    N: UnzipFrom<O>,
     P: RecoverableParser<I, O, E>,
 {
     fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, N, E>
@@ -259,7 +259,7 @@ where
     {
         self.0
             .parse(input, recovery_point)
-            .map(|(input, value)| (input, N::from_nested(value)))
+            .map(|(input, value)| (input, N::unzip_from(value)))
     }
 }
 
