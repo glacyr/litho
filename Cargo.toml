@@ -34,7 +34,6 @@ warp-server = ["warp"]
 [workspace]
 members = [
 	"copa",
-    "dbounce",
 	"kono-aspect",
 	"kono-executor",
 	"kono-introspection",

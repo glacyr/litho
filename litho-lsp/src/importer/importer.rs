@@ -1,7 +1,7 @@
 use std::sync::Weak;
 use std::time::Duration;
 
-use dbounce::debounced;
+use debounced::debounced;
 use futures::channel::mpsc::{channel, Receiver, Sender};
 use futures::future::join;
 use futures::lock::Mutex;
