@@ -19,43 +19,43 @@ jobs:
             arch: x64
             npm_config_arch: x64
             target: "x86_64-pc-windows-msvc"
-          - os: windows-latest
-            platform: win32
-            arch: ia32
-            npm_config_arch: ia32
-            target: "i686-pc-windows-msvc"
-          - os: windows-latest
-            platform: win32
-            arch: arm64
-            npm_config_arch: arm
-            target: "aarch64-pc-windows-msvc"
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: ia32
+          #   npm_config_arch: ia32
+          #   target: "i686-pc-windows-msvc"
+          # - os: windows-latest
+          #   platform: win32
+          #   arch: arm64
+          #   npm_config_arch: arm
+          #   target: "aarch64-pc-windows-msvc"
           - os: ubuntu-latest
             platform: linux
             arch: x64
             npm_config_arch: x64
             target: "x86_64-unknown-linux-gnu"
-          - os: ubuntu-latest
-            platform: linux
-            arch: arm64
-            npm_config_arch: arm64
-            target: "aarch64-unknown-linux-gnu"
-            gcc: "gcc-aarch64-linux-gnu"
-          - os: ubuntu-latest
-            platform: linux
-            arch: armhf
-            npm_config_arch: arm
-            target: "arm-unknown-linux-gnueabihf"
-            gcc: "gcc-arm-linux-gnueabihf"
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: arm64
+          #   npm_config_arch: arm64
+          #   target: "aarch64-unknown-linux-gnu"
+          #   gcc: "gcc-aarch64-linux-gnu"
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   arch: armhf
+          #   npm_config_arch: arm
+          #   target: "arm-unknown-linux-gnueabihf"
+          #   gcc: "gcc-arm-linux-gnueabihf"
           - os: macos-latest
             platform: darwin
             arch: x64
             npm_config_arch: x64
             target: "x86_64-apple-darwin"
-          - os: macos-latest
-            platform: darwin
-            arch: arm64
-            npm_config_arch: arm64
-            target: "aarch64-apple-darwin"
+          # - os: macos-latest
+          #   platform: darwin
+          #   arch: arm64
+          #   npm_config_arch: arm64
+          #   target: "aarch64-apple-darwin"
 
     runs-on: ${{ matrix.os }}
 
@@ -73,22 +73,6 @@ jobs:
         run: sudo apt-get install ${{ matrix.gcc }}
         if: ${{ matrix.gcc }}
 
-      # Litho LSP
-      - name: Build Litho LSP
-        run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
-      - name: Package Litho LSP
-        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp"
-        if: runner.os != 'Windows'
-        working-directory: "target/${{ matrix.target }}/release"
-      - name: Package Litho LSP on Windows
-        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
-        if: runner.os == 'Windows'
-        working-directory: "target/${{ matrix.target }}/release"
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.target }}
-          path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
-
       # Litho CLI
       - name: Build Litho CLI
         run: cargo build --package litho-cli --release --target ${{ matrix.target }}
@@ -104,6 +88,22 @@ jobs:
         with:
           name: ${{ matrix.target }}
           path: "target/${{ matrix.target }}/release/litho-cli-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
+
+      # Litho LSP
+      - name: Build Litho LSP
+        run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
+      - name: Package Litho LSP
+        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp"
+        if: runner.os != 'Windows'
+        working-directory: "target/${{ matrix.target }}/release"
+      - name: Package Litho LSP on Windows
+        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
+        if: runner.os == 'Windows'
+        working-directory: "target/${{ matrix.target }}/release"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}
+          path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
 
       # Litho for VSCode
       - name: Copy Litho LSP into VSCode Extension
