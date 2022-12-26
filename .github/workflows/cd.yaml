@@ -77,11 +77,11 @@ jobs:
       - name: Build Litho CLI
         run: cargo build --package litho-cli --release --target ${{ matrix.target }}
       - name: Package Litho LSP
-        run: gzip -c "litho-cli" > "litho-cli-${{ env.LITHO_VERSION }}-${{ matrix.target }}.gz"
+        run: gzip -c "litho" > "litho-cli-${{ env.LITHO_VERSION }}-${{ matrix.target }}.gz"
         if: runner.os != 'Windows'
         working-directory: "target/${{ matrix.target }}/release"
       - name: Package Litho LSP on Windows
-        run: gzip -c "litho-cli.exe" > "litho-cli-${{ env.LITHO_VERSION }}-${{ matrix.target }}.gz"
+        run: gzip -c "litho.exe" > "litho-cli-${{ env.LITHO_VERSION }}-${{ matrix.target }}.gz"
         if: runner.os == 'Windows'
         working-directory: "target/${{ matrix.target }}/release"
       - uses: actions/upload-artifact@v2
