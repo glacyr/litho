@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "litho-cli",
     "litho-compiler",
     "litho-diagnostics",
     "litho-import",
