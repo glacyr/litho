@@ -14,48 +14,48 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: windows-latest
-          #   platform: win32
-          #   arch: x64
-          #   npm_config_arch: x64
-          #   target: "x86_64-pc-windows-msvc"
-          # - os: windows-latest
-          #   platform: win32
-          #   arch: ia32
-          #   npm_config_arch: ia32
-          #   target: "i686-pc-windows-msvc"
-          # - os: windows-latest
-          #   platform: win32
-          #   arch: arm64
-          #   npm_config_arch: arm
-          #   target: "aarch64-pc-windows-msvc"
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            npm_config_arch: x64
+            target: "x86_64-pc-windows-msvc"
+          - os: windows-latest
+            platform: win32
+            arch: ia32
+            npm_config_arch: ia32
+            target: "i686-pc-windows-msvc"
+          - os: windows-latest
+            platform: win32
+            arch: arm64
+            npm_config_arch: arm
+            target: "aarch64-pc-windows-msvc"
           - os: ubuntu-latest
             platform: linux
             arch: x64
             npm_config_arch: x64
             target: "x86_64-unknown-linux-gnu"
-          # - os: ubuntu-latest
-          #   platform: linux
-          #   arch: arm64
-          #   npm_config_arch: arm64
-          #   target: "aarch64-unknown-linux-gnu"
-          #   gcc: "gcc-aarch64-linux-gnu"
-          # - os: ubuntu-latest
-          #   platform: linux
-          #   arch: armhf
-          #   npm_config_arch: arm
-          #   target: "arm-unknown-linux-gnueabihf"
-          #   gcc: "gcc-arm-linux-gnueabihf"
-          # - os: macos-latest
-          #   platform: darwin
-          #   arch: x64
-          #   npm_config_arch: x64
-          #   target: "x86_64-apple-darwin"
-          # - os: macos-latest
-          #   platform: darwin
-          #   arch: arm64
-          #   npm_config_arch: arm64
-          #   target: "aarch64-apple-darwin"
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
+            npm_config_arch: arm64
+            target: "aarch64-unknown-linux-gnu"
+            gcc: "gcc-aarch64-linux-gnu"
+          - os: ubuntu-latest
+            platform: linux
+            arch: armhf
+            npm_config_arch: arm
+            target: "arm-unknown-linux-gnueabihf"
+            gcc: "gcc-arm-linux-gnueabihf"
+          - os: macos-latest
+            platform: darwin
+            arch: x64
+            npm_config_arch: x64
+            target: "x86_64-apple-darwin"
+          - os: macos-latest
+            platform: darwin
+            arch: arm64
+            npm_config_arch: arm64
+            target: "aarch64-apple-darwin"
 
     runs-on: ${{ matrix.os }}
 
