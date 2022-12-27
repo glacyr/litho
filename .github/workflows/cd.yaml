@@ -199,6 +199,10 @@ jobs:
     if: success()
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14.x"
+          registry-url: "https://registry.npmjs.org"
       - name: Determine NPM version
         run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
         working-directory: litho-cli-js
