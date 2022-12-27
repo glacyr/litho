@@ -73,6 +73,12 @@ jobs:
         run: sudo apt-get install ${{ matrix.gcc }}
         if: ${{ matrix.gcc }}
 
+      - name: Determine crate version
+        run: echo "CARGO_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
+
+      - name: Update crate versions
+        run: cargo set-version --workspace $CARGO_VERSION
+
       # Litho CLI
       - name: Build Litho CLI
         run: cargo build --package litho-cli --release --target ${{ matrix.target }}
@@ -119,6 +125,12 @@ jobs:
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #     npm_config_arch: ${{ matrix.npm_config_arch }}
+      #   working-directory: litho-vscode
+      # - name: Determine NPM version
+      #   run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
+      #   working-directory: litho-vscode
+      # - name: Fix package.json version
+      #   run: yarn version --new-version $NPM_VERSION --no-git-tag-version
       #   working-directory: litho-vscode
       # - shell: pwsh
       #   run: echo "vs_target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
