@@ -5,7 +5,8 @@
     "author": "Tim <tim@glacyr.com>",
     "license": "MIT",
     "files": [
-        "bin/litho"
+        "bin/litho",
+        "install.js"
     ],
     "bin": {
         "litho": "bin/litho"
