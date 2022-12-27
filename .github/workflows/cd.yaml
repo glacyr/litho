@@ -193,6 +193,21 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-central-1
 
+  publish_cli_npm:
+    runs-on: ubuntu-latest
+    needs: publish_cli
+    if: success()
+    steps:
+      - name: Determine NPM version
+        run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
+      - name: Fix package.json version
+        run: yarn version --new-version $NPM_VERSION --no-git-tag-version
+      - name: Publish litho-cli to NPM
+        run: yarn publish
+        working-directory: glacyr-cli-js
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   # publish_vscode:
   #   runs-on: ubuntu-latest
   #   needs: build
