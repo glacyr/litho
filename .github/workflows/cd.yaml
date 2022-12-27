@@ -72,10 +72,10 @@ jobs:
       - name: Install GCC ${{ matrix.gcc }}
         run: sudo apt-get install ${{ matrix.gcc }}
         if: ${{ matrix.gcc }}
-
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
       - name: Determine crate version
         run: echo "CARGO_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
-
       - name: Update crate versions
         run: cargo set-version --workspace $CARGO_VERSION
 
