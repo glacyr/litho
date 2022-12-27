@@ -1,0 +1,16 @@
+{
+    "name": "litho-cli",
+    "version": "0.0.0",
+    "description": "",
+    "author": "Tim <tim@glacyr.com>",
+    "license": "MIT",
+    "files": [
+        "bin/litho"
+    ],
+    "bin": {
+        "litho": "bin/litho"
+    },
+    "scripts": {
+        "install": "node install"
+    }
+}

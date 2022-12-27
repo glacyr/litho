@@ -198,6 +198,7 @@ jobs:
     needs: publish_cli
     if: success()
     steps:
+      - uses: actions/checkout@v2
       - name: Determine NPM version
         run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
         working-directory: litho-cli-js
