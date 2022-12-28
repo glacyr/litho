@@ -11,6 +11,10 @@ impl<T> SourceMap<T> {
     pub fn new() -> SourceMap<T> {
         Default::default()
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&T, &SourceId)> {
+        self.map.iter()
+    }
 }
 
 impl<T> Default for SourceMap<T> {

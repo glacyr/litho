@@ -202,7 +202,9 @@ pub trait Format {
 
     fn format_to_string(&self, line_width: usize) -> String {
         let mut string = String::new();
-        let _ = self.format(&mut Formatter::new(&mut string, line_width));
+        let mut formatter = Formatter::new(&mut string, line_width);
+        let _ = self.format(&mut formatter);
+        let _ = formatter.line();
         string
     }
 
