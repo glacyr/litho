@@ -8,9 +8,12 @@ edition = "2021"
 name = "litho"
 
 [dependencies]
-smol_str = "0.1.23"
-
 litho-compiler = { path = "../litho-compiler" }
 litho-language = { path = "../litho-language" }
+
 ariadne = "0.1.5"
 glob = "0.3.0"
+smol_str = "0.1.23"
+
+[build-dependencies]
+vergen = "7.4.4"

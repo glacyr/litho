@@ -50,8 +50,7 @@ where
         let mut workspace = self.workspace.lock().await;
         workspace
             .mutate(|workspace| {
-                workspace.populate_inflection();
-                workspace.populate_scalars();
+                workspace.populate_builtins();
 
                 if let Some(root_uri) = params.root_uri {
                     let _ = self.populate_root(workspace, root_uri);

@@ -878,6 +878,7 @@ where
             keyword("FIELD").map(ExecutableDirectiveLocation::Field),
             keyword("FRAGMENT_DEFINITION").map(ExecutableDirectiveLocation::FragmentDefinition),
             keyword("FRAGMENT_SPREAD").map(ExecutableDirectiveLocation::FragmentSpread),
+            keyword("INLINE_FRAGMENT").map(ExecutableDirectiveLocation::InlineFragment),
             keyword("VARIABLE_DEFINITION").map(ExecutableDirectiveLocation::VariableDefinition),
         ))
     })

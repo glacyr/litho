@@ -4,7 +4,7 @@ use std::sync::Arc;
 use futures::channel::mpsc::Sender;
 use futures::lock::Mutex;
 use futures::SinkExt;
-use litho_compiler::Compiler;
+use litho_compiler::{builtins, Compiler};
 use litho_language::lex::{SourceId, SourceMap, Span};
 use litho_types::Database;
 use lsp_types::*;
@@ -125,22 +125,10 @@ impl Workspace {
         result
     }
 
-    pub fn populate_inflection(&mut self) {
-        self.populate_file_contents(
-            Url::parse("litho://std.litho.dev/inflection.graphql").unwrap(),
-            None,
-            true,
-            include_str!("../std/introspection.graphql").to_owned(),
-        )
-    }
-
-    pub fn populate_scalars(&mut self) {
-        self.populate_file_contents(
-            Url::parse("litho://std.litho.dev/scalars.graphql").unwrap(),
-            None,
-            true,
-            include_str!("../std/scalars.graphql").to_owned(),
-        );
+    pub fn populate_builtins(&mut self) {
+        for (path, source) in builtins().into_iter().copied() {
+            self.populate_file_contents(Url::parse(path).unwrap(), None, true, source.to_owned())
+        }
     }
 
     pub fn populate_file_contents(

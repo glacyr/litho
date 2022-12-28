@@ -569,6 +569,7 @@ where
 
         formatter.line()?;
         self.directive.format(formatter)?;
+        self.at.format(formatter)?;
         formatter.squeeze(|formatter| self.name.format(formatter))?;
         formatter.squeeze(|formatter| self.arguments_definition.format(formatter))?;
         self.repeatable.format(formatter)?;
@@ -591,6 +592,7 @@ where
         if self.expands() {
             formatter.indent(|formatter| {
                 for location in self.locations() {
+                    formatter.line()?;
                     formatter.push("|")?;
                     location.format(formatter)?;
                 }
@@ -601,8 +603,8 @@ where
             for (i, location) in self.locations().enumerate() {
                 if i != 0 {
                     formatter.push("|")?;
-                    location.format(formatter)?;
                 }
+                location.format(formatter)?;
             }
         }
 

@@ -58,7 +58,6 @@ where
         let result = closure(self);
         self.line()?;
         self.shape.indent -= 4;
-        self.shape.blank_lines = 0;
         result
     }
 

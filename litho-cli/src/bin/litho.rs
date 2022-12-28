@@ -6,7 +6,7 @@ use std::process::ExitCode;
 
 use ariadne::{Cache, Label, Report, ReportKind, Source};
 use glob::glob;
-use litho_compiler::Compiler;
+use litho_compiler::{builtins, Compiler};
 use litho_language::lex::{SourceId, SourceMap, Span};
 use smol_str::SmolStr;
 
@@ -36,32 +36,33 @@ pub fn main() -> ExitCode {
     let mut args = args().skip(1);
 
     while let Some(arg) = args.next() {
-        inputs.extend(
-            glob(&arg)
-                .into_iter()
-                .flatten()
-                .map(IntoIterator::into_iter)
-                .flatten()
-                .map(|path| path.to_string_lossy().into_owned()),
-        );
+        match arg.as_str() {
+            "--version" | "-v" | "version" => {
+                println!(
+                    "litho {} ({} {})",
+                    env!("CARGO_PKG_VERSION"),
+                    env!("VERGEN_GIT_SHA_SHORT"),
+                    env!("VERGEN_GIT_COMMIT_DATE")
+                );
+
+                return ExitCode::SUCCESS;
+            }
+            arg => inputs.extend(
+                glob(&arg)
+                    .into_iter()
+                    .flatten()
+                    .map(IntoIterator::into_iter)
+                    .flatten()
+                    .map(|path| path.to_string_lossy().into_owned()),
+            ),
+        }
     }
 
     let mut compiler = Compiler::<SmolStr>::new();
     let mut source_map = SourceMap::new();
     let mut sources = Sources::default();
 
-    let std = vec![
-        (
-            "litho://std.litho.dev/inflection.graphql",
-            include_str!("../../std/introspection.graphql").to_owned(),
-        ),
-        (
-            "litho://std.litho.dev/scalars.graphql",
-            include_str!("../../std/scalars.graphql").to_owned(),
-        ),
-    ];
-
-    for (path, text) in std.into_iter() {
+    for (path, text) in builtins().into_iter().copied() {
         let source_id = source_map.get_or_insert(path.to_owned());
         sources.insert(source_id, path.to_owned(), Source::from(&text));
         compiler.add_document(source_id, &text, true);
