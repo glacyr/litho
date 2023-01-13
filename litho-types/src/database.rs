@@ -10,7 +10,7 @@ use multimap::MultiMap;
 
 use super::indexer::Indexer;
 use super::inferencer::{InferenceState, Inferencer};
-use super::{Bindings, Fragments, Inference, Operations, Usages};
+use super::{Bindings, Fragments, Import, Inference, Operations, Usages};
 
 #[derive(Debug)]
 pub struct Database<T>
@@ -24,7 +24,7 @@ where
     pub fragments: Fragments<T>,
     pub usages: Usages<T>,
     pub interface_implementations: MultiMap<T, T>,
-    pub imports: HashMap<String, Duration>,
+    pub imports: HashMap<String, Import>,
     pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
     pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
     pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
@@ -59,7 +59,7 @@ where
         Default::default()
     }
 
-    pub fn imports(&self) -> &HashMap<String, Duration> {
+    pub fn imports(&self) -> &HashMap<String, Import> {
         &self.imports
     }
 
@@ -82,27 +82,46 @@ where
             .schema_directives()
             .flat_map(|directive| {
                 let Some(name) = directive.name.ok() else {
-                return None
-            };
+                    return None
+                };
 
                 if name.as_ref().borrow() != "litho" {
                     return None;
                 }
 
                 let Some(url) = directive
-                .arguments
-                .iter()
-                .flat_map(|args| args.items.iter())
-                .find(|arg| arg.name.as_ref().borrow() == "url")
-                .and_then(|arg| arg.value.ok()) else {
-                return None
-            };
+                    .arguments
+                    .iter()
+                    .flat_map(|args| args.items.iter())
+                    .find(|arg| arg.name.as_ref().borrow() == "url")
+                    .and_then(|arg| arg.value.ok()) else {
+                    return None
+                };
 
                 let Value::StringValue(url) = url.as_ref() else {
-                return None
-            };
+                    return None
+                };
 
-                Some((url.to_string(), Duration::from_secs(60)))
+                let headers = match directive
+                    .arguments
+                    .iter()
+                    .flat_map(|args| args.items.iter())
+                    .find(|arg| arg.name.as_ref().borrow() == "headers")
+                    .and_then(|arg| arg.value.ok())
+                {
+                    Some(value) => value
+                        .to_json()
+                        .and_then(|json| serde_json::from_value(json).ok())
+                        .unwrap_or_default(),
+                    None => vec![],
+                };
+
+                let import = Import {
+                    headers,
+                    refresh: Duration::from_secs(60),
+                };
+
+                Some((url.to_string(), import))
             })
             .collect::<HashMap<_, _>>();
 

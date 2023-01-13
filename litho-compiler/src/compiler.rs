@@ -2,14 +2,13 @@ use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::Arc;
-use std::time::Duration;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::{DefinitionId, Document};
 use litho_language::chk::collect_errors;
 use litho_language::lex::{SourceId, Span};
 use litho_language::Parse;
-use litho_types::Database;
+use litho_types::{Database, Import};
 use litho_validation::check;
 
 use super::{Consumer, DepGraph, Dependency, Producer};
@@ -57,7 +56,7 @@ impl<T> Compiler<T>
 where
     T: Eq + Clone + Hash + Borrow<str> + ToString,
 {
-    pub fn imports(&self) -> &HashMap<String, Duration> {
+    pub fn imports(&self) -> &HashMap<String, Import> {
         self.database.imports()
     }
 

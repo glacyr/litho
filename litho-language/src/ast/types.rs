@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
@@ -338,6 +339,43 @@ impl<T> Value<T> {
     }
 }
 
+impl<T> Value<T>
+where
+    T: Borrow<str>,
+{
+    pub fn to_json(&self) -> Option<serde_json::Value> {
+        match self {
+            Value::Variable(_) => None,
+            Value::IntValue(value) => Some(serde_json::Value::Number(value.to_i32().ok()?.into())),
+            Value::FloatValue(value) => Some(serde_json::Value::Number(
+                serde_json::Number::from_f64(value.to_f64().ok()?)?,
+            )),
+            Value::StringValue(value) => Some(serde_json::Value::String(value.to_string())),
+            Value::EnumValue(value) => Some(match value.0.to_string() {
+                value if value == "true" => serde_json::Value::Bool(true),
+                value if value == "false" => serde_json::Value::Bool(false),
+                value => serde_json::Value::String(value),
+            }),
+            Value::NullValue(_) => Some(serde_json::Value::Null),
+            Value::BooleanValue(value) => Some(serde_json::Value::Bool(value.to_bool())),
+            Value::ListValue(value) => Some(serde_json::Value::Array(
+                value
+                    .values
+                    .iter()
+                    .map(|value| value.to_json())
+                    .collect::<Option<_>>()?,
+            )),
+            Value::ObjectValue(value) => Some(serde_json::Value::Object(
+                value
+                    .object_fields
+                    .iter()
+                    .map(|field| Some((field.name.to_string(), field.value.ok()?.to_json()?)))
+                    .collect::<Option<_>>()?,
+            )),
+        }
+    }
+}
+
 node_enum!(
     Arc<Value>,
     visit_value + post_visit_value,
@@ -356,6 +394,15 @@ node_enum!(
 pub enum BooleanValue<T> {
     True(Name<T>),
     False(Name<T>),
+}
+
+impl<T> BooleanValue<T>
+where
+    T: Borrow<str>,
+{
+    pub fn to_bool(&self) -> bool {
+        matches!(self, BooleanValue::True(_))
+    }
 }
 
 node_enum!(BooleanValue, visit_boolean_value, True, False);
@@ -651,7 +698,7 @@ pub struct Description<T>(pub StringValue<T>);
 
 impl<T> ToString for Description<T>
 where
-    T: ToString,
+    T: Borrow<str>,
 {
     fn to_string(&self) -> String {
         self.0.to_string()

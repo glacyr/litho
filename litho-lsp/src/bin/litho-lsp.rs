@@ -75,8 +75,6 @@ mod tower {
     #[tower_lsp::async_trait]
     impl LanguageServer for TowerServer {
         async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-            eprintln!("Going to initialize.");
-
             self.server
                 .initialize(params)
                 .await

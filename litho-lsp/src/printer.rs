@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::Display;
 
 use litho_language::ast::*;
@@ -7,7 +8,7 @@ pub struct Printer;
 impl Printer {
     pub fn short_print_type_definition<T>(definition: &TypeDefinition<T>) -> String
     where
-        T: Display,
+        T: Borrow<str> + Display,
     {
         format!(
             "{} {}",
@@ -25,7 +26,7 @@ impl Printer {
 
     pub fn pretty_print_field<T>(definition: &FieldDefinition<T>) -> String
     where
-        T: Display,
+        T: Borrow<str> + Display,
     {
         format!(
             "{}{}: {}",
@@ -41,7 +42,7 @@ impl Printer {
 
     pub fn print_arguments_definition<T>(definition: &ArgumentsDefinition<T>) -> String
     where
-        T: Display,
+        T: Borrow<str> + Display,
     {
         format!(
             "({})",
@@ -65,7 +66,7 @@ impl Printer {
         arguments_definition: Option<&ArgumentsDefinition<T>>,
     ) -> String
     where
-        T: Display,
+        T: Borrow<str> + Display,
     {
         match arguments_definition {
             Some(arguments_definition) => format!(
@@ -94,7 +95,7 @@ impl Printer {
         arguments_definition: Option<&ArgumentsDefinition<T>>,
     ) -> String
     where
-        T: Display,
+        T: Borrow<str> + Display,
     {
         match arguments_definition {
             Some(arguments_definition) => format!(

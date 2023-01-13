@@ -7,12 +7,12 @@ use futures::future::join;
 use futures::lock::Mutex;
 use futures::{SinkExt, StreamExt};
 
-use super::{Import, ImportWorker};
+use super::{ImportTracker, ImportWorker};
 
 use crate::{Imports, Workspace};
 
 pub struct ImporterState {
-    imports: Arc<Mutex<HashMap<String, Import>>>,
+    imports: Arc<Mutex<HashMap<String, ImportTracker>>>,
     sender: Sender<ImportWorker>,
     refresh: Sender<()>,
 }
@@ -45,16 +45,17 @@ impl ImporterState {
 
         self_imports.retain(|url, _| imports.contains_key(url));
 
-        for (url, interval) in imports.into_iter() {
+        for (url, import) in imports.into_iter() {
             match self_imports.entry(url.clone()) {
                 Entry::Occupied(mut entry) => {
-                    entry.get_mut().update(interval).await;
+                    entry.get_mut().update(import).await;
                 }
                 Entry::Vacant(entry) => {
                     entry.insert({
-                        let (import, worker) = Import::new(url, interval, self.refresh.clone());
+                        let (tracker, worker) =
+                            ImportTracker::new(url, import, self.refresh.clone());
                         let _ = self.sender.send(worker).await;
-                        import
+                        tracker
                     });
                 }
             }
@@ -65,7 +66,7 @@ impl ImporterState {
 }
 
 pub struct ImporterStateWorker {
-    imports: Weak<Mutex<HashMap<String, Import>>>,
+    imports: Weak<Mutex<HashMap<String, ImportTracker>>>,
     workspace: Weak<Mutex<Workspace>>,
     workers: Receiver<ImportWorker>,
     refresh: Receiver<()>,

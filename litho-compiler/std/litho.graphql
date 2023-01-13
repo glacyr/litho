@@ -1,3 +1,9 @@
+input __Header {
+    name: String!
+    value: String!
+}
+
 directive @litho(
     url: String!,
+    headers: [__Header!]!,
 ) on SCHEMA

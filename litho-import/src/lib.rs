@@ -7,6 +7,7 @@ use litho_language::Document;
 mod introspection;
 
 use introspection::Response;
+use reqwest::header::HeaderMap;
 
 pub trait Importer {
     type Error: ToString;
@@ -17,7 +18,7 @@ pub trait Importer {
     fn import<'a, T>(&'a self, path: &'a str) -> Self::Future<'a, T>;
 }
 
-pub async fn import<T>(url: &str) -> Result<T, String>
+pub async fn import<T>(url: &str, headers: HeaderMap) -> Result<T, String>
 where
     T: for<'a> From<&'a str>,
 {
@@ -28,6 +29,7 @@ where
     let client = reqwest::Client::new();
     let response = client
         .post(url)
+        .headers(headers)
         .json(&params)
         .send()
         .await
@@ -46,7 +48,7 @@ where
 mod tests {
     #[tokio::test]
     async fn test_import() {
-        let result = super::import::<String>("https://api.spacex.land/graphql")
+        let result = super::import::<String>("https://api.spacex.land/graphql", Default::default())
             .await
             .unwrap();
         eprintln!("{}", result);

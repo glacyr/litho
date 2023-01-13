@@ -1,5 +1,7 @@
 use std::borrow::Borrow;
 use std::collections::VecDeque;
+use std::num::{ParseFloatError, ParseIntError};
+use std::str::FromStr;
 
 use logos::Logos;
 use nom::InputLength;
@@ -136,6 +138,15 @@ impl<T> IntValue<T> {
     }
 }
 
+impl<T> IntValue<T>
+where
+    T: Borrow<str>,
+{
+    pub fn to_i32(&self) -> Result<i32, ParseIntError> {
+        i32::from_str(self.as_raw_token().source.borrow())
+    }
+}
+
 /// Represents a float value (literal) in a GraphQL document.
 #[derive(Clone, Copy, Debug)]
 pub struct FloatValue<T>(RawToken<T>);
@@ -147,6 +158,15 @@ impl<T> FloatValue<T> {
 
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
+    }
+}
+
+impl<T> FloatValue<T>
+where
+    T: Borrow<str>,
+{
+    pub fn to_f64(&self) -> Result<f64, ParseFloatError> {
+        f64::from_str(self.as_raw_token().source.borrow())
     }
 }
 
@@ -184,10 +204,10 @@ where
 
 impl<T> ToString for StringValue<T>
 where
-    T: ToString,
+    T: Borrow<str>,
 {
     fn to_string(&self) -> String {
-        let source = self.0.source.to_string();
+        let source = self.0.source.borrow();
 
         match source.starts_with("\"\"\"") {
             true => unindent(&source[3..source.len() - 3]),
@@ -369,16 +389,17 @@ pub fn lexer<T>(source_id: SourceId, source: &str) -> Lexer<T> {
 }
 
 mod display {
+    use std::borrow::Borrow;
     use std::fmt::{Display, Formatter, Result};
 
     use super::Name;
 
     impl<T> Display for Name<T>
     where
-        T: Display,
+        T: Borrow<str>,
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-            self.0.source.fmt(f)
+            self.0.source.borrow().fmt(f)
         }
     }
 }
