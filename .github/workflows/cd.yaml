@@ -78,7 +78,8 @@ jobs:
         uses: actions/github-script@v4
         with:
           script: |
-            const version = process.env['LITHO_VERSION'].substring(1)
+            const version = process.env['LITHO_VERSION'].substring(1);
+            console.log(version);
             core.exportVariable('LITHO_RAW_VERSION', version);
       - name: Update crate versions
         run: cargo set-version --workspace $LITHO_RAW_VERSION
@@ -220,7 +221,7 @@ jobs:
   #       uses: actions/github-script@v4
   #       with:
   #         script: |
-  #           const version = process.env['LITHO_VERSION'].substring(1)
+  #           const version = process.env['LITHO_VERSION'].substring(1);
   #           core.exportVariable('LITHO_RAW_VERSION', version);
   #     - name: Fix package.json version
   #       run: yarn version --new-version $LITHO_RAW_VERSION --no-git-tag-version
