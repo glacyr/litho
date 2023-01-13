@@ -65,7 +65,6 @@ jobs:
         with:
           script: |
             const version = process.env['LITHO_VERSION'].substring(1);
-            console.log(version);
             core.exportVariable('LITHO_RAW_VERSION', version);
       - name: Print crate version
         run: echo ${{ env.LITHO_RAW_VERSION }}
@@ -84,7 +83,7 @@ jobs:
       - name: Install cargo-edit
         run: cargo install cargo-edit
       - name: Update crate versions
-        run: cargo set-version --workspace $LITHO_RAW_VERSION
+        run: cargo set-version --workspace ${{ env.LITHO_RAW_VERSION }}
 
       # Litho CLI
       - name: Build Litho CLI
@@ -134,7 +133,7 @@ jobs:
           npm_config_arch: ${{ matrix.npm_config_arch }}
         working-directory: litho-vscode
       - name: Fix package.json version
-        run: yarn version --new-version $LITHO_RAW_VERSION --no-git-tag-version
+        run: yarn version --new-version ${{ env.LITHO_RAW_VERSION }} --no-git-tag-version
         working-directory: litho-vscode
       - shell: pwsh
         run: echo "vs_target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
@@ -226,7 +225,7 @@ jobs:
   #           const version = process.env['LITHO_VERSION'].substring(1);
   #           core.exportVariable('LITHO_RAW_VERSION', version);
   #     - name: Fix package.json version
-  #       run: yarn version --new-version $LITHO_RAW_VERSION --no-git-tag-version
+  #       run: yarn version --new-version ${{ env.LITHO_RAW_VERSION }} --no-git-tag-version
   #       working-directory: litho-cli-js
   #     - name: Publish litho-cli to NPM
   #       run: yarn publish
