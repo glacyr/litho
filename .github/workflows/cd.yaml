@@ -127,8 +127,11 @@ jobs:
           npm_config_arch: ${{ matrix.npm_config_arch }}
         working-directory: litho-vscode
       - name: Determine NPM version
-        run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
-        working-directory: litho-vscode
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const version = process.env['LITHO_VERSION'].substring(1)
+            core.exportVariable('NPM_VERSION', version);
       - name: Fix package.json version
         run: yarn version --new-version $NPM_VERSION --no-git-tag-version
         working-directory: litho-vscode
@@ -216,8 +219,11 @@ jobs:
   #         node-version: "14.x"
   #         registry-url: "https://registry.npmjs.org"
   #     - name: Determine NPM version
-  #       run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
-  #       working-directory: litho-cli-js
+  #       uses: actions/github-script@v4
+  #       with:
+  #         script: |
+  #           const version = process.env['LITHO_VERSION'].substring(1)
+  #           core.exportVariable('NPM_VERSION', version);
   #     - name: Fix package.json version
   #       run: yarn version --new-version $NPM_VERSION --no-git-tag-version
   #       working-directory: litho-cli-js
