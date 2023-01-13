@@ -74,10 +74,14 @@ jobs:
         if: ${{ matrix.gcc }}
       - name: Install cargo-edit
         run: cargo install cargo-edit
-      - name: Determine crate version
-        run: echo "CARGO_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
+      - name: Strip version prefix
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const version = process.env['LITHO_VERSION'].substring(1)
+            core.exportVariable('LITHO_RAW_VERSION', version);
       - name: Update crate versions
-        run: cargo set-version --workspace $CARGO_VERSION
+        run: cargo set-version --workspace $LITHO_RAW_VERSION
 
       # Litho CLI
       - name: Build Litho CLI
@@ -126,14 +130,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_arch: ${{ matrix.npm_config_arch }}
         working-directory: litho-vscode
-      - name: Determine NPM version
-        uses: actions/github-script@v4
-        with:
-          script: |
-            const version = process.env['LITHO_VERSION'].substring(1)
-            core.exportVariable('NPM_VERSION', version);
       - name: Fix package.json version
-        run: yarn version --new-version $NPM_VERSION --no-git-tag-version
+        run: yarn version --new-version $LITHO_RAW_VERSION --no-git-tag-version
         working-directory: litho-vscode
       - shell: pwsh
         run: echo "vs_target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
@@ -218,14 +216,14 @@ jobs:
   #       with:
   #         node-version: "14.x"
   #         registry-url: "https://registry.npmjs.org"
-  #     - name: Determine NPM version
+  #     - name: Strip version prefix
   #       uses: actions/github-script@v4
   #       with:
   #         script: |
   #           const version = process.env['LITHO_VERSION'].substring(1)
-  #           core.exportVariable('NPM_VERSION', version);
+  #           core.exportVariable('LITHO_RAW_VERSION', version);
   #     - name: Fix package.json version
-  #       run: yarn version --new-version $NPM_VERSION --no-git-tag-version
+  #       run: yarn version --new-version $LITHO_RAW_VERSION --no-git-tag-version
   #       working-directory: litho-cli-js
   #     - name: Publish litho-cli to NPM
   #       run: yarn publish
