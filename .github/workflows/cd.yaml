@@ -96,100 +96,100 @@ jobs:
           path: "target/${{ matrix.target }}/release/litho-cli-${{ env.LITHO_VERSION }}-${{ matrix.target }}.gz"
 
       # Litho LSP
-      # - name: Build Litho LSP
-      #   run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
-      # - name: Package Litho LSP
-      #   run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp"
-      #   if: runner.os != 'Windows'
-      #   working-directory: "target/${{ matrix.target }}/release"
-      # - name: Package Litho LSP on Windows
-      #   run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
-      #   if: runner.os == 'Windows'
-      #   working-directory: "target/${{ matrix.target }}/release"
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: ${{ matrix.target }}
-      #     path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
+      - name: Build Litho LSP
+        run: cargo build --package litho-lsp --release --target ${{ matrix.target }}
+      - name: Package Litho LSP
+        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp"
+        if: runner.os != 'Windows'
+        working-directory: "target/${{ matrix.target }}/release"
+      - name: Package Litho LSP on Windows
+        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.exe"
+        if: runner.os == 'Windows'
+        working-directory: "target/${{ matrix.target }}/release"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}
+          path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
 
       # Litho for VSCode
-      # - name: Copy Litho LSP into VSCode Extension
-      #   run: cp target/${{ matrix.target }}/release/litho-lsp litho-vscode
-      #   if: runner.os != 'Windows'
-      # - name: Copy Litho LSP into VSCode Extension
-      #   run: cp target/${{ matrix.target }}/release/litho-lsp.exe litho-vscode
-      #   if: runner.os == 'Windows'
-      # - uses: actions/setup-node@v2
-      #   with:
-      #     node-version: 14.x
-      # - run: yarn install
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     npm_config_arch: ${{ matrix.npm_config_arch }}
-      #   working-directory: litho-vscode
-      # - name: Determine NPM version
-      #   run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
-      #   working-directory: litho-vscode
-      # - name: Fix package.json version
-      #   run: yarn version --new-version $NPM_VERSION --no-git-tag-version
-      #   working-directory: litho-vscode
-      # - shell: pwsh
-      #   run: echo "vs_target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
-      #   working-directory: litho-vscode
-      # - run: npx vsce package --target ${{ env.vs_target }}
-      #   working-directory: litho-vscode
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: ${{ env.vs_target }}
-      #     path: "litho-vscode/*.vsix"
+      - name: Copy Litho LSP into VSCode Extension
+        run: cp target/${{ matrix.target }}/release/litho-lsp litho-vscode
+        if: runner.os != 'Windows'
+      - name: Copy Litho LSP into VSCode Extension
+        run: cp target/${{ matrix.target }}/release/litho-lsp.exe litho-vscode
+        if: runner.os == 'Windows'
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+      - run: yarn install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_arch: ${{ matrix.npm_config_arch }}
+        working-directory: litho-vscode
+      - name: Determine NPM version
+        run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
+        working-directory: litho-vscode
+      - name: Fix package.json version
+        run: yarn version --new-version $NPM_VERSION --no-git-tag-version
+        working-directory: litho-vscode
+      - shell: pwsh
+        run: echo "vs_target=${{ matrix.platform }}-${{ matrix.arch }}" >> $env:GITHUB_ENV
+        working-directory: litho-vscode
+      - run: npx vsce package --target ${{ env.vs_target }}
+        working-directory: litho-vscode
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.vs_target }}
+          path: "litho-vscode/*.vsix"
 
-  # build_wasm:
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - os: ubuntu-latest
-  #           target: "wasm32-unknown-unknown"
+  build_wasm:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: "wasm32-unknown-unknown"
 
-  #   runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Install Rust Stable
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         profile: minimal
-  #         toolchain: stable
-  #         components: rustfmt
-  #     - name: Download target ${{ matrix.target }}
-  #       run: rustup target add ${{ matrix.target }}
-  #     - name: Install GCC ${{ matrix.gcc }}
-  #       run: sudo apt-get install ${{ matrix.gcc }}
-  #       if: ${{ matrix.gcc }}
-  #     - name: Build Litho LSP for WASM
-  #       run: cargo build --package litho-lsp-wasm --release --target ${{ matrix.target }}
-  #     - name: Rename Litho LSP for WASM
-  #       run: mv "litho_lsp_wasm.wasm" "litho-lsp.wasm"
-  #       working-directory: "target/${{ matrix.target }}/release"
-  #     - name: Package Litho LSP for WASM
-  #       run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.wasm"
-  #       working-directory: "target/${{ matrix.target }}/release"
-  #     - uses: actions/upload-artifact@v2
-  #       with:
-  #         name: ${{ matrix.target }}
-  #         path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust Stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt
+      - name: Download target ${{ matrix.target }}
+        run: rustup target add ${{ matrix.target }}
+      - name: Install GCC ${{ matrix.gcc }}
+        run: sudo apt-get install ${{ matrix.gcc }}
+        if: ${{ matrix.gcc }}
+      - name: Build Litho LSP for WASM
+        run: cargo build --package litho-lsp-wasm --release --target ${{ matrix.target }}
+      - name: Rename Litho LSP for WASM
+        run: mv "litho_lsp_wasm.wasm" "litho-lsp.wasm"
+        working-directory: "target/${{ matrix.target }}/release"
+      - name: Package Litho LSP for WASM
+        run: tar -czf "litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz" "litho-lsp.wasm"
+        working-directory: "target/${{ matrix.target }}/release"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}
+          path: "target/${{ matrix.target }}/release/litho-lsp-${{ env.LITHO_VERSION }}-${{ matrix.target }}.tar.gz"
 
-  # publish_lsp:
-  #   runs-on: ubuntu-latest
-  #   needs: [build, build_wasm]
-  #   if: success()
-  #   steps:
-  #     - uses: actions/download-artifact@v2
-  #       with:
-  #         path: artifacts
-  #     - run: find ./artifacts/ -name "litho-lsp-*.tar.gz" -exec aws s3 cp {} s3://litho-downloads/litho-lsp/${{ env.LITHO_VERSION }}/ \;
-  #       env:
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         AWS_DEFAULT_REGION: eu-central-1
+  publish_lsp:
+    runs-on: ubuntu-latest
+    needs: [build, build_wasm]
+    if: success()
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - run: find ./artifacts/ -name "litho-lsp-*.tar.gz" -exec aws s3 cp {} s3://litho-downloads/litho-lsp/${{ env.LITHO_VERSION }}/ \;
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-central-1
 
   publish_cli:
     runs-on: ubuntu-latest
@@ -205,34 +205,34 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-central-1
 
-  publish_cli_npm:
-    runs-on: ubuntu-latest
-    needs: publish_cli
-    if: success()
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: "14.x"
-          registry-url: "https://registry.npmjs.org"
-      - name: Determine NPM version
-        run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
-        working-directory: litho-cli-js
-      - name: Fix package.json version
-        run: yarn version --new-version $NPM_VERSION --no-git-tag-version
-        working-directory: litho-cli-js
-      - name: Publish litho-cli to NPM
-        run: yarn publish
-        working-directory: litho-cli-js
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # publish_vscode:
+  # publish_cli_npm:
   #   runs-on: ubuntu-latest
-  #   needs: build
+  #   needs: publish_cli
   #   if: success()
   #   steps:
-  #     - uses: actions/download-artifact@v2
-  #     - run: find . -iname *.vsix -exec npx @vscode/vsce publish --packagePath {} \;
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-node@v2
+  #       with:
+  #         node-version: "14.x"
+  #         registry-url: "https://registry.npmjs.org"
+  #     - name: Determine NPM version
+  #       run: echo "NPM_VERSION=${LITHO_VERSION#v}" >> $GITHUB_ENV
+  #       working-directory: litho-cli-js
+  #     - name: Fix package.json version
+  #       run: yarn version --new-version $NPM_VERSION --no-git-tag-version
+  #       working-directory: litho-cli-js
+  #     - name: Publish litho-cli to NPM
+  #       run: yarn publish
+  #       working-directory: litho-cli-js
   #       env:
-  #         VSCE_PAT: ${{ secrets.VSCE_PAT }}
+  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish_vscode:
+    runs-on: ubuntu-latest
+    needs: build
+    if: success()
+    steps:
+      - uses: actions/download-artifact@v2
+      - run: find . -iname *.vsix -exec npx @vscode/vsce publish --packagePath {} \;
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
