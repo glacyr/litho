@@ -60,6 +60,15 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Strip version prefix
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const version = process.env['LITHO_VERSION'].substring(1);
+            console.log(version);
+            core.exportVariable('LITHO_RAW_VERSION', version);
+      - name: Print crate version
+        run: echo ${{ env.LITHO_RAW_VERSION }}
       - uses: actions/checkout@v2
       - name: Install Rust Stable
         uses: actions-rs/toolchain@v1
@@ -74,15 +83,6 @@ jobs:
         if: ${{ matrix.gcc }}
       - name: Install cargo-edit
         run: cargo install cargo-edit
-      - name: Strip version prefix
-        uses: actions/github-script@v4
-        with:
-          script: |
-            const version = process.env['LITHO_VERSION'].substring(1);
-            console.log(version);
-            core.exportVariable('LITHO_RAW_VERSION', version);
-      - name: Print crate version
-        run: echo $LITHO_RAW_VERSION
       - name: Update crate versions
         run: cargo set-version --workspace $LITHO_RAW_VERSION
 
