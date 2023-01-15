@@ -5,3 +5,12 @@
    ·         ────────┬────────  
    ·                 ╰────────── Fragment `undefinedFragment` is used here but never defined.
 ───╯
+
+
+[E0329] Error: Operation must be defined in schema before it can be used.
+   ╭─[graphql:1:1]
+   │
+ 1 │ query {
+   · ──┬──  
+   ·   ╰──── Schema doesn't have a `Query` type. You might be interested in using `@litho(url: "...")` to automatically import your existing schema. Learn more at https://litho.dev/docs/operations/import-schemas/.
+───╯

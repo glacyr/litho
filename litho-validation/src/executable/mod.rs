@@ -33,5 +33,6 @@ where
     document.traverse(&fragments::FragmentSpreadIsPossible(database), &mut errors);
     document.traverse(&operations::OperationNameUniqueness(database), &mut errors);
     document.traverse(&operations::LoneAnonymousOperation(database), &mut errors);
+    document.traverse(&operations::SupportedOperation(database), &mut errors);
     errors
 }

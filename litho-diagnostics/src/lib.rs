@@ -542,6 +542,10 @@ diagnostics! {
         "Fragment `{fragment}` is used here ..." @ span,
         "... and it requires variable `${name}` to be type `{expected}` here ..." @ second,
         "... but variable `${name}` is defined here as type `{ty}`." @ first
+    },
+    E0329 => UnsupportedOperation @ span + name {
+        "Operation must be defined in schema before it can be used.",
+        "Schema doesn't have a `{name}` type. You might be interested in using `@litho(url: \"...\")` to automatically import your existing schema. Learn more at https://litho.dev/docs/operations/import-schemas/." @ span
     }
 }
 
