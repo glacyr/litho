@@ -26,7 +26,7 @@ impl From<Error> for TypescriptError {
     }
 }
 
-pub fn export_typescript<T>(
+pub fn codegen_typescript<T>(
     database: &Database<T>,
     source_map: HashMap<SourceId, (&str, &str)>,
     path: &Path,

@@ -1,5 +1,5 @@
 [package]
-name = "litho-export"
+name = "litho-codegen"
 version = "0.0.0"
 edition = "2021"
 

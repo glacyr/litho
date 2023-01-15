@@ -8,8 +8,8 @@ edition = "2021"
 name = "litho"
 
 [dependencies]
+litho-codegen = { path = "../litho-codegen" }
 litho-compiler = { path = "../litho-compiler" }
-litho-export = { path = "../litho-export" }
 litho-language = { path = "../litho-language" }
 
 ariadne = "0.1.5"

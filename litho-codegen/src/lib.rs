@@ -8,25 +8,25 @@ use litho_types::Database;
 
 mod typescript;
 
-use typescript::{export_typescript, TypescriptError};
+use typescript::{codegen_typescript, TypescriptError};
 
 #[derive(Debug)]
-pub enum ExportError {
+pub enum CodegenError {
     UnrecognizedExtension,
     Typescript(TypescriptError),
 }
 
-impl From<TypescriptError> for ExportError {
+impl From<TypescriptError> for CodegenError {
     fn from(value: TypescriptError) -> Self {
-        ExportError::Typescript(value)
+        CodegenError::Typescript(value)
     }
 }
 
-pub fn export<T, P>(
+pub fn codegen<T, P>(
     database: &Database<T>,
     source_map: HashMap<SourceId, (&str, &str)>,
     path: P,
-) -> Result<(), ExportError>
+) -> Result<(), CodegenError>
 where
     T: Eq + Hash + Borrow<str>,
     P: AsRef<Path>,
@@ -34,7 +34,7 @@ where
     let path = path.as_ref();
 
     match path.extension().and_then(|ext| ext.to_str()) {
-        Some("js" | "ts") => export_typescript(database, source_map, path).map_err(Into::into),
-        _ => Err(ExportError::UnrecognizedExtension),
+        Some("js" | "ts") => codegen_typescript(database, source_map, path).map_err(Into::into),
+        _ => Err(CodegenError::UnrecognizedExtension),
     }
 }

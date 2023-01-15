@@ -105,7 +105,7 @@ pub fn generate() -> ExitCode {
     match success {
         true => {
             for output in outputs {
-                litho_export::export(
+                litho_codegen::codegen(
                     workspace.compiler().database(),
                     workspace
                         .files()
