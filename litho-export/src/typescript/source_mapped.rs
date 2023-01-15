@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::env::current_dir;
 use std::path::Path;
 
 use litho_language::lex::raw::RawToken;
@@ -57,7 +58,15 @@ impl<'a> SourceMapped<'a> {
         if let Some((source, index)) = self.sources.get(&token.span.source_id) {
             let (src_line, src_column) = index.lookup(token.span.start);
 
-            let source = self.builder.add_source(source);
+            let path = current_dir().ok().map(|dir| dir.join(source));
+
+            let source =
+                self.builder
+                    .add_source(match path.as_ref().and_then(|path| path.to_str()) {
+                        Some(path) => path,
+                        None => source,
+                    });
+
             let name = self.builder.add_name(token.source.borrow());
 
             self.builder.add_raw(
