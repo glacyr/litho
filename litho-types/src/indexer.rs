@@ -61,6 +61,17 @@ where
                 .type_definitions_by_name
                 .insert(name.as_ref().clone(), node.clone());
 
+            let directives = node
+                .directives()
+                .into_iter()
+                .flat_map(|directives| directives.directives.iter())
+                .cloned();
+
+            accumulator
+                .definitions
+                .type_directives
+                .insert_many(name.as_ref().clone(), directives);
+
             for interface in node
                 .implements_interfaces()
                 .into_iter()
@@ -82,6 +93,17 @@ where
             accumulator
                 .type_extensions_by_name
                 .insert(name.clone(), node.clone());
+
+            let directives = node
+                .directives()
+                .into_iter()
+                .flat_map(|directives| directives.directives.iter())
+                .cloned();
+
+            accumulator
+                .extensions
+                .type_directives
+                .insert_many(name.clone(), directives);
 
             for interface in node
                 .implements_interfaces()

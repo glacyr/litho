@@ -1,0 +1,14 @@
+[package]
+name = "litho-export"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.91"
+sourcemap = "6.2.1"
+
+litho-language = { path = "../litho-language" }
+litho-types = { path = "../litho-types" }

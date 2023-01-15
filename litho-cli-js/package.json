@@ -6,6 +6,7 @@
     "license": "MIT",
     "files": [
         "bin/litho",
+        "std/litho.graphql",
         "install.js"
     ],
     "bin": {

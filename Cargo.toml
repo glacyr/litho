@@ -3,6 +3,7 @@ members = [
     "litho-cli",
     "litho-compiler",
     "litho-diagnostics",
+    "litho-export",
     "litho-import",
     "litho-language",
     "litho-lsp",

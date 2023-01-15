@@ -22,12 +22,19 @@ pub enum FormattingError {
 
 pub fn generate() -> ExitCode {
     let mut inputs = vec![];
+    let mut outputs = vec![];
     let mut options = Options::default();
 
-    for arg in args().skip(1) {
+    let mut args = args().skip(1);
+
+    while let Some(arg) = args.next() {
         match arg.as_str() {
             "--fix" => options.fix = true,
             "--fmt" | "--format" => options.format = true,
+            "-o" | "--output" => match args.next() {
+                Some(arg) => outputs.push(arg),
+                None => panic!("Missing output argument."),
+            },
             _ => inputs.push(arg),
         }
     }
@@ -39,38 +46,41 @@ pub fn generate() -> ExitCode {
 
     let mut sources = workspace.to_sources();
 
-    let mut code = ExitCode::SUCCESS;
+    let mut success = true;
 
     for file in files {
-        let formatted = file.document.format_to_string(80);
-        if &formatted != file.text {
-            let formatting_error = if options.fix {
-                let modified = metadata(file.path).and_then(|metadata| metadata.modified());
+        if options.format {
+            let formatted = file.document.format_to_string(80);
+            if &formatted != file.text {
+                let formatting_error = if options.fix {
+                    let modified = metadata(file.path).and_then(|metadata| metadata.modified());
 
-                if file.modified.as_ref().ok() != modified.as_ref().ok() {
-                    Some(FormattingError::Changed)
+                    if file.modified.as_ref().ok() != modified.as_ref().ok() {
+                        Some(FormattingError::Changed)
+                    } else {
+                        write(file.path, formatted).unwrap();
+                        None
+                    }
                 } else {
-                    write(file.path, formatted).unwrap();
-                    None
+                    Some(FormattingError::Unformatted)
+                };
+
+                if let Some(diagnostic) = formatting_error {
+                    eprintln!(
+                        "{} {}\n   {}{}{}\n",
+                        Paint::red("[E0000] Error:"),
+                        match diagnostic {
+                            FormattingError::Changed =>
+                                "File has changed on disk while formatting.",
+                            FormattingError::Unformatted => "File must be formatted.",
+                        },
+                        Paint::new("──[").dimmed(),
+                        file.path,
+                        Paint::new("]").dimmed(),
+                    );
+
+                    success = false;
                 }
-            } else {
-                Some(FormattingError::Unformatted)
-            };
-
-            if let Some(diagnostic) = formatting_error {
-                eprintln!(
-                    "{} {}\n   {}{}{}\n",
-                    Paint::red("[E0000] Error:"),
-                    match diagnostic {
-                        FormattingError::Changed => "File has changed on disk while formatting.",
-                        FormattingError::Unformatted => "File must be formatted.",
-                    },
-                    Paint::new("──[").dimmed(),
-                    file.path,
-                    Paint::new("]").dimmed(),
-                );
-
-                code = ExitCode::FAILURE;
             }
         }
 
@@ -88,9 +98,26 @@ pub fn generate() -> ExitCode {
             builder.finish().eprint(&mut sources).unwrap();
             eprintln!("");
 
-            code = ExitCode::FAILURE;
+            success = false;
         }
     }
 
-    code
+    match success {
+        true => {
+            for output in outputs {
+                litho_export::export(
+                    workspace.compiler().database(),
+                    workspace
+                        .files()
+                        .map(|file| (file.source_id, (file.path.as_str(), file.text.as_str())))
+                        .collect(),
+                    &output,
+                )
+                .unwrap();
+            }
+
+            ExitCode::SUCCESS
+        }
+        false => ExitCode::FAILURE,
+    }
 }

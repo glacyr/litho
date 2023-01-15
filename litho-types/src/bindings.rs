@@ -2,6 +2,7 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 use litho_language::ast::*;
+use multimap::MultiMap;
 
 use super::Named;
 
@@ -15,6 +16,7 @@ where
     pub enum_value_definitions: Named<T, EnumValueDefinition<T>>,
     pub union_member_types: Named<T, NamedType<T>>,
     pub schema_directives: Vec<Arc<Directive<T>>>,
+    pub type_directives: MultiMap<T, Arc<Directive<T>>>,
 }
 
 impl<T> Default for Bindings<T>
@@ -28,6 +30,7 @@ where
             enum_value_definitions: Default::default(),
             union_member_types: Default::default(),
             schema_directives: Default::default(),
+            type_directives: Default::default(),
         }
     }
 }

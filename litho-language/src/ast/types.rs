@@ -521,6 +521,10 @@ impl<T> Type<T> {
         }
     }
 
+    pub fn is_nullable(&self) -> bool {
+        !self.is_required()
+    }
+
     pub fn is_required(&self) -> bool {
         matches!(self, Type::NonNull(_))
     }
@@ -615,6 +619,20 @@ pub struct Directive<T> {
     pub at: Punctuator<T>,
     pub name: Recoverable<Name<T>>,
     pub arguments: Option<Arc<Arguments<T>>>,
+}
+
+impl<T> Directive<T>
+where
+    T: Borrow<str>,
+{
+    pub fn argument(&self, name: &str) -> Option<&Arc<Argument<T>>> {
+        self.arguments.as_ref().and_then(move |arguments| {
+            arguments
+                .items
+                .iter()
+                .find(|arg| arg.name.as_ref().borrow() == name)
+        })
+    }
 }
 
 node!(Arc<Directive>, visit_directive, at, name, arguments);
@@ -878,6 +896,17 @@ impl<T> TypeDefinition<T> {
         matches!(self, TypeDefinition::ObjectTypeDefinition(_))
     }
 
+    pub fn directives(&self) -> Option<&Directives<T>> {
+        match self {
+            TypeDefinition::EnumTypeDefinition(definition) => definition.directives.as_ref(),
+            TypeDefinition::InputObjectTypeDefinition(definition) => definition.directives.as_ref(),
+            TypeDefinition::InterfaceTypeDefinition(definition) => definition.directives.as_ref(),
+            TypeDefinition::ObjectTypeDefinition(definition) => definition.directives.as_ref(),
+            TypeDefinition::ScalarTypeDefinition(definition) => definition.directives.as_ref(),
+            TypeDefinition::UnionTypeDefinition(definition) => definition.directives.as_ref(),
+        }
+    }
+
     pub fn implements_interfaces(&self) -> Option<&ImplementsInterfaces<T>> {
         match self {
             TypeDefinition::InterfaceTypeDefinition(definition) => {
@@ -947,6 +976,17 @@ impl<T> TypeExtension<T> {
         }
         .ok()
         .map(|name| name.0.as_ref())
+    }
+
+    pub fn directives(&self) -> Option<&Directives<T>> {
+        match self {
+            TypeExtension::EnumTypeExtension(extension) => extension.directives.as_ref(),
+            TypeExtension::InputObjectTypeExtension(extension) => extension.directives.as_ref(),
+            TypeExtension::InterfaceTypeExtension(extension) => extension.directives.as_ref(),
+            TypeExtension::ObjectTypeExtension(extension) => extension.directives.as_ref(),
+            TypeExtension::ScalarTypeExtension(extension) => extension.directives.ok(),
+            TypeExtension::UnionTypeExtension(extension) => extension.directives.as_ref(),
+        }
     }
 
     pub fn implements_interfaces(&self) -> Option<&ImplementsInterfaces<T>> {

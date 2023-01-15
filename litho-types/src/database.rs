@@ -361,4 +361,16 @@ where
             .iter()
             .chain(self.extensions.schema_directives.iter())
     }
+
+    fn both<'a, F, O>(&'a self, apply: F) -> impl Iterator<Item = O::Item> + 'a
+    where
+        F: Fn(&'a Bindings<T>) -> O,
+        O: Iterator + 'a,
+    {
+        apply(&self.definitions).chain(apply(&self.extensions))
+    }
+
+    pub fn type_directives<'a>(&'a self, ty: &'a T) -> impl Iterator<Item = &Arc<Directive<T>>> {
+        self.both(move |bindings| bindings.type_directives.get_vec(ty).into_iter().flatten())
+    }
 }
