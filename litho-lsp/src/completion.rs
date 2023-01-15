@@ -189,18 +189,6 @@ impl<'a> CompletionVisitor<'a> {
 
         let name = match ty {
             Type::List(_) => {
-                // items.push(CompletionItem {
-                //     label: "[".to_owned(),
-                //     label_details: Some(CompletionItemLabelDetails {
-                //         detail: Some("...]".to_owned()),
-                //         description: None,
-                //     }),
-                //     insert_text: Some("[${0}]".to_owned()),
-                //     insert_text_format: Some(InsertTextFormat::SNIPPET),
-                //     kind: Some(CompletionItemKind::OPERATOR),
-                //     ..Default::default()
-                // });
-
                 return items.into_iter();
             }
             ty => match ty.name() {
@@ -458,6 +446,24 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
                 }
             }
             _ => {}
+        }
+    }
+
+    fn visit_variable_definitions(
+        &self,
+        node: &'a VariableDefinitions<SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if !node.parens.span().contains(self.offset) {
+            return;
+        }
+
+        for definition in node.variable_definitions.iter() {
+            if !definition.colon.span().before(self.offset) {
+                continue;
+            }
+
+            accumulator.extend(self.complete_all_types(true));
         }
     }
 }
