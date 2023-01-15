@@ -1,13 +1,11 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::path::Path;
 
 use litho_language::ast::{Type, TypeDefinition};
 use litho_language::lex::{Name, SourceId};
 use litho_types::Database;
 use serde::Deserialize;
-use sourcemap::Error;
 
 use super::{LineIndex, SourceMapped};
 

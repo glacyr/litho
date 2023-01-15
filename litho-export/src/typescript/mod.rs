@@ -3,10 +3,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::path::Path;
 
-use litho_language::ast::{Type, TypeDefinition};
 use litho_language::lex::SourceId;
 use litho_types::Database;
-use serde::Deserialize;
 use sourcemap::Error;
 
 mod generator;
@@ -41,7 +39,7 @@ where
         .map(|(id, (path, text))| (id, (path, LineIndex::new(text))))
         .collect();
 
-    let mut generator = Generator::new(database, &source_map);
+    let generator = Generator::new(database, &source_map);
 
     generator.js.write(path.with_extension("js"))?;
     generator.dts.write(path.with_extension("d.ts"))?;
