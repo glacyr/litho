@@ -1,8 +1,22 @@
+/// Trait implemented by all different diagnostic types that Litho uses.
 pub trait DiagnosticInfo<S> {
+    /// Returns the code of this diagnostic. This is usually a letter (e.g. `E`)
+    /// followed by 4 digits that represent the error number.
     fn code(&self) -> &'static str;
+
+    /// Returns the message of this diagnostic.
     fn message(&self) -> &'static str;
+
+    /// Returns the primary span that triggered this diagnostic.
     fn span(&self) -> S;
+
+    /// Returns additional labels for this diagnostic: pairs of spans and
+    /// explanations.
     fn labels(&self) -> Vec<(S, String)>;
+
+    /// Returns a boolean that indicates if this diagnostic is deprecated.
+    /// Deprecated diagnostics are no longer returned but still part of the docs
+    /// for historic purposes.
     fn is_deprecated(&self) -> bool;
 }
 
@@ -24,6 +38,7 @@ macro_rules! diagnostics {
             ),*
         } $(@$directive:ident)?
     ),*) => {
+        /// Enum that contains all possible diagnostics that Litho can return.
         #[derive(Clone, Debug)]
         pub enum Diagnostic<S> where S: Copy {
             $(
@@ -52,24 +67,30 @@ macro_rules! diagnostics {
                 )*
             }
 
+            /// Returns the code of this diagnostic. This is usually a letter (e.g. `E`)
+            /// followed by 4 digits that represent the error number.
             pub fn code(&self) -> &'static str {
                 match self {
                     $(Diagnostic::$name(diagnostic) => diagnostic.code(),)*
                 }
             }
 
+            /// Returns the message of this diagnostic.
             pub fn message(&self) -> &'static str {
                 match self {
                     $(Diagnostic::$name(diagnostic) => diagnostic.message(),)*
                 }
             }
 
+            /// Returns the primary span that triggered this diagnostic.
             pub fn span(&self) -> S {
                 match self {
                     $(Diagnostic::$name(diagnostic) => diagnostic.span(),)*
                 }
             }
 
+            /// Returns additional labels for this diagnostic: pairs of spans and
+            /// explanations.
             pub fn labels(&self) -> Vec<(S, String)> {
                 match self {
                     $(Diagnostic::$name(diagnostic) => diagnostic.labels(),)*
@@ -78,10 +99,14 @@ macro_rules! diagnostics {
         }
 
         $(
+            #[allow(rustdoc::bare_urls)]
             #[doc = concat!("(", stringify!($code), ") ", $message)]
             #[derive(Clone, Debug)]
             pub struct $name<S> where S: Copy {
-                $($(pub $var: String,)*)?
+                $($(
+                    #[doc = concat!("Value of `{", stringify!($var), "}` that is referenced in the message and/or one of the labels.")]
+                    pub $var: String,
+                )*)?
                 $(
                     #[doc = $label]
                     pub $label_span: S,
