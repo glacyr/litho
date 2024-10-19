@@ -23,7 +23,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(variable_definitions) = node.variable_definitions.as_ref() else {
-            return
+            return;
         };
 
         let variable_definitions = variable_definitions
@@ -58,11 +58,11 @@ where
     let location_default_value = database.inference.default_value_for_values.get(value);
 
     let Some(actual) = definition.ty.ok() else {
-        return true
+        return true;
     };
 
     let Some(expected) = database.inference.types_for_values.get(value) else {
-        return true
+        return true;
     };
 
     let expected_nullable = match (definition_default_value, location_default_value) {
@@ -119,15 +119,15 @@ where
         };
 
         let Some(definition) = self.variable_definitions.get(variable.name.as_ref()) else {
-            return
+            return;
         };
 
         let Some(actual) = definition.ty.ok() else {
-            return
+            return;
         };
 
         let Some(expected) = self.database.inference.types_for_values.get(node) else {
-            return
+            return;
         };
 
         if !is_variable_usage_allowed(self.database, definition, node) {
@@ -150,8 +150,9 @@ where
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next() else {
-            return
+            .next()
+        else {
+            return;
         };
 
         definition.traverse(
@@ -191,15 +192,15 @@ where
         };
 
         let Some(definition) = self.variable_definitions.get(variable.name.as_ref()) else {
-            return
+            return;
         };
 
         let Some(actual) = definition.ty.ok() else {
-            return
+            return;
         };
 
         let Some(expected) = self.database.inference.types_for_values.get(node) else {
-            return
+            return;
         };
 
         if !is_variable_usage_allowed(self.database, definition, node) {
@@ -228,8 +229,9 @@ where
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next() else {
-            return
+            .next()
+        else {
+            return;
         };
 
         definition.traverse(

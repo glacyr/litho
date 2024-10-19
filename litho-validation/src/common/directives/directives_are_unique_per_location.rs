@@ -20,7 +20,7 @@ where
 
         for directive in node.directives.iter() {
             let Some(definition) = self.0.inference.definition_for_directive(directive) else {
-                return
+                return;
             };
 
             if definition.repeatable.is_some() {
@@ -28,7 +28,7 @@ where
             }
 
             let Some(name) = definition.name.ok() else {
-                continue
+                continue;
             };
 
             match seen.get(name.as_ref()) {

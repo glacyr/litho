@@ -74,8 +74,9 @@ where
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next() else {
-            return
+            .next()
+        else {
+            return;
         };
 
         definition.traverse(
@@ -134,8 +135,9 @@ where
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next() else {
-            return
+            .next()
+        else {
+            return;
         };
 
         definition.traverse(

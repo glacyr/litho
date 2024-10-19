@@ -76,8 +76,9 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
             .database()
             .inference
             .definition_for_arguments
-            .get(node) else {
-            return
+            .get(node)
+        else {
+            return;
         };
 
         for argument in node.items.iter() {
@@ -88,8 +89,9 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
             let Some(definition) = definitions
                 .definitions
                 .iter()
-                .find(|definition| definition.name.as_ref() == argument.name.as_ref()) else {
-                continue
+                .find(|definition| definition.name.as_ref() == argument.name.as_ref())
+            else {
+                continue;
             };
 
             if let Some(location) = self.workspace.span_to_location(definition.name.span()) {

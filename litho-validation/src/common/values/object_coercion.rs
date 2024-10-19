@@ -22,7 +22,7 @@ where
         }
 
         let Some(ty) = self.0.inference.types_for_values.get(&node) else {
-            return
+            return;
         };
 
         let ty = match ty.as_ref() {
@@ -47,9 +47,7 @@ where
                 }
             };
 
-            let Some(ty) = field.ty.ok() else {
-                continue
-            };
+            let Some(ty) = field.ty.ok() else { continue };
 
             if !ty.is_required() {
                 continue;

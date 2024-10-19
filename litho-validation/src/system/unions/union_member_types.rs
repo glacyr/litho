@@ -60,9 +60,7 @@ where
         node: &'a UnionTypeDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(name) = node.name.ok() else {
-            return
-        };
+        let Some(name) = node.name.ok() else { return };
 
         if let Some(member_types) = node.member_types.as_ref() {
             accumulator.extend(self.check_union_member_types(name.as_ref(), member_types));
@@ -81,9 +79,7 @@ where
         node: &'a UnionTypeExtension<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(name) = node.name.ok() else {
-            return
-        };
+        let Some(name) = node.name.ok() else { return };
 
         if let Some(member_types) = node.member_types.as_ref() {
             accumulator.extend(self.check_union_member_types(name.0.as_ref(), member_types));

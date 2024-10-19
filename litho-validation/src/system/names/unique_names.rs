@@ -20,12 +20,10 @@ where
         node: &'a Arc<DirectiveDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(name) = node.name.ok() else {
-            return
-        };
+        let Some(name) = node.name.ok() else { return };
 
         let Some(first) = self.0.directive_definitions_by_name(name.as_ref()).next() else {
-            return
+            return;
         };
 
         if Arc::ptr_eq(first, node) {
@@ -44,12 +42,10 @@ where
         node: &'a Arc<TypeDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(name) = node.name().ok() else {
-            return
-        };
+        let Some(name) = node.name().ok() else { return };
 
         let Some(first) = self.0.type_definitions_by_name(name.as_ref()).next() else {
-            return
+            return;
         };
 
         if Arc::ptr_eq(first, node) {

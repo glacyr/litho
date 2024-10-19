@@ -270,12 +270,10 @@ where
         node: &'a Arc<TypeDefinition<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(ty) = node.name().ok() else {
-            return
-        };
+        let Some(ty) = node.name().ok() else { return };
 
         let Some(implements_interfaces) = node.implements_interfaces() else {
-            return
+            return;
         };
 
         accumulator.extend(self.check_type(ty.as_ref(), implements_interfaces))
@@ -286,12 +284,10 @@ where
         node: &'a Arc<TypeExtension<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(ty) = node.name() else {
-            return
-        };
+        let Some(ty) = node.name() else { return };
 
         let Some(implements_interfaces) = node.implements_interfaces() else {
-            return
+            return;
         };
 
         accumulator.extend(self.check_type(ty, implements_interfaces))

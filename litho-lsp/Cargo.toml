@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 futures = "0.3.25"
 line-col = "0.2.1"
-lsp-types = { version = "*", features = ["proposed"] }
+lsp-types = { version = "0.93.0", features = ["proposed"] }
 serde = "1.0.147"
 serde_json = { version = "*" }
 smol_str = "0.1.23"

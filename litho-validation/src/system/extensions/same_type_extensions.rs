@@ -20,16 +20,15 @@ where
         node: &'a Arc<TypeExtension<T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(name) = node.name() else {
-            return
-        };
+        let Some(name) = node.name() else { return };
 
         let Some(first) = self
             .0
             .type_definitions_by_name(name)
             .next()
-            .map(|first| first.keyword()) else {
-            return
+            .map(|first| first.keyword())
+        else {
+            return;
         };
 
         let second = node.keyword();

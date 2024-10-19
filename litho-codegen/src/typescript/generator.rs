@@ -55,15 +55,15 @@ where
 
         for directive in directives {
             let Some(typescript) = directive.argument("typescript") else {
-                continue
+                continue;
             };
 
             let Some(value) = typescript.value.ok().and_then(|value| value.to_json()) else {
-                continue
+                continue;
             };
 
             let Ok(value) = serde_json::from_value::<LithoExportTypescript>(value) else {
-                continue
+                continue;
             };
 
             if let Some(prepend) = value.prepend.as_ref() {
@@ -99,9 +99,7 @@ where
     }
 
     fn process_type_definition(&mut self, ty: &TypeDefinition<T>) {
-        let Some(name) = ty.name().ok() else {
-            return
-        };
+        let Some(name) = ty.name().ok() else { return };
 
         let directives = self
             .database
@@ -116,15 +114,15 @@ where
 
         for directive in directives {
             let Some(typescript) = directive.argument("typescript") else {
-                continue
+                continue;
             };
 
             let Some(value) = typescript.value.ok().and_then(|value| value.to_json()) else {
-                continue
+                continue;
             };
 
             let Ok(value) = serde_json::from_value::<LithoExportTypescript>(value) else {
-                continue
+                continue;
             };
 
             if value.skip {

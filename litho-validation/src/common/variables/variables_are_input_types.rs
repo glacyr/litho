@@ -19,13 +19,9 @@ where
         node: &'a VariableDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(ty) = node.ty.ok() else {
-            return
-        };
+        let Some(ty) = node.ty.ok() else { return };
 
-        let Some(name) = ty.name() else {
-            return
-        };
+        let Some(name) = ty.name() else { return };
 
         if self.0.type_exists(name) && !self.0.is_input_type(name) {
             accumulator.push(Diagnostic::variable_must_be_input_type(

@@ -169,7 +169,7 @@ impl Workspace {
 
     pub fn remove_file(&mut self, url: &Url) {
         let Some(id) = self.source_map.remove(url) else {
-            return
+            return;
         };
 
         self.invalid.extend(self.compiler.remove_document(id));
@@ -248,7 +248,7 @@ impl Workspace {
         let invalid = self.take_invalid();
         for id in invalid {
             let Some(document) = self.document_by_id(id) else {
-                continue
+                continue;
             };
 
             if document.is_internal() {

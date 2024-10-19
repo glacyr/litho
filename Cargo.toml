@@ -12,3 +12,4 @@ members = [
     "litho-types",
     "litho-validation",
 ]
+resolver = "2"

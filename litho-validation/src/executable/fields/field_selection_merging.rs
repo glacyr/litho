@@ -20,7 +20,7 @@ where
         fields: &mut HashMap<&'a T, Vec<(&'a T, &'a Arc<Field<T>>)>>,
     ) {
         let Some(ty) = self.0.inference.type_by_selection_set.get(set) else {
-            return
+            return;
         };
 
         for selection in set.selections.iter() {

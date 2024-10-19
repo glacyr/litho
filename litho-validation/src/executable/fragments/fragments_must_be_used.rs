@@ -21,7 +21,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.fragment_name.ok() else {
-            return
+            return;
         };
 
         if self.0.usages.fragments.usages(node).next().is_none() {

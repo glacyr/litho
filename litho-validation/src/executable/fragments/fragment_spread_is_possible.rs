@@ -22,7 +22,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(parent_type) = self.0.inference.type_by_selection_set.get(node) else {
-            return
+            return;
         };
 
         for selection in node.selections.iter() {
@@ -47,7 +47,7 @@ where
             };
 
             let Some(fragment_type) = type_condition.named_type.ok() else {
-                continue
+                continue;
             };
 
             if !self.0.type_exists(fragment_type.0.as_ref()) {

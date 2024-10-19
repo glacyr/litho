@@ -34,11 +34,11 @@ where
             .flat_map(|directives| directives.directives.iter())
         {
             let Some(name) = directive.name.ok() else {
-                return
+                return;
             };
 
             let Some(definition) = self.0.inference.definition_for_directive(directive) else {
-                return
+                return;
             };
 
             let locations = definition

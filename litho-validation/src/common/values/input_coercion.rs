@@ -73,7 +73,7 @@ where
 
     fn visit_value(&self, node: &'a Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
         let Some(ty) = self.0.inference.types_for_values.get(&node) else {
-            return
+            return;
         };
 
         accumulator.extend(self.check_ty(&ty, node))

@@ -48,9 +48,10 @@ where
 mod tests {
     #[tokio::test]
     async fn test_import() {
-        let result = super::import::<String>("https://api.spacex.land/graphql", Default::default())
-            .await
-            .unwrap();
+        let result =
+            super::import::<String>("https://countries.trevorblades.com/", Default::default())
+                .await
+                .unwrap();
         eprintln!("{}", result);
     }
 }

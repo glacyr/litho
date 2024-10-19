@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 futures = "0.3.25"
 js-sys = "0.3.60"
 litho-lsp = { path = "../litho-lsp", default-features = false }
-lsp-types = { version = "*", features = ["proposed"] }
+lsp-types = { version = "0.93.0", features = ["proposed"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = { version = "*" }
 wasm-bindgen = "0.2.83"

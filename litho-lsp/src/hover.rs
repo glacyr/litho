@@ -100,7 +100,7 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
         }
 
         let Some(values) = node.values_definition.as_ref() else {
-            return
+            return;
         };
 
         for value in values.definitions.iter() {

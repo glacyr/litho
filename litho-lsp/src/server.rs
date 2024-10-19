@@ -148,8 +148,10 @@ where
 
     pub async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let workspace = self.workspace.lock().await;
-        let Some(document) = workspace.document(&params.text_document_position_params.text_document.uri) else {
-            return Ok(None)
+        let Some(document) =
+            workspace.document(&params.text_document_position_params.text_document.uri)
+        else {
+            return Ok(None);
         };
 
         Ok(HoverProvider::new(document, workspace.database())
@@ -161,8 +163,10 @@ where
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let workspace = self.workspace.lock().await;
-        let Some(document) = workspace.document(&params.text_document_position_params.text_document.uri) else {
-            return Ok(None)
+        let Some(document) =
+            workspace.document(&params.text_document_position_params.text_document.uri)
+        else {
+            return Ok(None);
         };
 
         Ok(DefinitionProvider::new(document, &workspace)
@@ -171,8 +175,9 @@ where
 
     pub async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let workspace = self.workspace.lock().await;
-        let Some(document) = workspace.document(&params.text_document_position.text_document.uri) else {
-            return Ok(None)
+        let Some(document) = workspace.document(&params.text_document_position.text_document.uri)
+        else {
+            return Ok(None);
         };
 
         Ok(Some(
@@ -183,8 +188,9 @@ where
 
     pub async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
         let workspace = self.workspace.lock().await;
-        let Some(document) = workspace.document(&params.text_document_position.text_document.uri) else {
-            return Ok(None)
+        let Some(document) = workspace.document(&params.text_document_position.text_document.uri)
+        else {
+            return Ok(None);
         };
 
         Ok(ReferencesProvider::new(document, &workspace)
@@ -197,7 +203,7 @@ where
     ) -> Result<Option<Vec<TextEdit>>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document.uri) else {
-            return Ok(None)
+            return Ok(None);
         };
 
         Ok(Some(
@@ -208,7 +214,7 @@ where
     pub async fn inlay_hint(&self, params: InlayHintParams) -> Result<Vec<InlayHint>> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.text_document.uri) else {
-            return Ok(vec![])
+            return Ok(vec![]);
         };
 
         Ok(InlayHintProvider::new(document, workspace.database())
@@ -219,7 +225,7 @@ where
     pub async fn text_document_content(&self, params: TextDocumentContentParams) -> Result<String> {
         let workspace = self.workspace.lock().await;
         let Some(document) = workspace.document(&params.url) else {
-            return Err(())
+            return Err(());
         };
 
         Ok(document.text().to_string())

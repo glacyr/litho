@@ -20,16 +20,17 @@ where
             .0
             .inference
             .type_for_field(node)
-            .and_then(|ty| ty.name()) else {
-            return
+            .and_then(|ty| ty.name())
+        else {
+            return;
         };
 
         let Some(ty) = self.0.type_definitions_by_name(name).next() else {
-            return
+            return;
         };
 
         let Some(field_name) = node.name.ok() else {
-            return
+            return;
         };
 
         let diagnostic = match (!ty.is_scalar_like(), node.selection_set.is_some()) {

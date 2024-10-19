@@ -200,16 +200,22 @@ where
     }
 
     fn visit_arguments(&self, node: &'ast Arc<Arguments<T>>, accumulator: &mut Self::Accumulator) {
-        let Some(definition) = accumulator.database.inference.definition_for_arguments.get(&node) else {
-            return
+        let Some(definition) = accumulator
+            .database
+            .inference
+            .definition_for_arguments
+            .get(&node)
+        else {
+            return;
         };
 
         for argument in node.items.iter() {
             let Some(definition) = definition
                 .definitions
                 .iter()
-                .find(|def| def.name.as_ref() == argument.name.as_ref()) else {
-                continue
+                .find(|def| def.name.as_ref() == argument.name.as_ref())
+            else {
+                continue;
             };
 
             accumulator
@@ -374,8 +380,9 @@ where
             .database
             .fragments
             .by_name(node.fragment_name.as_ref())
-            .next() else {
-            return
+            .next()
+        else {
+            return;
         };
 
         accumulator
@@ -386,9 +393,7 @@ where
     }
 
     fn visit_directive(&self, node: &'ast Arc<Directive<T>>, accumulator: &mut Self::Accumulator) {
-        let Some(name) = node.name.ok() else {
-            return
-        };
+        let Some(name) = node.name.ok() else { return };
 
         let definition = accumulator
             .database
@@ -396,9 +401,7 @@ where
             .next()
             .cloned();
 
-        let Some(definition) = definition else {
-            return
-        };
+        let Some(definition) = definition else { return };
 
         accumulator
             .database

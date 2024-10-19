@@ -21,7 +21,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.fragment_name.ok().map(AsRef::as_ref) else {
-            return
+            return;
         };
 
         node.traverse(

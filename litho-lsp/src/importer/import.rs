@@ -108,7 +108,7 @@ impl ImportWorker {
                     self.last_updated = Some(Instant::now());
 
                     let Some(mutex) = self.result.upgrade() else {
-                        return
+                        return;
                     };
                     mutex.lock().await.replace(result);
                     let _ = self.refresh.send(()).await;

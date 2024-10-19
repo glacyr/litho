@@ -80,7 +80,7 @@ impl ImporterStateWorker {
             async move {
                 while let Some(_) = self.refresh.next().await {
                     let Some(imports) = self.imports.upgrade() else {
-                        return
+                        return;
                     };
 
                     let mut results = HashMap::new();
@@ -89,14 +89,14 @@ impl ImporterStateWorker {
 
                     for (url, import) in imports.iter() {
                         let Some(result) = &*import.result().await else {
-                            continue
+                            continue;
                         };
 
                         results.insert(url.clone(), result.clone());
                     }
 
                     let Some(workspace) = self.workspace.upgrade() else {
-                        return
+                        return;
                     };
 
                     workspace.lock().await.update_imports(results).await;

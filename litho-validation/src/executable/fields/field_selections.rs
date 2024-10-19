@@ -21,7 +21,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(ty) = self.0.inference.type_by_selection_set.get(node) else {
-            return
+            return;
         };
 
         if !self.0.is_composite_type(ty) {

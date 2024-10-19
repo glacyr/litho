@@ -21,7 +21,7 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.as_ref() else {
-            return
+            return;
         };
 
         match self.0.operations.by_name(name.as_ref()).next() {

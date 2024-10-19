@@ -16,9 +16,7 @@ where
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_directive(&self, node: &'a Arc<Directive<T>>, accumulator: &mut Self::Accumulator) {
-        let Some(name) = node.name.ok() else {
-            return
-        };
+        let Some(name) = node.name.ok() else { return };
 
         if self.0.inference.definition_for_directive(node).is_none() {
             accumulator.push(Diagnostic::undefined_directive(

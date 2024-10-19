@@ -52,9 +52,7 @@ where
         node: &'a InputObjectTypeDefinition<T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let Some(name) = node.name.ok() else {
-            return
-        };
+        let Some(name) = node.name.ok() else { return };
 
         for field in node
             .fields_definition

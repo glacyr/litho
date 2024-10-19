@@ -82,7 +82,7 @@ where
             .schema_directives()
             .flat_map(|directive| {
                 let Some(name) = directive.name.ok() else {
-                    return None
+                    return None;
                 };
 
                 if name.as_ref().borrow() != "litho" {
@@ -94,12 +94,13 @@ where
                     .iter()
                     .flat_map(|args| args.items.iter())
                     .find(|arg| arg.name.as_ref().borrow() == "url")
-                    .and_then(|arg| arg.value.ok()) else {
-                    return None
+                    .and_then(|arg| arg.value.ok())
+                else {
+                    return None;
                 };
 
                 let Value::StringValue(url) = url.as_ref() else {
-                    return None
+                    return None;
                 };
 
                 let headers = match directive
@@ -127,7 +128,7 @@ where
 
         for url in directives.keys() {
             let Some(Ok(document)) = imports.get(url) else {
-                continue
+                continue;
             };
 
             document.traverse(&Indexer, &mut database);

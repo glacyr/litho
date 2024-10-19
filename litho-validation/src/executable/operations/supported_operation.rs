@@ -21,11 +21,11 @@ where
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(selection_set) = node.selection_set.ok() else {
-            return
+            return;
         };
 
         let Some(ty) = self.0.inference.type_by_selection_set.get(selection_set) else {
-            return
+            return;
         };
 
         if self.0.type_exists(ty) {
