@@ -7,4 +7,4 @@ pub mod lex;
 pub mod syn;
 
 pub use ast::Document;
-pub use syn::{parse_from_str, Parse};
+pub use syn::Parse;

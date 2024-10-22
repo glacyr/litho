@@ -1,108 +1,44 @@
-use nom::error::{ErrorKind, ParseError};
-use nom::multi::many_till;
-use nom::IResult;
+use nom::error::ParseError;
 use nom::Parser;
 
-use super::{next, Input, Recognizer, RecoverableParser};
+use super::{Input, Recognizer, RecoverableParser};
 
-pub struct Many0<P>(P);
+pub struct Many<P>(P, bool);
 
-pub fn many0<P>(parser: P) -> Many0<P> {
-    Many0(parser)
-}
-
-impl<I, E, P> Recognizer<I, E> for Many0<P>
+impl<I, E, P> Recognizer<I, E> for Many<P>
 where
     P: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
-impl<I, O, E, P> RecoverableParser<I, Vec<O>, E> for Many0<P>
+impl<I, O, E, P> RecoverableParser<I, Vec<O>, E> for Many<P>
 where
     I: Clone + Input,
     P: RecoverableParser<I, O, E>,
     E: ParseError<I>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Vec<O>, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, Vec<O>, E>
     where
         R: Recognizer<I, E>,
     {
-        let mut input = input;
-        let mut items = vec![];
+        move |input: I| {
+            let parser = self.0.parser(recovery_point.by_ref().or(&self.0));
 
-        loop {
-            match many_till(
-                next,
-                (|input| self.0.parse(input, recovery_point.by_ref().or(&self.0)))
-                    .map(Some)
-                    .or({ |input| recovery_point.recognize(input) }.map(|_| None)),
-            )
-            .parse(input.clone())
-            {
-                Ok((input_, (rest, Some(item)))) => {
-                    input = input_;
-                    input.extend(rest);
-                    items.push(item);
-                }
-                Ok(_) => {
-                    return Ok((input, items));
-                }
-                Err(_) => return Ok((input, items)),
+            match self.1 {
+                false => nom::multi::many0(parser).parse(input),
+                true => nom::multi::many1(parser).parse(input),
             }
         }
     }
 }
 
-pub struct Many1<P>(P);
-
-pub fn many1<P>(parser: P) -> Many1<P> {
-    Many1(parser)
+pub fn many0<P>(parser: P) -> Many<P> {
+    Many(parser, false)
 }
 
-impl<I, E, P> Recognizer<I, E> for Many1<P>
-where
-    P: Recognizer<I, E>,
-{
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
-    }
-}
-
-impl<I, O, E, P> RecoverableParser<I, Vec<O>, E> for Many1<P>
-where
-    I: Clone + Input,
-    P: RecoverableParser<I, O, E>,
-    E: ParseError<I>,
-{
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Vec<O>, E>
-    where
-        R: Recognizer<I, E>,
-    {
-        let mut input = input;
-        let mut items = vec![];
-
-        loop {
-            match many_till(
-                next,
-                (|input| self.0.parse(input, recovery_point.by_ref().or(&self.0)))
-                    .map(Some)
-                    .or({ |input| recovery_point.recognize(input) }.map(|_| None)),
-            )
-            .parse(input.clone())
-            {
-                Ok((input_, (rest, Some(item)))) => {
-                    input = input_;
-                    input.extend(rest);
-                    items.push(item);
-                }
-                _ if !items.is_empty() => {
-                    return Ok((input, items));
-                }
-                _ => return Err(nom::Err::Error(E::from_error_kind(input, ErrorKind::Many1))),
-            }
-        }
-    }
+pub fn many1<P>(parser: P) -> Many<P> {
+    Many(parser, true)
 }

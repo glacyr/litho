@@ -1,8 +1,34 @@
-use nom::error::ParseError;
+use nom::error::{ErrorKind, ParseError};
 use nom::multi::many_till;
-use nom::{IResult, Parser};
+use nom::{Err, IResult, Parser};
 
-use super::{next, Input, Recognizer, RecoverableParser};
+use super::{Input, Recognizer, RecoverableParser};
+
+fn next<I, E>(mut input: I) -> IResult<I, I::Item, E>
+where
+    I: Iterator,
+    E: ParseError<I>,
+{
+    match input.next() {
+        Some(token) => Ok((input, token)),
+        None => Err(Err::Error(E::from_error_kind(input, ErrorKind::ManyTill))),
+    }
+}
+
+fn extend_rest<P, I, O, E>(mut parser: P) -> impl Parser<I, Option<O>, E>
+where
+    P: Parser<I, (Vec<<I as Iterator>::Item>, Option<O>), E>,
+    I: Clone + Input,
+    E: ParseError<I>,
+{
+    move |input: I| {
+        let (mut input, (rest, value)) = parser.parse(input)?;
+        if value.is_some() {
+            input.extend(rest);
+        }
+        Ok((input, value))
+    }
+}
 
 pub struct Opt<P>(P);
 
@@ -10,8 +36,8 @@ impl<I, E, P> Recognizer<I, E> for Opt<P>
 where
     P: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
@@ -21,26 +47,23 @@ where
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Option<O>, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, Option<O>, E>
     where
         R: Recognizer<I, E>,
     {
-        let input_ = input.clone();
-
-        let (mut input, (rest, value)) = many_till(
-            next,
-            (|input| self.0.parse(input, recovery_point.by_ref()))
-                .map(Some)
-                .or({ |input| recovery_point.recognize(input) }.map(|_| None)),
-        )
-        .parse(input)?;
-
-        match value {
-            Some(value) => {
-                input.extend(rest);
-                Ok((input, Some(value)))
-            }
-            None => Ok((input_, None)),
+        move |input: I| {
+            extend_rest(many_till(
+                next,
+                // This parser returns:
+                // - Ok(Some(_)) if it has parsed something
+                // - Ok(None)    if it has reached the recovery point
+                // - Err(_)      along the way
+                self.0
+                    .parser(&recovery_point)
+                    .map(Some)
+                    .or(recovery_point.recognizer().map(|_| None)),
+            ))
+            .parse(input)
         }
     }
 }

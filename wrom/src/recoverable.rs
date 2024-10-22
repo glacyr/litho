@@ -1,5 +1,7 @@
 use super::Missing;
 
+/// Equivalent to `Option<T>`, represents a token that is either present
+/// (successfully parsed), or interpolated.
 #[derive(Debug, Clone)]
 pub enum Recoverable<T, M>
 where
@@ -13,6 +15,8 @@ impl<T, M> Recoverable<T, M>
 where
     M: Missing,
 {
+    /// Returns an [`Option`] that is [`Option::Some`] when `T` was parsed
+    /// successfully, or [`Option::None`] otherwise.
     pub fn ok(&self) -> Option<&T> {
         match self {
             Recoverable::Present(value) => Some(value),

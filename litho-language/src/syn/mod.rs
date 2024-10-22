@@ -2,13 +2,13 @@ use std::iter::once;
 
 use nom::combinator::eof;
 use nom::error::{ErrorKind, ParseError};
-use nom::Err;
+use nom::{Err, Parser};
 use wrom::branch::alt;
 use wrom::multi::many0;
 use wrom::{terminal, Input, RecoverableParser};
 
 use crate::ast::*;
-use crate::lex::{lexer, SourceId, Token};
+use crate::lex::Token;
 
 mod combinators;
 pub mod executable;
@@ -95,28 +95,13 @@ where
     ))
 }
 
-pub fn parse_from_str<'a, T, P, O>(
-    parser: P,
-    source_id: SourceId,
-    input: &'a str,
-) -> Result<(Vec<Token<T>>, O), Error>
-where
-    P: for<'b> RecoverableParser<Stream<'b, T>, O, Error>,
-    T: From<&'a str> + Clone,
-{
-    match parser.parse((&lexer(source_id, input).exact()).into(), terminal(eof)) {
-        Ok((input, result)) => Ok((input.into_unexpected(), result)),
-        Err(nom::Err::Error(error) | nom::Err::Failure(error)) => Err(error),
-        Err(nom::Err::Incomplete(_)) => Err(Error::Incomplete),
-    }
-}
-
 macro_rules! parse {
     ($name:ident, $($fn:tt)*) => {
         impl<T> Parse<T> for $name<T> where T: for<'b> PartialEq<&'b str> + Clone {
             fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
                 $($fn)*()
-                    .parse(stream, terminal(eof))
+                    .parser(terminal(eof))
+                    .parse(stream)
                     .map(|(input, value)| (value, input.into_unexpected()))
             }
         }

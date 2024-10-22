@@ -2,14 +2,14 @@ use std::marker::PhantomData;
 
 use zipped::UnzipFrom;
 
-use nom::error::{ErrorKind, ParseError};
-use nom::multi::many_till;
-use nom::{Err, IResult, Parser};
+use nom::error::ParseError;
+use nom::Parser;
 
-use super::{next, Input, Recognizer, Recoverable};
+use super::combinator::opt;
+use super::{Input, Recognizer, Recoverable};
 
 pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
     where
         R: Recognizer<I, E>;
 
@@ -68,11 +68,11 @@ where
     I: Iterator,
     P: RecoverableParser<I, O, E>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
     where
         R: Recognizer<I, E>,
     {
-        (*self).parse(input, recovery_point)
+        (*self).parser(recovery_point)
     }
 }
 
@@ -82,8 +82,8 @@ impl<I, E, A, B> Recognizer<I, E> for And<A, B>
 where
     A: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
@@ -94,28 +94,16 @@ where
     A: RecoverableParser<I, AO, E>,
     B: RecoverableParser<I, BO, E>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, (AO, BO), E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, (AO, BO), E>
     where
         R: Recognizer<I, E>,
     {
-        let (input, a) = self.0.parse(input, recovery_point.by_ref().or(&self.1))?;
-
-        let (mut input, (rest, b)) = many_till(
-            next,
-            (|input| self.1.parse(input, recovery_point.by_ref()))
-                .map(Some)
-                .or({ |input| recovery_point.recognize(input) }.map(|_| None)),
-        )
-        .parse(input)?;
-
-        let b = match b {
-            Some(value) => value,
-            None => return Err(Err::Error(E::from_error_kind(input, ErrorKind::Fail))),
-        };
-
-        input.extend(rest);
-
-        Ok((input, (a, b)))
+        move |input| {
+            self.0
+                .parser(recovery_point.by_ref().or(&self.1))
+                .and(self.1.parser(&recovery_point))
+                .parse(input)
+        }
     }
 }
 
@@ -124,11 +112,12 @@ pub struct AndRecognize<A, B>(A, B);
 impl<I, E, A, B> Recognizer<I, E> for AndRecognize<A, B>
 where
     I: Clone,
+    E: ParseError<I>,
     A: Recognizer<I, E>,
     B: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        (&self.0).or(&self.1).recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer().or(self.1.recognizer())
     }
 }
 
@@ -139,11 +128,11 @@ where
     A: RecoverableParser<I, AO, E>,
     B: RecoverableParser<I, BO, E>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, (AO, BO), E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, (AO, BO), E>
     where
         R: Recognizer<I, E>,
     {
-        And(&self.0, &self.1).parse(input, recovery_point)
+        move |input| And(&self.0, &self.1).parser(&recovery_point).parse(input)
     }
 }
 
@@ -153,8 +142,8 @@ impl<I, E, A, B, M> Recognizer<I, E> for AndRecover<A, B, M>
 where
     A: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
@@ -167,32 +156,24 @@ where
     B: RecoverableParser<I, BO, E>,
     M: Fn(&AO) -> I::Missing,
 {
-    fn parse<R>(
-        &self,
-        input: I,
-        recovery_point: R,
-    ) -> IResult<I, (AO, Recoverable<BO, I::Missing>), E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, (AO, Recoverable<BO, I::Missing>), E>
     where
         R: Recognizer<I, E>,
     {
-        let (input, a) = self.0.parse(input, recovery_point.by_ref().or(&self.1))?;
+        move |input| {
+            let (input, (a, b)) = self
+                .0
+                .parser(recovery_point.by_ref().or(&self.1))
+                .and(opt(&self.1).parser(&recovery_point))
+                .parse(input)?;
 
-        let (mut input, (rest, b)) = many_till(
-            next,
-            (|input| self.1.parse(input, recovery_point.by_ref()))
-                .map(Some)
-                .or({ |input| recovery_point.recognize(input) }.map(|_| None)),
-        )
-        .parse(input)?;
+            let b = match b {
+                Some(value) => Recoverable::Present(value),
+                None => Recoverable::Missing(input.missing(self.2(&a))),
+            };
 
-        let b = match b {
-            Some(value) => Recoverable::Present(value),
-            None => Recoverable::Missing(input.missing(self.2(&a))),
-        };
-
-        input.extend(rest);
-
-        Ok((input, (a, b)))
+            Ok((input, (a, b)))
+        }
     }
 }
 
@@ -202,8 +183,8 @@ impl<I, E, P, M> Recognizer<I, E> for Recover<P, M>
 where
     P: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
@@ -214,26 +195,20 @@ where
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Recoverable<O, I::Missing>, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, Recoverable<O, I::Missing>, E>
     where
         R: Recognizer<I, E>,
     {
-        let (mut input, (rest, value)) = many_till(
-            next,
-            (|input| self.0.parse(input, recovery_point.by_ref()))
-                .map(Some)
-                .or({ |input| recovery_point.recognize(input) }.map(|_| None)),
-        )
-        .parse(input)?;
+        move |input| {
+            let (input, value) = opt(&self.0).parser(&recovery_point).parse(input)?;
 
-        input.extend(rest);
+            let value = match value {
+                Some(value) => Recoverable::Present(value),
+                None => Recoverable::Missing(input.missing(self.1.clone())),
+            };
 
-        let value = match value {
-            Some(value) => Recoverable::Present(value),
-            None => Recoverable::Missing(input.missing(self.1.clone())),
-        };
-
-        Ok((input, value))
+            Ok((input, value))
+        }
     }
 }
 
@@ -243,8 +218,8 @@ impl<I, E, P, O> Recognizer<I, E> for Unzip<P, O>
 where
     P: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
@@ -253,13 +228,16 @@ where
     N: UnzipFrom<O>,
     P: RecoverableParser<I, O, E>,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, N, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, N, E>
     where
         R: Recognizer<I, E>,
     {
-        self.0
-            .parse(input, recovery_point)
-            .map(|(input, value)| (input, N::unzip_from(value)))
+        move |input| {
+            self.0
+                .parser(&recovery_point)
+                .map(N::unzip_from)
+                .parse(input)
+        }
     }
 }
 
@@ -269,8 +247,8 @@ impl<I, E, P, O, F> Recognizer<I, E> for Map<P, O, F>
 where
     P: Recognizer<I, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
+    fn recognizer(&self) -> impl Parser<I, (), E> {
+        self.0.recognizer()
     }
 }
 
@@ -280,12 +258,10 @@ where
     P: RecoverableParser<I, O, E>,
     F: Fn(O) -> O2,
 {
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O2, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O2, E>
     where
         R: Recognizer<I, E>,
     {
-        self.0
-            .parse(input, recovery_point)
-            .map(|(input, output)| (input, (self.2)(output)))
+        move |input| self.0.parser(&recovery_point).map(&self.2).parse(input)
     }
 }
