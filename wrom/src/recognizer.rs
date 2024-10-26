@@ -16,7 +16,7 @@ pub trait Recognizer<I, E> {
         Or(self, other)
     }
 
-    fn by_ref(&self) -> &Self
+    fn as_ref(&self) -> &Self
     where
         Self: Sized,
     {

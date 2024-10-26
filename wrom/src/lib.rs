@@ -14,6 +14,6 @@ pub mod sequence;
 pub use input::Input;
 pub use missing::Missing;
 pub use parser::RecoverableParser;
-pub use recognizer::{terminal, Or, Recognizer};
+pub use recognizer::{terminal, Recognizer};
 pub use recoverable::Recoverable;
 pub use recursive::recursive;

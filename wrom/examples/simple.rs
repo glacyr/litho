@@ -1,6 +1,6 @@
 use nom::combinator::eof;
 use nom::error::ParseError;
-use nom::InputLength;
+use nom::{InputLength, Parser};
 
 use wrom::{terminal, Input, Recoverable, RecoverableParser};
 
@@ -175,6 +175,8 @@ fn main() {
     ];
     eprintln!(
         "Output: {:#?}",
-        root().parse(Stream(input.into_iter()), terminal(eof))
+        root()
+            .parser(terminal(eof))
+            .parse(Stream(input.into_iter()))
     );
 }

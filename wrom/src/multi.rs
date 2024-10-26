@@ -25,7 +25,7 @@ where
         R: Recognizer<I, E>,
     {
         move |input: I| {
-            let parser = self.0.parser(recovery_point.by_ref().or(&self.0));
+            let parser = self.0.parser(recovery_point.as_ref().or(&self.0));
 
             match self.1 {
                 false => nom::multi::many0(parser).parse(input),

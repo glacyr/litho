@@ -13,19 +13,16 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
     where
         R: Recognizer<I, E>;
 
+    fn as_ref(&self) -> &Self {
+        self
+    }
+
     fn recover(self, missing: I::Missing) -> Recover<Self, I::Missing>
     where
         Self: Sized,
         I: Input,
     {
         Recover(self, missing)
-    }
-
-    fn unzip(self) -> Unzip<Self, O>
-    where
-        Self: Sized,
-    {
-        Unzip(self, PhantomData)
     }
 
     fn and<P>(self, parser: P) -> And<Self, P>
@@ -58,8 +55,13 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
         Map(self, PhantomData, apply)
     }
 
-    fn as_ref(&self) -> &Self {
-        self
+    fn unzip<N>(self) -> impl RecoverableParser<I, N, E>
+    where
+        Self: Sized,
+        I: Input,
+        N: UnzipFrom<O>,
+    {
+        self.map(N::unzip_from)
     }
 }
 
@@ -100,7 +102,7 @@ where
     {
         move |input| {
             self.0
-                .parser(recovery_point.by_ref().or(&self.1))
+                .parser(recovery_point.as_ref().or(&self.1))
                 .and(self.1.parser(&recovery_point))
                 .parse(input)
         }
@@ -163,7 +165,7 @@ where
         move |input| {
             let (input, (a, b)) = self
                 .0
-                .parser(recovery_point.by_ref().or(&self.1))
+                .parser(recovery_point.as_ref().or(&self.1))
                 .and(opt(&self.1).parser(&recovery_point))
                 .parse(input)?;
 
@@ -208,35 +210,6 @@ where
             };
 
             Ok((input, value))
-        }
-    }
-}
-
-pub struct Unzip<P, O>(P, PhantomData<O>);
-
-impl<I, E, P, O> Recognizer<I, E> for Unzip<P, O>
-where
-    P: Recognizer<I, E>,
-{
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
-    }
-}
-
-impl<I, N, E, P, O> RecoverableParser<I, N, E> for Unzip<P, O>
-where
-    N: UnzipFrom<O>,
-    P: RecoverableParser<I, O, E>,
-{
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, N, E>
-    where
-        R: Recognizer<I, E>,
-    {
-        move |input| {
-            self.0
-                .parser(&recovery_point)
-                .map(N::unzip_from)
-                .parse(input)
         }
     }
 }

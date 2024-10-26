@@ -3,61 +3,13 @@ use nom::Parser;
 
 use super::{Recognizer, RecoverableParser};
 
-pub trait AltRecognize<I, E> {
-    fn recognizer(&self) -> impl Parser<I, (), E>;
-}
-
-pub trait AltParse<I, O, E>
-where
-    I: Iterator,
-{
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
-    where
-        R: Recognizer<I, E>;
-}
-
-pub trait AltList<I, O, E>: AltRecognize<I, E> + AltParse<I, O, E>
-where
-    I: Iterator,
-{
-}
-
-impl<I, O, E, T> AltList<I, O, E> for T
-where
-    I: Iterator,
-    T: AltRecognize<I, E> + AltParse<I, O, E>,
-{
-}
-
-/// Combinator that succeeds if any of the parsers in `L` succeeds.
+/// Parser that succeeds if any of the parsers in `L` succeed.
 pub struct Alt<L>(L);
 
-impl<I, E, L> Recognizer<I, E> for Alt<L>
-where
-    I: Iterator,
-    L: AltRecognize<I, E>,
-{
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
-    }
-}
-
-impl<I, O, E, L> RecoverableParser<I, O, E> for Alt<L>
-where
-    I: Iterator,
-    L: AltRecognize<I, E> + AltParse<I, O, E>,
-{
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
-    where
-        R: Recognizer<I, E>,
-    {
-        self.0.parser(recovery_point)
-    }
-}
-
+/// Returns a parser that succeeds if any of the parsers in `L` succeed.
 pub fn alt<L, I, O, E>(list: L) -> impl RecoverableParser<I, O, E>
 where
-    L: AltList<I, O, E>,
+    Alt<L>: RecoverableParser<I, O, E>,
     I: Iterator,
 {
     Alt(list)
@@ -73,7 +25,7 @@ macro_rules! alt {
     };
     (@ $($ident:ident)* ;) => {
         #[allow(non_snake_case)]
-        impl<I, E, $($ident),*> AltRecognize<I, E> for ($($ident,)*)
+        impl<I, E, $($ident),*> Recognizer<I, E> for Alt<($($ident,)*)>
         where
             I: Clone,
             $(
@@ -82,7 +34,7 @@ macro_rules! alt {
             E: ParseError<I>,
         {
             fn recognizer(&self) -> impl Parser<I, (), E> {
-                let ($($ident,)*) = self;
+                let ($($ident,)*) = &self.0;
 
                 nom::branch::alt((
                     $(
@@ -93,7 +45,7 @@ macro_rules! alt {
         }
 
         #[allow(non_snake_case)]
-        impl<I, O, E, $($ident),*> AltParse<I, O, E> for ($($ident,)*)
+        impl<I, O, E, $($ident),*> RecoverableParser<I, O, E> for Alt<($($ident,)*)>
         where
             I: Iterator + Clone,
             I::Item: Clone,
@@ -107,7 +59,7 @@ macro_rules! alt {
                 R: Recognizer<I, E>,
             {
                 move |input: I| {
-                    let ($($ident,)*) = self;
+                    let ($($ident,)*) = &self.0;
 
                     nom::branch::alt((
                         $(
