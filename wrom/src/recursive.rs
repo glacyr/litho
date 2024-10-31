@@ -1,80 +1,107 @@
-use nom::{IResult, Parser};
+use nom::error::{ErrorKind, ParseError};
+use nom::{Err, Parser};
 
 use super::{Recognizer, RecoverableParser};
 
-pub struct Recursive<'a, I, O, E>(Box<dyn ErasedRecoverableParser<I, O, E> + 'a>);
-
-pub struct RecursiveRecognizer<'a, R>(&'a R)
-where
-    R: ?Sized;
-
-impl<R, I, E> Recognizer<I, E> for RecursiveRecognizer<'_, R>
-where
-    R: ErasedRecognizer<I, E> + ?Sized,
-{
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        |input| self.0.recognize(input)
-    }
+pub struct Recursive<P> {
+    max_depth: usize,
+    parser_fn: fn(max_depth: usize) -> P,
 }
 
-trait ErasedRecognizer<I, E> {
-    fn recognize(&self, input: I) -> IResult<I, (), E>;
-}
-
-trait ErasedRecoverableParser<I, O, E> {
-    fn recognize(&self, input: I) -> IResult<I, (), E>;
-    fn parse(&self, input: I, recovery_point: &dyn ErasedRecognizer<I, E>) -> IResult<I, O, E>;
-}
-
-impl<I, E, R> ErasedRecognizer<I, E> for R
+/// Returns a recursive wrapper that breaks infinite recursion and prevents
+/// stack overflows.
+///
+/// The returned recursive parser serves two purposes: first it lazily calls the
+/// given `parser_fn` instead of calling it immediately (breaking infinite
+/// recursion), and it keeps track of the recursion depth and returns an error
+/// when `max_depth` is reached, thereby preventing a stack overflow.
+///
+/// ```rust
+/// # use wrom::mock::char;
+/// # use wrom::{alt, recursive, Input, RecoverableParser};
+/// #
+/// fn square_brackets<'a, I>(max_depth: usize) -> impl RecoverableParser<I, usize, ()> + 'a
+/// where
+///     I: Input<Item = char> + 'a,
+/// {
+///     char('[')
+///         .and(alt((
+///             char(']').map(|_| 0),
+///             recursive(max_depth, square_brackets),
+///         )))
+///         .map(|(_, i)| i + 1)
+///         .boxed()
+/// }
+///
+/// assert_eq!(square_brackets(128).parse("[  [ -[]]-]").unwrap(), 3);
+/// assert!(square_brackets(1).parse("[[[]]]").is_err());
+/// ```
+pub fn recursive<P, I, O, E>(
+    max_depth: usize,
+    parser_fn: fn(max_depth: usize) -> P,
+) -> impl RecoverableParser<I, O, E>
 where
-    I: Iterator,
-    R: Recognizer<I, E>,
-{
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        Recognizer::recognizer(&self).parse(input)
-    }
-}
-
-impl<I, O, E, P> ErasedRecoverableParser<I, O, E> for fn() -> P
-where
-    I: Iterator,
+    E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        Recognizer::recognizer(&self()).parse(input)
-    }
-
-    fn parse(&self, input: I, recovery_point: &dyn ErasedRecognizer<I, E>) -> IResult<I, O, E> {
-        RecoverableParser::parser(&self(), RecursiveRecognizer(recovery_point)).parse(input)
+    Recursive {
+        max_depth,
+        parser_fn,
     }
 }
 
-pub fn recursive<'a, P, I, O, E>(parser: fn() -> P) -> Recursive<'a, I, O, E>
+impl<I, E, R> Recognizer<I, E> for Recursive<R>
 where
-    I: Iterator,
-    P: RecoverableParser<I, O, E> + 'a,
-{
-    Recursive(Box::new(parser))
-}
-
-impl<I, O, E> Recognizer<I, E> for Recursive<'_, I, O, E>
-where
-    I: Iterator,
+    E: ParseError<I>,
+    R: Recognizer<I, E>,
 {
     fn recognizer(&self) -> impl Parser<I, (), E> {
-        |input| self.0.recognize(input)
+        |input| match self.max_depth {
+            0 => Err(Err::Failure(E::from_error_kind(input, ErrorKind::Fail))),
+            n => (self.parser_fn)(n - 1).recognizer().parse(input),
+        }
     }
 }
 
-impl<I, O, E> RecoverableParser<I, O, E> for Recursive<'_, I, O, E>
+impl<I, O, E, P> RecoverableParser<I, O, E> for Recursive<P>
 where
-    I: Iterator,
+    E: ParseError<I>,
+    P: RecoverableParser<I, O, E>,
 {
-    fn parser<R2>(&self, recovery_point: R2) -> impl Parser<I, O, E>
+    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
     where
-        R2: Recognizer<I, E>,
+        R: Recognizer<I, E>,
     {
-        move |input| self.0.parse(input, &recovery_point)
+        move |input| match self.max_depth {
+            0 => Err(Err::Failure(E::from_error_kind(input, ErrorKind::Fail))),
+            n => (self.parser_fn)(n - 1).parser(&recovery_point).parse(input),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::mock::char;
+    use crate::{alt, recursive, Input, RecoverableParser};
+
+    #[test]
+    fn test_recursion() {
+        fn square_brackets<'a, I>(max_depth: usize) -> impl RecoverableParser<I, usize, ()> + 'a
+        where
+            I: Input<Item = char> + 'a,
+        {
+            char('[')
+                .and(alt((
+                    char(']').map(|_| 0),
+                    recursive(max_depth, square_brackets),
+                )))
+                .map(|(_, i)| i + 1)
+                .boxed()
+        }
+
+        assert_eq!(square_brackets(128).parse("[  [ -[]]-]").unwrap(), 3);
+        assert_eq!(square_brackets(2).parse("[  [ -[]]-]").unwrap(), 3);
+        assert!(square_brackets(1).parse("[  [ -[]]-]").is_err());
+        assert!(square_brackets(0).parse("[[]]").is_err());
     }
 }

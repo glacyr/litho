@@ -34,8 +34,8 @@ impl Default for Missing {
     }
 }
 
-impl wrom::Missing for Missing {
-    type Error = MissingToken;
+pub trait Spanned {
+    fn span(&self) -> Span;
 }
 
 #[derive(Debug, Clone)]
@@ -54,7 +54,7 @@ impl MissingToken {
     }
 }
 
-pub type Recoverable<T> = wrom::Recoverable<T, Missing>;
+pub type Recoverable<T> = wrom::Recoverable<T, MissingToken>;
 
 /// # 2.2
 /// A GraphQL Document describes a complete file or request string operated on

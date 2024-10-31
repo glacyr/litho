@@ -7,20 +7,17 @@ use crate::RecoverableParser;
 /// input, without consuming it. This is the starting point of your recoverable
 /// parser.
 pub trait Recognizer<I, E> {
+    /// Returns a parser that should return `Ok(_)` when it recognizes the start
+    /// of a parsing rule and `Err(_)` otherwise, without consuming its input.
     fn recognizer(&self) -> impl Parser<I, (), E>;
 
+    /// Returns a recognizer that succeeds when either `self` or the `other`
+    /// recognizer succeeds.
     fn or<R>(self, other: R) -> Or<Self, R>
     where
         Self: Sized,
     {
         Or(self, other)
-    }
-
-    fn as_ref(&self) -> &Self
-    where
-        Self: Sized,
-    {
-        self
     }
 }
 
@@ -57,6 +54,8 @@ where
     }
 }
 
+/// Returns a recoverable parser based on a parser function that will serve both
+/// as its parser and as its recognizer.
 pub fn terminal<F, I, O, E>(parser: F) -> impl RecoverableParser<I, O, E>
 where
     I: Clone,

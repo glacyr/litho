@@ -3,11 +3,11 @@ use wrom::Input;
 
 use crate::lex::{ExactLexer, FastLexer, Token};
 
-use super::{Missing, MissingToken};
+use super::{Span, Spanned};
 
 #[derive(Clone)]
 pub struct Stream<'a, T> {
-    lexer: FastLexer<'a, T>,
+    pub(crate) lexer: FastLexer<'a, T>,
     unexpected: Vec<Token<T>>,
 }
 
@@ -18,6 +18,12 @@ impl<'a, T> Stream<'a, T> {
         U: FromIterator<Token<T>>,
     {
         self.lexer.chain(self.unexpected).collect()
+    }
+}
+
+impl<'a, T> Spanned for Stream<'a, T> {
+    fn span(&self) -> Span {
+        self.lexer.span()
     }
 }
 
@@ -41,12 +47,6 @@ where
     }
 }
 
-impl<'a, T> Extend<Token<T>> for Stream<'a, T> {
-    fn extend<I: IntoIterator<Item = Token<T>>>(&mut self, iter: I) {
-        self.unexpected.extend(iter)
-    }
-}
-
 impl<'a, T> InputLength for Stream<'a, T> {
     fn input_len(&self) -> usize {
         self.lexer.input_len()
@@ -58,12 +58,15 @@ where
     T: Clone,
 {
     type Item = Token<T>;
-    type Missing = Missing;
 
-    fn missing(&self, missing: Missing) -> MissingToken {
-        MissingToken {
-            span: self.lexer.span(),
-            missing,
-        }
+    fn next(&mut self) -> Option<Self::Item> {
+        self.lexer.next()
+    }
+
+    fn unrecognized<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Self::Item>,
+    {
+        self.unexpected.extend(iter)
     }
 }

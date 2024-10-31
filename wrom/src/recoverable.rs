@@ -1,20 +1,16 @@
-use super::Missing;
-
-/// Equivalent to `Option<T>`, represents a token that is either present
+/// Analogous to `Result<T, E>`, represents a token that is either present
 /// (successfully parsed), or interpolated.
-#[derive(Debug, Clone)]
-pub enum Recoverable<T, M>
-where
-    M: Missing,
-{
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Recoverable<T, E> {
+    /// Represents a value that is present (i.e. a successful parse).
     Present(T),
-    Missing(M::Error),
+
+    /// Represents a value that is missed, by its replacement (i.e. after a
+    /// recovered unsuccessful parse).
+    Missing(E),
 }
 
-impl<T, M> Recoverable<T, M>
-where
-    M: Missing,
-{
+impl<T, E> Recoverable<T, E> {
     /// Returns an [`Option`] that is [`Option::Some`] when `T` was parsed
     /// successfully, or [`Option::None`] otherwise.
     pub fn ok(&self) -> Option<&T> {
@@ -25,10 +21,7 @@ where
     }
 }
 
-impl<T, M> From<T> for Recoverable<T, M>
-where
-    M: Missing,
-{
+impl<T, E> From<T> for Recoverable<T, E> {
     fn from(value: T) -> Self {
         Recoverable::Present(value)
     }
@@ -37,12 +30,11 @@ where
 mod display {
     use std::fmt::{Display, Formatter, Result};
 
-    use super::{Missing, Recoverable};
+    use super::Recoverable;
 
-    impl<T, M> Display for Recoverable<T, M>
+    impl<T, E> Display for Recoverable<T, E>
     where
         T: Display,
-        M: Missing,
     {
         fn fmt(&self, f: &mut Formatter<'_>) -> Result {
             match self {

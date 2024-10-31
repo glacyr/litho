@@ -1,11 +1,10 @@
 use std::iter::once;
+use std::sync::Arc;
 
 use nom::combinator::eof;
 use nom::error::{ErrorKind, ParseError};
 use nom::{Err, Parser};
-use wrom::branch::alt;
-use wrom::multi::many0;
-use wrom::{terminal, Input, RecoverableParser};
+use wrom::{alt, many0, terminal, Input, RecoverableParser};
 
 use crate::ast::*;
 use crate::lex::Token;
@@ -18,6 +17,22 @@ mod stream;
 
 pub use parse::Parse;
 pub use stream::Stream;
+
+const RECURSION_LIMIT: usize = 64;
+
+impl<I> wrom::Missing<I> for Missing
+where
+    I: Spanned,
+{
+    type Error = MissingToken;
+
+    fn error(&self, input: &I) -> Self::Error {
+        MissingToken {
+            span: input.span(),
+            missing: *self,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum Error {
@@ -32,10 +47,7 @@ pub enum Error {
     Multiple(Vec<Error>),
 }
 
-impl<T, I> ParseError<I> for Error
-where
-    I: Iterator<Item = Token<T>> + Clone,
-{
+impl<I> ParseError<I> for Error {
     fn from_error_kind(_input: I, kind: ErrorKind) -> Self {
         Error::Nom(kind)
     }
@@ -77,7 +89,7 @@ where
 
 pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     many0(definition().map(Into::into)).map(|definitions| Document { definitions })
@@ -85,7 +97,7 @@ where
 
 pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>, Missing = Missing> + 'a,
+    I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     alt((
@@ -96,10 +108,21 @@ where
 }
 
 macro_rules! parse {
+    (Arc<$name:ident>, $($fn:tt)*) => {
+        impl<T> Parse<T> for Arc<$name<T>> where T: for<'b> PartialEq<&'b str> + Clone {
+            fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
+                $($fn)*
+                    .parser(terminal(eof))
+                    .parse(stream)
+                    .map(|(input, value)| (value, input.into_unexpected()))
+            }
+        }
+    };
+
     ($name:ident, $($fn:tt)*) => {
         impl<T> Parse<T> for $name<T> where T: for<'b> PartialEq<&'b str> + Clone {
             fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
-                $($fn)*()
+                $($fn)*
                     .parser(terminal(eof))
                     .parse(stream)
                     .map(|(input, value)| (value, input.into_unexpected()))
@@ -108,7 +131,7 @@ macro_rules! parse {
     };
 }
 
-parse!(Document, document);
+parse!(Document, document());
 // parse!(Definition, definition);
 // parse!(ExecutableDocument, executable::executable_document);
 // parse!(ExecutableDefinition, executable::executable_definition);
@@ -124,7 +147,7 @@ parse!(Document, document);
 // parse!(InlineFragment, executable::inline_fragment);
 // parse!(FragmentDefinition, executable::fragment_definition);
 // parse!(TypeCondition, executable::type_condition);
-// parse!(Value, executable::value);
+parse!(Arc<Value>, executable::value(RECURSION_LIMIT));
 // parse!(BooleanValue, executable::boolean_value);
 // parse!(NullValue, executable::null_value);
 // parse!(EnumValue, executable::enum_value);

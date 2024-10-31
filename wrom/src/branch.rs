@@ -3,14 +3,14 @@ use nom::Parser;
 
 use super::{Recognizer, RecoverableParser};
 
-/// Parser that succeeds if any of the parsers in `L` succeed.
+/// Parser that succeeds if any of the recoverable parsers in `L` succeed.
 pub struct Alt<L>(L);
 
-/// Returns a parser that succeeds if any of the parsers in `L` succeed.
+/// Returns a recoverable parser that succeeds if any of the recoverable parsers
+/// in `L` succeed.
 pub fn alt<L, I, O, E>(list: L) -> impl RecoverableParser<I, O, E>
 where
     Alt<L>: RecoverableParser<I, O, E>,
-    I: Iterator,
 {
     Alt(list)
 }
@@ -47,8 +47,7 @@ macro_rules! alt {
         #[allow(non_snake_case)]
         impl<I, O, E, $($ident),*> RecoverableParser<I, O, E> for Alt<($($ident,)*)>
         where
-            I: Iterator + Clone,
-            I::Item: Clone,
+            I: Clone,
             $(
                 $ident: RecoverableParser<I, O, E>,
             )*

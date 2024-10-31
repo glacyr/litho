@@ -100,5 +100,5 @@ pub async unsafe fn server_message(server: *mut WasmServer, request: &str) -> St
 
 #[wasm_bindgen]
 pub fn destroy_server(server: *mut WasmServer) {
-    unsafe { Box::from_raw(server) };
+    let _ = unsafe { Box::from_raw(server) };
 }
