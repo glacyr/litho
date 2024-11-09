@@ -50,6 +50,16 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
     }
 
     /// Returns a recoverable parser that succeeds if both `self` and the given
+    /// `parser` succeed, and returns the output of both in a tuple. The second
+    /// parser will be used as a recovery point for the first parser.
+    fn and_opt<P>(self, parser: P) -> And<Self, Opt<SkipUnrecognized<P>>>
+    where
+        Self: Sized,
+    {
+        And(self, opt(skip_unrecognized(parser)))
+    }
+
+    /// Returns a recoverable parser that succeeds if both `self` and the given
     /// `parser` succeed, and returns the output of both in a tuple. Unlike
     /// [`RecoverableParser::and`], this returns a parser that also recognizes
     /// the `parser` instead of only `self`.

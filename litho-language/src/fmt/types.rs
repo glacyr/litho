@@ -12,6 +12,7 @@ pub struct Shape {
     line: usize,
     whitespace: bool,
     blank_lines: usize,
+    level: usize,
 }
 
 pub struct Formatter<W> {
@@ -19,11 +20,13 @@ pub struct Formatter<W> {
     shape: Shape,
 }
 
+const MAX_LEVEL: usize = 0;
+
 impl<W> Formatter<W>
 where
     W: Write,
 {
-    pub fn new(writer: W, line_width: usize) -> Formatter<W> {
+    pub fn new(writer: W, line_width: usize, level: usize) -> Formatter<W> {
         Formatter {
             writer,
             shape: Shape {
@@ -32,6 +35,7 @@ where
                 line: 0,
                 whitespace: true,
                 blank_lines: 2,
+                level,
             },
         }
     }
@@ -108,7 +112,9 @@ where
                 self.squeeze(|formatter| formatter.push(","))?;
             }
 
-            if Measurer::measure(&item, self.shape.range.len()).is_err() {
+            if self.shape.level == MAX_LEVEL
+                || Measurer::measure(&item, self.shape.range.len(), self.shape.level + 1).is_err()
+            {
                 self.line()?;
             }
 
@@ -181,7 +187,14 @@ pub trait Format {
         W: Write,
     {
         let expanded = self.expands()
-            || (self.can_expand() && Measurer::measure(self, formatter.shape.range.len()).is_err());
+            && (formatter.shape.level == MAX_LEVEL
+                || (self.can_expand()
+                    && Measurer::measure(
+                        self,
+                        formatter.shape.range.len(),
+                        formatter.shape.level + 1,
+                    )
+                    .is_err()));
 
         match expanded {
             true => self.format_expanded(formatter),
@@ -202,7 +215,7 @@ pub trait Format {
 
     fn format_to_string(&self, line_width: usize) -> String {
         let mut string = String::new();
-        let mut formatter = Formatter::new(&mut string, line_width);
+        let mut formatter = Formatter::new(&mut string, line_width, 0);
         let _ = self.format(&mut formatter);
         let _ = formatter.line();
         string

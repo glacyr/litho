@@ -4,6 +4,7 @@
 //! 2.2-2.12](https://spec.graphql.org/June2018/#sec-Language.Document) of the
 //! GraphQL spec.
 
+mod mock;
 mod node;
 mod tokens;
 mod types;

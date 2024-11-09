@@ -11,7 +11,7 @@ where
     T: for<'a> PartialEq<&'a str>,
 {
     terminal(move |mut input: I| match input.next() {
-        Some(Token::Name(name)) if name.as_ref() != &"fragment" => Ok((input, name)),
+        Some(Token::Name(name)) => Ok((input, name)),
         Some(_) => Err(Err::Error(Error::ExpectedName)),
         None => Err(Err::Error(Error::Incomplete)),
     })

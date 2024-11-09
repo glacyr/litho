@@ -36,7 +36,6 @@ where
             .map(Into::into)
             .map(ExecutableDefinition::FragmentDefinition),
     ))
-    .boxed()
 }
 
 pub fn operation_definition<'a, T, I>(
@@ -227,7 +226,7 @@ where
     punctuator("...")
         .and(opt(type_condition()))
         .and(opt(directives()))
-        .and(
+        .and_recognize(
             recursive(depth, selection_set)
                 .map(Into::into)
                 .recover(Missing::unary(
@@ -273,7 +272,6 @@ where
                 }
             },
         )
-        .boxed()
 }
 
 pub fn type_condition<'a, T, I>() -> impl RecoverableParser<I, TypeCondition<T>, Error> + 'a
@@ -286,7 +284,6 @@ where
             Diagnostic::missing_type_condition_named_type,
         )))
         .map(|(on, named_type)| TypeCondition { on, named_type })
-        .boxed()
 }
 
 pub fn value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Arc<Value<T>>, Error> + 'a
@@ -318,7 +315,6 @@ where
         keyword("true").map(BooleanValue::True),
         keyword("false").map(BooleanValue::False),
     ))
-    .boxed()
 }
 
 pub fn null_value<'a, T, I>() -> impl RecoverableParser<I, NullValue<T>, Error> + 'a
@@ -326,7 +322,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    keyword("null").map(NullValue).boxed()
+    keyword("null").map(NullValue)
 }
 
 pub fn enum_value<'a, T, I>() -> impl RecoverableParser<I, EnumValue<T>, Error> + 'a
@@ -334,7 +330,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    name().map(EnumValue).boxed()
+    name().map(EnumValue)
 }
 
 pub fn list_value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListValue<T>, Error> + 'a
@@ -454,7 +450,6 @@ where
     punctuator("=")
         .and(value(RECURSION_LIMIT).recover(Missing::unary(Diagnostic::missing_default_value)))
         .map(|(eq, value)| DefaultValue { eq, value })
-        .boxed()
 }
 
 pub fn ty<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Arc<Type<T>>, Error> + 'a
@@ -463,12 +458,18 @@ where
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     alt((
-        recursive(depth, non_null_type).map(Type::NonNull),
         named_type().map(Type::Named),
         recursive(depth, list_type).map(Type::List),
     ))
+    .and(opt(punctuator("!")))
+    .map(|(ty, bang): (Type<_>, Option<_>)| match bang {
+        Some(bang) => Type::NonNull(NonNullType {
+            ty: ty.into(),
+            bang,
+        }),
+        None => ty,
+    })
     .map(Into::into)
-    .boxed()
 }
 
 pub fn named_type<'a, T, I>() -> impl RecoverableParser<I, NamedType<T>, Error> + 'a
@@ -476,7 +477,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    name().map(NamedType).boxed()
+    name().map(NamedType)
 }
 
 pub fn list_type<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListType<T>, Error> + 'a
@@ -497,31 +498,12 @@ where
     .boxed()
 }
 
-pub fn non_null_type<'a, T, I>(
-    depth: usize,
-) -> impl RecoverableParser<I, NonNullType<T>, Error> + 'a
-where
-    I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
-{
-    alt((
-        named_type().map(Type::Named),
-        list_type(depth).map(Type::List),
-    ))
-    .map(Into::into)
-    .and(punctuator("!"))
-    .map(|(ty, bang)| NonNullType { ty, bang })
-    .boxed()
-}
-
 pub fn directives<'a, T, I>() -> impl RecoverableParser<I, Directives<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    many1(directive())
-        .map(|directives| Directives { directives })
-        .boxed()
+    many1(directive()).map(|directives| Directives { directives })
 }
 
 pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Arc<Directive<T>>, Error> + 'a
@@ -539,5 +521,4 @@ where
             arguments,
         })
         .map(Into::into)
-        .boxed()
 }

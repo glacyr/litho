@@ -2,10 +2,12 @@ use std::borrow::Borrow;
 use std::fmt::{Display, Formatter, Result};
 use std::sync::Arc;
 
+use arbitrary::Arbitrary;
 use litho_diagnostics::Diagnostic;
 
 pub use crate::lex::{FloatValue, IntValue, Name, Punctuator, Span, StringValue};
 
+use super::mock::{arbitrary_at_least_one, arbitrary_present_at_least_one, arbitrary_punctuators};
 use super::{node, node_arc, node_enum, node_unit, Node, Visit};
 
 #[derive(Clone, Copy, Debug)]
@@ -60,7 +62,8 @@ pub type Recoverable<T> = wrom::Recoverable<T, MissingToken>;
 /// A GraphQL Document describes a complete file or request string operated on
 /// by a GraphQL service or client. A document contains multiple definitions,
 /// either executable or representative of a GraphQL type system.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Document<T> {
     pub definitions: Vec<Arc<Definition<T>>>,
 }
@@ -75,7 +78,8 @@ impl<T> Default for Document<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum Definition<T> {
     ExecutableDefinition(ExecutableDefinition<T>),
     TypeSystemDefinitionOrExtension(TypeSystemDefinitionOrExtension<T>),
@@ -102,14 +106,16 @@ impl<T> Definition<T> {
 /// Document which contains `TypeSystemDefinitionOrExtension` must not be
 /// executed; GraphQL execution services which receive a Document containing
 /// these should return a descriptive error.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ExecutableDocument<T> {
     pub definitions: Vec<ExecutableDefinition<T>>,
 }
 
 node!(ExecutableDocument, visit_executable_document, definitions);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum ExecutableDefinition<T> {
     OperationDefinition(Arc<OperationDefinition<T>>),
     FragmentDefinition(Arc<FragmentDefinition<T>>),
@@ -122,8 +128,10 @@ node_enum!(
     FragmentDefinition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct OperationDefinition<T> {
+    #[arbitrary(value = Some(u.arbitrary()?))]
     pub ty: Option<OperationType<T>>,
     pub name: Option<Name<T>>,
     pub variable_definitions: Option<VariableDefinitions<T>>,
@@ -141,11 +149,12 @@ node!(
     selection_set
 );
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum OperationType<T> {
-    Query(Name<T>),
-    Mutation(Name<T>),
-    Subscription(Name<T>),
+    Query(#[arbitrary(value = Name::new("query".into()))] Name<T>),
+    Mutation(#[arbitrary(value = Name::new("mutation".into()))] Name<T>),
+    Subscription(#[arbitrary(value = Name::new("subscription".into()))] Name<T>),
 }
 
 node_enum!(
@@ -156,15 +165,18 @@ node_enum!(
     Subscription
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct SelectionSet<T> {
+    #[arbitrary(value = arbitrary_punctuators("{", "}"))]
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub selections: Vec<Selection<T>>,
 }
 
 node!(Arc<SelectionSet>, visit_selection_set, braces, selections);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum Selection<T> {
     Field(Arc<Field<T>>),
     FragmentSpread(Arc<FragmentSpread<T>>),
@@ -179,7 +191,8 @@ node_enum!(
     InlineFragment
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Field<T> {
     pub alias: Option<Alias<T>>,
     pub name: Recoverable<Name<T>>,
@@ -198,25 +211,33 @@ node!(
     selection_set
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Alias<T> {
     pub name: Name<T>,
+
+    #[arbitrary(value = Punctuator::new(":".into()))]
     pub colon: Punctuator<T>,
 }
 
 node!(Alias, visit_alias, name, colon);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Arguments<T> {
+    #[arbitrary(value = arbitrary_punctuators("(", ")"))]
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub items: Vec<Arc<Argument<T>>>,
 }
 
 node!(Arc<Arguments>, visit_arguments, parens, items);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Argument<T> {
     pub name: Name<T>,
+
+    #[arbitrary(value = Punctuator::new(":".into()).into())]
     pub colon: Recoverable<Punctuator<T>>,
     pub value: Recoverable<Arc<Value<T>>>,
 }
@@ -229,8 +250,10 @@ node!(
     value
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct FragmentSpread<T> {
+    #[arbitrary(value = Punctuator::new("...".into()))]
     pub dots: Punctuator<T>,
     pub fragment_name: Name<T>,
     pub directives: Option<Directives<T>>,
@@ -244,8 +267,10 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InlineFragment<T> {
+    #[arbitrary(value = Punctuator::new("...".into()))]
     pub dots: Punctuator<T>,
     pub type_condition: Option<TypeCondition<T>>,
     pub directives: Option<Directives<T>>,
@@ -261,8 +286,10 @@ node!(
     selection_set
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct FragmentDefinition<T> {
+    #[arbitrary(value = Name::new("fragment".into()))]
     pub fragment: Name<T>,
     pub fragment_name: Recoverable<Name<T>>,
     pub type_condition: Recoverable<TypeCondition<T>>,
@@ -280,15 +307,18 @@ node!(
     selection_set
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct TypeCondition<T> {
+    #[arbitrary(value = Name::new("on".into()))]
     pub on: Name<T>,
     pub named_type: Recoverable<NamedType<T>>,
 }
 
 node!(TypeCondition, visit_type_condition, on, named_type);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum Value<T> {
     Variable(Variable<T>),
     IntValue(IntValue<T>),
@@ -390,10 +420,11 @@ node_enum!(
     ObjectValue,
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum BooleanValue<T> {
-    True(Name<T>),
-    False(Name<T>),
+    True(#[arbitrary(value = Name::new("true".into()))] Name<T>),
+    False(#[arbitrary(value = Name::new("false".into()))] Name<T>),
 }
 
 impl<T> BooleanValue<T>
@@ -407,19 +438,24 @@ where
 
 node_enum!(BooleanValue, visit_boolean_value, True, False);
 
-#[derive(Clone, Debug)]
-pub struct NullValue<T>(pub Name<T>);
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
+pub struct NullValue<T>(#[arbitrary(value = Name::new("null".into()))] pub Name<T>);
 
 node_unit!(NullValue, visit_null_value);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct EnumValue<T>(pub Name<T>);
 
 node_unit!(EnumValue, visit_enum_value);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ListValue<T> {
+    #[arbitrary(value = arbitrary_punctuators("[", "]"))]
     pub brackets: (Punctuator<T>, Recoverable<Punctuator<T>>),
+
     pub values: Vec<Arc<Value<T>>>,
 }
 
@@ -430,18 +466,25 @@ node!(
     values
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ObjectValue<T> {
+    #[arbitrary(value = arbitrary_punctuators("{", "}"))]
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+
     pub object_fields: Vec<ObjectField<T>>,
 }
 
 node!(ObjectValue, visit_object_value, braces, object_fields);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ObjectField<T> {
     pub name: Name<T>,
+
+    #[arbitrary(value = Punctuator::new(":".into()).into())]
     pub colon: Recoverable<Punctuator<T>>,
+
     pub value: Recoverable<Arc<Value<T>>>,
 }
 
@@ -453,8 +496,10 @@ node!(
     value
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct VariableDefinitions<T> {
+    #[arbitrary(value = arbitrary_punctuators("(", ")"))]
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub variable_definitions: Vec<Arc<VariableDefinition<T>>>,
 }
@@ -466,11 +511,16 @@ node!(
     variable_definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct VariableDefinition<T> {
     pub variable: Variable<T>,
+
+    #[arbitrary(value = Punctuator::new(":".into()).into())]
     pub colon: Recoverable<Punctuator<T>>,
+
     pub ty: Recoverable<Arc<Type<T>>>,
+
     pub default_value: Option<DefaultValue<T>>,
     pub directives: Option<Directives<T>>,
 }
@@ -485,23 +535,29 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Variable<T> {
+    #[arbitrary(value = Punctuator::new("$".into()))]
     pub dollar: Punctuator<T>,
     pub name: Name<T>,
 }
 
 node!(Variable, visit_variable, dollar, name);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct DefaultValue<T> {
+    #[arbitrary(value = Punctuator::new("=".into()))]
     pub eq: Punctuator<T>,
+
     pub value: Recoverable<Arc<Value<T>>>,
 }
 
 node!(DefaultValue, visit_default_value, eq, value);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum Type<T> {
     Named(NamedType<T>),
     List(ListType<T>),
@@ -585,15 +641,19 @@ where
 
 node_enum!(Arc<Type>, visit_type, Named, List, NonNull);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct NamedType<T>(pub Name<T>);
 
 node_unit!(NamedType, visit_named_type);
 node_arc!(NamedType);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ListType<T> {
+    #[arbitrary(value = arbitrary_punctuators("[", "]"))]
     pub brackets: (Punctuator<T>, Recoverable<Punctuator<T>>),
+
     pub ty: Recoverable<Arc<Type<T>>>,
 }
 
@@ -607,17 +667,23 @@ pub struct NonNullType<T> {
 
 node!(NonNullType, visit_non_null_type, ty, bang);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Directives<T> {
+    #[arbitrary(with = arbitrary_at_least_one)]
     pub directives: Vec<Arc<Directive<T>>>,
 }
 
 node!(Directives, visit_directives, directives);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Directive<T> {
+    #[arbitrary(value = Punctuator::new("@".into()))]
     pub at: Punctuator<T>,
+
     pub name: Recoverable<Name<T>>,
+
     pub arguments: Option<Arc<Arguments<T>>>,
 }
 
@@ -652,14 +718,16 @@ node!(Arc<Directive>, visit_directive, at, name, arguments);
 /// execute requests may choose to only allow `TypeSystemDocument` and not allow
 /// `ExecutableDefinition` or `TypeSystemExtension` but should provide a
 /// descriptive error if present.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct TypeSystemDocument<T> {
     pub definitions: Vec<TypeSystemDefinition<T>>,
 }
 
 node!(TypeSystemDocument, visit_type_system_document, definitions);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum TypeSystemDefinition<T> {
     SchemaDefinition(SchemaDefinition<T>),
     TypeDefinition(Arc<TypeDefinition<T>>),
@@ -674,7 +742,8 @@ node_enum!(
     DirectiveDefinition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct TypeSystemExtensionDocument<T> {
     pub definitions: Vec<TypeSystemDefinitionOrExtension<T>>,
 }
@@ -685,7 +754,8 @@ node!(
     definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum TypeSystemDefinitionOrExtension<T> {
     TypeSystemDefinition(TypeSystemDefinition<T>),
     TypeSystemExtension(TypeSystemExtension<T>),
@@ -698,7 +768,8 @@ node_enum!(
     TypeSystemExtension
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum TypeSystemExtension<T> {
     SchemaExtension(SchemaExtension<T>),
     TypeExtension(Arc<TypeExtension<T>>),
@@ -711,7 +782,8 @@ node_enum!(
     TypeExtension
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct Description<T>(pub StringValue<T>);
 
 impl<T> ToString for Description<T>
@@ -725,11 +797,16 @@ where
 
 node_unit!(Description, visit_description);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct SchemaDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("schema".into()))]
     pub schema: Name<T>,
+
     pub directives: Option<Directives<T>>,
+
     pub type_definitions: Recoverable<RootOperationTypeDefinitions<T>>,
 }
 
@@ -742,9 +819,13 @@ node!(
     type_definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct RootOperationTypeDefinitions<T> {
+    #[arbitrary(value = arbitrary_punctuators("{", "}"))]
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+
+    #[arbitrary(with = arbitrary_present_at_least_one)]
     pub definitions: Recoverable<Vec<RootOperationTypeDefinition<T>>>,
 }
 
@@ -755,10 +836,14 @@ node!(
     definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct RootOperationTypeDefinition<T> {
     pub operation_type: OperationType<T>,
+
+    #[arbitrary(value = Punctuator::new(":".into()).into())]
     pub colon: Recoverable<Punctuator<T>>,
+
     pub named_type: Recoverable<NamedType<T>>,
 }
 
@@ -770,8 +855,10 @@ node!(
     named_type
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct SchemaExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("schema".into())))]
     pub extend_schema: (Name<T>, Name<T>),
     pub directives: Option<Directives<T>>,
     pub type_definitions: Option<RootOperationTypeDefinitions<T>>,
@@ -785,7 +872,8 @@ node!(
     type_definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum TypeDefinition<T> {
     ScalarTypeDefinition(ScalarTypeDefinition<T>),
     ObjectTypeDefinition(ObjectTypeDefinition<T>),
@@ -932,7 +1020,8 @@ impl<T> TypeDefinition<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum TypeExtension<T> {
     ScalarTypeExtension(ScalarTypeExtension<T>),
     ObjectTypeExtension(ObjectTypeExtension<T>),
@@ -1012,10 +1101,14 @@ impl<T> TypeExtension<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ScalarTypeDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("scalar".into()))]
     pub scalar: Name<T>,
+
     pub name: Recoverable<Name<T>>,
     pub directives: Option<Directives<T>>,
 }
@@ -1028,10 +1121,14 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ScalarTypeExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("scalar".into())))]
     pub extend_scalar: (Name<T>, Name<T>),
+
     pub name: Recoverable<NamedType<T>>,
+
     pub directives: Recoverable<Directives<T>>,
 }
 
@@ -1043,11 +1140,16 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ObjectTypeDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("type".into()))]
     pub ty: Name<T>,
+
     pub name: Recoverable<Name<T>>,
+
     pub implements_interfaces: Option<ImplementsInterfaces<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<FieldsDefinition<T>>,
@@ -1076,11 +1178,18 @@ node!(
     fields_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ImplementsInterfaces<T> {
+    #[arbitrary(value = Name::new("implements".into()))]
     pub implements: Name<T>,
+
+    #[arbitrary(value = None)]
     pub ampersand: Option<Punctuator<T>>,
+
     pub first: Recoverable<Arc<NamedType<T>>>,
+
+    #[arbitrary(value = vec![])]
     pub types: Vec<(Punctuator<T>, Recoverable<Arc<NamedType<T>>>)>,
 }
 
@@ -1115,8 +1224,10 @@ node!(
     types
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct FieldsDefinition<T> {
+    #[arbitrary(value = arbitrary_punctuators("{", "}"))]
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub definitions: Vec<Arc<FieldDefinition<T>>>,
 }
@@ -1140,12 +1251,16 @@ node!(
     definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct FieldDefinition<T> {
     pub description: Option<Description<T>>,
     pub name: Name<T>,
     pub arguments_definition: Option<Arc<ArgumentsDefinition<T>>>,
+
+    #[arbitrary(value = Punctuator::new(":".into()).into())]
     pub colon: Recoverable<Punctuator<T>>,
+
     pub ty: Recoverable<Arc<Type<T>>>,
     pub directives: Option<Directives<T>>,
 }
@@ -1161,9 +1276,12 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ArgumentsDefinition<T> {
+    #[arbitrary(value = arbitrary_punctuators("(", ")"))]
     pub parens: (Punctuator<T>, Recoverable<Punctuator<T>>),
+
     pub definitions: Vec<Arc<InputValueDefinition<T>>>,
 }
 
@@ -1185,13 +1303,19 @@ node!(
     definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InputValueDefinition<T> {
     pub description: Option<Description<T>>,
     pub name: Name<T>,
+
+    #[arbitrary(value = Punctuator::new(":".into()).into())]
     pub colon: Recoverable<Punctuator<T>>,
+
     pub ty: Recoverable<Arc<Type<T>>>,
+
     pub default_value: Option<DefaultValue<T>>,
+
     pub directives: Option<Directives<T>>,
 }
 
@@ -1224,10 +1348,14 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct ObjectTypeExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("type".into())))]
     pub extend_type: (Name<T>, Name<T>),
+
     pub name: Recoverable<NamedType<T>>,
+
     pub implements_interfaces: Option<ImplementsInterfaces<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<FieldsDefinition<T>>,
@@ -1243,11 +1371,16 @@ node!(
     fields_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InterfaceTypeDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("interface".into()))]
     pub interface: Name<T>,
+
     pub name: Recoverable<Name<T>>,
+
     pub implements_interfaces: Option<ImplementsInterfaces<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<FieldsDefinition<T>>,
@@ -1276,10 +1409,14 @@ node!(
     fields_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InterfaceTypeExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("interface".into())))]
     pub extend_interface: (Name<T>, Name<T>),
+
     pub name: Recoverable<NamedType<T>>,
+
     pub implements_interfaces: Option<ImplementsInterfaces<T>>,
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<FieldsDefinition<T>>,
@@ -1295,11 +1432,16 @@ node!(
     fields_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct UnionTypeDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("union".into()))]
     pub union_kw: Name<T>,
+
     pub name: Recoverable<Name<T>>,
+
     pub directives: Option<Directives<T>>,
     pub member_types: Option<UnionMemberTypes<T>>,
 }
@@ -1326,11 +1468,18 @@ node!(
     member_types
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct UnionMemberTypes<T> {
+    #[arbitrary(value = Punctuator::new("=".into()))]
     pub eq: Punctuator<T>,
+
+    #[arbitrary(value = None)]
     pub pipe: Option<Punctuator<T>>,
+
     pub first: Recoverable<Arc<NamedType<T>>>,
+
+    #[arbitrary(value = vec![])]
     pub types: Vec<(Punctuator<T>, Recoverable<Arc<NamedType<T>>>)>,
 }
 
@@ -1365,10 +1514,14 @@ node!(
     types
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct UnionTypeExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("union".into())))]
     pub extend_union: (Name<T>, Name<T>),
+
     pub name: Recoverable<NamedType<T>>,
+
     pub directives: Option<Directives<T>>,
     pub member_types: Option<UnionMemberTypes<T>>,
 }
@@ -1382,11 +1535,16 @@ node!(
     member_types
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct EnumTypeDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("enum".into()))]
     pub enum_kw: Name<T>,
+
     pub name: Recoverable<Name<T>>,
+
     pub directives: Option<Directives<T>>,
     pub values_definition: Option<EnumValuesDefinition<T>>,
 }
@@ -1401,8 +1559,10 @@ node!(
     values_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct EnumValuesDefinition<T> {
+    #[arbitrary(value = arbitrary_punctuators("{", "}"))]
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
     pub definitions: Vec<Arc<EnumValueDefinition<T>>>,
 }
@@ -1414,7 +1574,8 @@ node!(
     definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct EnumValueDefinition<T> {
     pub description: Option<Description<T>>,
     pub enum_value: EnumValue<T>,
@@ -1429,10 +1590,14 @@ node!(
     directives
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct EnumTypeExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("enum".into())))]
     pub extend_enum: (Name<T>, Name<T>),
+
     pub name: Recoverable<NamedType<T>>,
+
     pub directives: Option<Directives<T>>,
     pub values_definition: Option<EnumValuesDefinition<T>>,
 }
@@ -1445,11 +1610,16 @@ node!(
     values_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InputObjectTypeDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("input".into()))]
     pub input: Name<T>,
+
     pub name: Recoverable<Name<T>>,
+
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<InputFieldsDefinition<T>>,
 }
@@ -1464,9 +1634,12 @@ node!(
     fields_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InputFieldsDefinition<T> {
+    #[arbitrary(value = arbitrary_punctuators("{", "}"))]
     pub braces: (Punctuator<T>, Recoverable<Punctuator<T>>),
+
     pub definitions: Vec<Arc<InputValueDefinition<T>>>,
 }
 
@@ -1477,10 +1650,14 @@ node!(
     definitions
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct InputObjectTypeExtension<T> {
+    #[arbitrary(value = (Name::new("extend".into()), Name::new("input".into())))]
     pub extend_input: (Name<T>, Name<T>),
+
     pub name: Recoverable<NamedType<T>>,
+
     pub directives: Option<Directives<T>>,
     pub fields_definition: Option<InputFieldsDefinition<T>>,
 }
@@ -1494,13 +1671,21 @@ node!(
     fields_definition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct DirectiveDefinition<T> {
     pub description: Option<Description<T>>,
+
+    #[arbitrary(value = Name::new("directive".into()))]
     pub directive: Name<T>,
+
+    #[arbitrary(value = Punctuator::new("@".into()).into())]
     pub at: Recoverable<Punctuator<T>>,
     pub name: Recoverable<Name<T>>,
+
     pub arguments_definition: Option<Arc<ArgumentsDefinition<T>>>,
+
+    #[arbitrary(value = Some(Name::new("repeatable".into())))]
     pub repeatable: Option<Name<T>>,
     pub locations: Recoverable<DirectiveLocations<T>>,
 }
@@ -1517,11 +1702,18 @@ node!(
     locations
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub struct DirectiveLocations<T> {
+    #[arbitrary(value = Name::new("on".into()))]
     pub on: Name<T>,
+
+    #[arbitrary(value = None)]
     pub pipe: Option<Punctuator<T>>,
+
     pub first: Recoverable<DirectiveLocation<T>>,
+
+    #[arbitrary(value = vec![])]
     pub locations: Vec<(Punctuator<T>, Recoverable<DirectiveLocation<T>>)>,
 }
 
@@ -1544,7 +1736,8 @@ node!(
     locations
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum DirectiveLocation<T> {
     ExecutableDirectiveLocation(ExecutableDirectiveLocation<T>),
     TypeSystemDirectiveLocation(TypeSystemDirectiveLocation<T>),
@@ -1557,16 +1750,17 @@ node_enum!(
     TypeSystemDirectiveLocation
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum ExecutableDirectiveLocation<T> {
-    Query(Name<T>),
-    Mutation(Name<T>),
-    Subscription(Name<T>),
-    Field(Name<T>),
-    FragmentDefinition(Name<T>),
-    FragmentSpread(Name<T>),
-    InlineFragment(Name<T>),
-    VariableDefinition(Name<T>),
+    Query(#[arbitrary(value = Name::new("QUERY".into()))] Name<T>),
+    Mutation(#[arbitrary(value = Name::new("MUTATION".into()))] Name<T>),
+    Subscription(#[arbitrary(value = Name::new("SUBSCRIPTION".into()))] Name<T>),
+    Field(#[arbitrary(value = Name::new("FIELD".into()))] Name<T>),
+    FragmentDefinition(#[arbitrary(value = Name::new("FRAGMENT_DEFINITION".into()))] Name<T>),
+    FragmentSpread(#[arbitrary(value = Name::new("FRAGMENT_SPREAD".into()))] Name<T>),
+    InlineFragment(#[arbitrary(value = Name::new("INLINE_FRAGMENT".into()))] Name<T>),
+    VariableDefinition(#[arbitrary(value = Name::new("VARIABLE_DEFINITION".into()))] Name<T>),
 }
 
 node_enum!(
@@ -1582,19 +1776,20 @@ node_enum!(
     VariableDefinition
 );
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Arbitrary)]
+#[arbitrary(bound = "T: From<&'static str>")]
 pub enum TypeSystemDirectiveLocation<T> {
-    Schema(Name<T>),
-    Scalar(Name<T>),
-    Object(Name<T>),
-    FieldDefinition(Name<T>),
-    ArgumentDefinition(Name<T>),
-    Interface(Name<T>),
-    Union(Name<T>),
-    Enum(Name<T>),
-    EnumValue(Name<T>),
-    InputObject(Name<T>),
-    InputFieldDefinition(Name<T>),
+    Schema(#[arbitrary(value = Name::new("SCHEMA".into()))] Name<T>),
+    Scalar(#[arbitrary(value = Name::new("SCALAR".into()))] Name<T>),
+    Object(#[arbitrary(value = Name::new("OBJECT".into()))] Name<T>),
+    FieldDefinition(#[arbitrary(value = Name::new("FIELD_DEFINITION".into()))] Name<T>),
+    ArgumentDefinition(#[arbitrary(value = Name::new("ARGUMENT_DEFINITION".into()))] Name<T>),
+    Interface(#[arbitrary(value = Name::new("INTERFACE".into()))] Name<T>),
+    Union(#[arbitrary(value = Name::new("UNION".into()))] Name<T>),
+    Enum(#[arbitrary(value = Name::new("ENUM".into()))] Name<T>),
+    EnumValue(#[arbitrary(value = Name::new("ENUM_VALUE".into()))] Name<T>),
+    InputObject(#[arbitrary(value = Name::new("INPUT_OBJECT".into()))] Name<T>),
+    InputFieldDefinition(#[arbitrary(value = Name::new("INPUT_FIELD_DEFINITION".into()))] Name<T>),
 }
 
 node_enum!(

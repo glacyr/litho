@@ -27,6 +27,21 @@ impl<T, E> From<T> for Recoverable<T, E> {
     }
 }
 
+mod mock {
+    use arbitrary::{Arbitrary, Result, Unstructured};
+
+    use super::Recoverable;
+
+    impl<'a, T, E> Arbitrary<'a> for Recoverable<T, E>
+    where
+        T: Arbitrary<'a>,
+    {
+        fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
+            Ok(Recoverable::Present(u.arbitrary()?))
+        }
+    }
+}
+
 mod display {
     use std::fmt::{Display, Formatter, Result};
 

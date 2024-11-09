@@ -5,11 +5,11 @@ use super::{Format, Formatter};
 pub struct Measurer(usize, usize);
 
 impl Measurer {
-    pub fn measure<T>(node: &T, width: usize) -> Result
+    pub fn measure<T>(node: &T, width: usize, level: usize) -> Result
     where
         T: Format + ?Sized,
     {
-        let mut formatter = Formatter::new(Measurer(0, width), width);
+        let mut formatter = Formatter::new(Measurer(0, width), width, level);
         node.format_collapsed(&mut formatter)
     }
 }

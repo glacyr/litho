@@ -100,11 +100,13 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    alt((
-        executable::executable_definition().map(Definition::ExecutableDefinition),
-        schema::type_system_definition_or_extension()
-            .map(Definition::TypeSystemDefinitionOrExtension),
-    ))
+    wrom::opt(schema::description())
+        .and(alt((
+            executable::executable_definition().map(Definition::ExecutableDefinition),
+            schema::type_system_definition_or_extension()
+                .map(Definition::TypeSystemDefinitionOrExtension),
+        )))
+        .map(|(_, b)| b)
 }
 
 macro_rules! parse {
@@ -135,7 +137,11 @@ parse!(Document, document());
 // parse!(Definition, definition);
 // parse!(ExecutableDocument, executable::executable_document);
 // parse!(ExecutableDefinition, executable::executable_definition);
-// parse!(OperationDefinition, executable::operation_definition);
+parse!(OperationDefinition, executable::operation_definition());
+parse!(SchemaDefinition, schema::schema_definition());
+parse!(ExecutableDocument, executable::executable_document());
+parse!(TypeSystemDocument, schema::type_system_document());
+parse!(DirectiveDefinition, schema::directive_definition());
 // parse!(OperationType, executable::operation_type);
 // parse!(SelectionSet, executable::selection_set);
 // parse!(Selection, executable::selection);
@@ -153,10 +159,10 @@ parse!(Arc<Value>, executable::value(RECURSION_LIMIT));
 // parse!(EnumValue, executable::enum_value);
 // parse!(ListValue, executable::list_value);
 // parse!(ObjectValue, executable::object_value);
-// parse!(VariableDefinitions, executable::variable_definitions);
-// parse!(VariableDefinition, executable::variable_definition);
+parse!(VariableDefinitions, executable::variable_definitions());
+parse!(Arc<VariableDefinition>, executable::variable_definition());
 // parse!(Variable, executable::variable);
-// parse!(Type, executable::ty);
+parse!(Arc<Type>, executable::ty(RECURSION_LIMIT));
 // parse!(NamedType, executable::named_type);
 // parse!(NonNullType, executable::non_null_type);
 // parse!(Directives, executable::directives);

@@ -5,6 +5,8 @@ use crate::ast::*;
 
 use super::{macros, Format, Formatter};
 
+macros::format_definitions!(ExecutableDocument);
+
 macros::format_enum!(
     ExecutableDefinition,
     OperationDefinition,

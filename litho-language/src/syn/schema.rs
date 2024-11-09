@@ -34,7 +34,6 @@ where
             .map(Into::into)
             .map(TypeSystemDefinition::DirectiveDefinition),
     ))
-    .boxed()
 }
 
 pub fn type_system_extension_document<'a, T, I>(
@@ -58,7 +57,6 @@ where
         type_system_definition().map(TypeSystemDefinitionOrExtension::TypeSystemDefinition),
         type_system_extension().map(TypeSystemDefinitionOrExtension::TypeSystemExtension),
     ))
-    .boxed()
 }
 
 pub fn type_system_extension<'a, T, I>(
@@ -73,7 +71,6 @@ where
             .map(Into::into)
             .map(TypeSystemExtension::TypeExtension),
     ))
-    .boxed()
 }
 
 pub fn description<'a, T, I>() -> impl RecoverableParser<I, Description<T>, Error> + 'a
@@ -89,22 +86,18 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("schema"))
+    keyword("schema")
         .and(opt(directives()))
         .and(root_operation_type_definitions().recover(Missing::unary(
             Diagnostic::missing_root_operation_type_definitions,
         )))
         .unzip()
-        .map(
-            |(description, schema, directives, type_definitions)| SchemaDefinition {
-                description,
-                schema,
-                directives,
-                type_definitions,
-            },
-        )
-        .boxed()
+        .map(|(schema, directives, type_definitions)| SchemaDefinition {
+            description: None,
+            schema,
+            directives,
+            type_definitions,
+        })
 }
 
 pub fn root_operation_type_definitions<'a, T, I>(
@@ -185,7 +178,6 @@ where
         enum_type_definition().map(TypeDefinition::EnumTypeDefinition),
         input_object_type_definition().map(TypeDefinition::InputObjectTypeDefinition),
     ))
-    .boxed()
 }
 
 pub fn type_extension<'a, T, I>() -> impl RecoverableParser<I, TypeExtension<T>, Error> + 'a
@@ -201,7 +193,6 @@ where
         enum_type_extension().map(TypeExtension::EnumTypeExtension),
         input_object_type_extension().map(TypeExtension::InputObjectTypeExtension),
     ))
-    .boxed()
 }
 
 pub fn scalar_type_definition<'a, T, I>(
@@ -210,22 +201,18 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("scalar"))
+    keyword("scalar")
         .and(name().recover(Missing::unary(
             Diagnostic::missing_scalar_type_definition_name,
         )))
         .and(opt(directives()))
         .unzip()
-        .map(
-            |(description, scalar, name, directives)| ScalarTypeDefinition {
-                description,
-                scalar,
-                name,
-                directives,
-            },
-        )
-        .boxed()
+        .map(|(scalar, name, directives)| ScalarTypeDefinition {
+            description: None,
+            scalar,
+            name,
+            directives,
+        })
 }
 
 pub fn scalar_type_extension<'a, T, I>(
@@ -248,7 +235,6 @@ where
             name,
             directives,
         })
-        .boxed()
 }
 
 pub fn object_type_definition<'a, T, I>(
@@ -257,8 +243,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("type"))
+    keyword("type")
         .and(name().recover(Missing::unary(
             Diagnostic::missing_object_type_definition_name,
         )))
@@ -267,9 +252,9 @@ where
         .and(opt(fields_definition()))
         .unzip()
         .map(
-            |(description, ty, name, implements_interfaces, directives, fields_definition)| {
+            |(ty, name, implements_interfaces, directives, fields_definition)| {
                 ObjectTypeDefinition {
-                    description,
+                    description: None,
                     ty,
                     name,
                     implements_interfaces,
@@ -278,7 +263,6 @@ where
                 }
             },
         )
-        .boxed()
 }
 
 pub fn implements_interfaces<'a, T, I>(
@@ -324,7 +308,6 @@ where
         braces: (left, right),
         definitions,
     })
-    .boxed()
 }
 
 pub fn field_definition<'a, T, I>() -> impl RecoverableParser<I, FieldDefinition<T>, Error> + 'a
@@ -333,7 +316,7 @@ where
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     opt(description())
-        .and_recognize(name())
+        .and(name())
         .and(opt(arguments_definition().map(Into::into)))
         .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_field_definition_colon)))
         .and(ty(RECURSION_LIMIT).recover(Missing::unary(Diagnostic::missing_field_definition_type)))
@@ -349,7 +332,6 @@ where
                 directives,
             },
         )
-        .boxed()
 }
 
 pub fn arguments_definition<'a, T, I>(
@@ -368,7 +350,6 @@ where
         parens: (left, right),
         definitions,
     })
-    .boxed()
 }
 
 pub fn input_value_definition<'a, T, I>(
@@ -378,7 +359,7 @@ where
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     opt(description())
-        .and_recognize(name())
+        .and(name())
         .and(punctuator(":").recover(Missing::unary(
             Diagnostic::missing_input_value_definition_colon,
         )))
@@ -398,7 +379,6 @@ where
                 directives,
             },
         )
-        .boxed()
 }
 
 pub fn object_type_extension<'a, T, I>(
@@ -427,7 +407,6 @@ where
                 }
             },
         )
-        .boxed()
 }
 
 pub fn interface_type_definition<'a, T, I>(
@@ -436,8 +415,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("interface"))
+    keyword("interface")
         .and(name().recover(Missing::unary(
             Diagnostic::missing_interface_type_definition_name,
         )))
@@ -446,23 +424,17 @@ where
         .and(opt(fields_definition()))
         .unzip()
         .map(
-            |(
-                description,
-                interface,
-                name,
-                implements_interfaces,
-                directives,
-                fields_definition,
-            )| InterfaceTypeDefinition {
-                description,
-                interface,
-                name,
-                implements_interfaces,
-                directives,
-                fields_definition,
+            |(interface, name, implements_interfaces, directives, fields_definition)| {
+                InterfaceTypeDefinition {
+                    description: None,
+                    interface,
+                    name,
+                    implements_interfaces,
+                    directives,
+                    fields_definition,
+                }
             },
         )
-        .boxed()
 }
 
 pub fn interface_type_extension<'a, T, I>(
@@ -491,7 +463,6 @@ where
                 }
             },
         )
-        .boxed()
 }
 
 pub fn union_type_definition<'a, T, I>(
@@ -500,8 +471,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("union"))
+    keyword("union")
         .and(name().recover(Missing::unary(
             Diagnostic::missing_union_type_definition_name,
         )))
@@ -509,15 +479,14 @@ where
         .and(opt(union_member_types()))
         .unzip()
         .map(
-            |(description, union_kw, name, directives, member_types)| UnionTypeDefinition {
-                description,
+            |(union_kw, name, directives, member_types)| UnionTypeDefinition {
+                description: None,
                 union_kw,
                 name,
                 directives,
                 member_types,
             },
         )
-        .boxed()
 }
 
 pub fn union_member_types<'a, T, I>() -> impl RecoverableParser<I, UnionMemberTypes<T>, Error> + 'a
@@ -571,7 +540,6 @@ where
                 member_types,
             },
         )
-        .boxed()
 }
 
 pub fn enum_type_definition<'a, T, I>(
@@ -580,8 +548,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("enum"))
+    keyword("enum")
         .and(name().recover(Missing::unary(
             Diagnostic::missing_enum_type_definition_name,
         )))
@@ -589,15 +556,14 @@ where
         .and(opt(enum_values_definition()))
         .unzip()
         .map(
-            |(description, enum_kw, name, directives, values_definition)| EnumTypeDefinition {
-                description,
+            |(enum_kw, name, directives, values_definition)| EnumTypeDefinition {
+                description: None,
                 enum_kw,
                 name,
                 directives,
                 values_definition,
             },
         )
-        .boxed()
 }
 
 pub fn enum_values_definition<'a, T, I>(
@@ -658,7 +624,6 @@ where
                 values_definition,
             },
         )
-        .boxed()
 }
 
 pub fn input_object_type_definition<'a, T, I>(
@@ -667,8 +632,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("input"))
+    keyword("input")
         .and(name().recover(Missing::unary(
             Diagnostic::missing_input_object_type_definition_name,
         )))
@@ -676,15 +640,14 @@ where
         .and(opt(input_fields_definition()))
         .unzip()
         .map(
-            |(description, input, name, directives, fields_definition)| InputObjectTypeDefinition {
-                description,
+            |(input, name, directives, fields_definition)| InputObjectTypeDefinition {
+                description: None,
                 input,
                 name,
                 directives,
                 fields_definition,
             },
         )
-        .boxed()
 }
 
 pub fn input_fields_definition<'a, T, I>(
@@ -728,7 +691,6 @@ where
                 fields_definition,
             },
         )
-        .boxed()
 }
 
 pub fn directive_definition<'a, T, I>(
@@ -737,8 +699,7 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    opt(description())
-        .and_recognize(keyword("directive"))
+    keyword("directive")
         .and(punctuator("@").recover(Missing::unary(Diagnostic::missing_directive_definition_at)))
         .and(name_unless("on").recover(Missing::unary(
             Diagnostic::missing_directive_definition_name,
@@ -750,9 +711,9 @@ where
         )))
         .unzip()
         .map(
-            |(description, directive, at, name, arguments_definition, repeatable, locations)| {
+            |(directive, at, name, arguments_definition, repeatable, locations)| {
                 DirectiveDefinition {
-                    description,
+                    description: None,
                     directive,
                     at,
                     name,
