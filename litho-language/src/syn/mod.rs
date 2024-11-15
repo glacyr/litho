@@ -5,6 +5,7 @@ use nom::combinator::eof;
 use nom::error::{ErrorKind, ParseError};
 use nom::{Err, Parser};
 use wrom::{alt, many0, terminal, Input, RecoverableParser};
+use wrom_derive::wrom;
 
 use crate::ast::*;
 use crate::lex::Token;
@@ -87,6 +88,50 @@ impl<I> ParseError<I> for Error {
     }
 }
 
+pub fn parser<I, T>(input: &mut I) -> Document<T>
+where
+    I: Iterator<Item = Token<T>>,
+    T: for<'a> PartialEq<&'a str> + Clone,
+{
+    while let Some(token) = input.next() {
+        match token {
+            Token::Name(name) if name.as_ref() == &"type" => {
+                parser_type(name, input);
+            }
+            _ => {
+                // Unrecognized token
+            }
+        }
+    }
+
+    Document {
+        definitions: vec![],
+    }
+}
+
+pub fn parser_type<I, T>(ty: Name<T>, input: &mut I) -> ObjectTypeDefinition<T>
+where
+    I: Iterator<Item = Token<T>>,
+    T: for<'a> PartialEq<&'a str> + Clone,
+{
+    let name = loop {
+        match input.next() {
+            Some(Token::Name(name)) => break name,
+            Some(_) => {}
+            None => todo!(),
+        };
+    };
+
+    ObjectTypeDefinition {
+        description: None,
+        ty,
+        name: name.into(),
+        implements_interfaces: None,
+        directives: None,
+        fields_definition: None,
+    }
+}
+
 pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -95,6 +140,7 @@ where
     many0(definition().map(Into::into)).map(|definitions| Document { definitions })
 }
 
+#[wrom(schema::description().or(executable::executable_definition()).or(schema::type_system_definition_or_extension()))]
 pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -114,8 +160,7 @@ macro_rules! parse {
         impl<T> Parse<T> for Arc<$name<T>> where T: for<'b> PartialEq<&'b str> + Clone {
             fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
                 $($fn)*
-                    .parser(terminal(eof))
-                    .parse(stream)
+                    .parse(stream, terminal(eof))
                     .map(|(input, value)| (value, input.into_unexpected()))
             }
         }
@@ -125,8 +170,7 @@ macro_rules! parse {
         impl<T> Parse<T> for $name<T> where T: for<'b> PartialEq<&'b str> + Clone {
             fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
                 $($fn)*
-                    .parser(terminal(eof))
-                    .parse(stream)
+                    .parse(stream, terminal(eof))
                     .map(|(input, value)| (value, input.into_unexpected()))
             }
         }
@@ -137,11 +181,11 @@ parse!(Document, document());
 // parse!(Definition, definition);
 // parse!(ExecutableDocument, executable::executable_document);
 // parse!(ExecutableDefinition, executable::executable_definition);
-parse!(OperationDefinition, executable::operation_definition());
-parse!(SchemaDefinition, schema::schema_definition());
-parse!(ExecutableDocument, executable::executable_document());
-parse!(TypeSystemDocument, schema::type_system_document());
-parse!(DirectiveDefinition, schema::directive_definition());
+// parse!(OperationDefinition, executable::operation_definition());
+// parse!(SchemaDefinition, schema::schema_definition());
+// parse!(ExecutableDocument, executable::executable_document());
+// parse!(TypeSystemDocument, schema::type_system_document());
+// parse!(DirectiveDefinition, schema::directive_definition());
 // parse!(OperationType, executable::operation_type);
 // parse!(SelectionSet, executable::selection_set);
 // parse!(Selection, executable::selection);
@@ -153,16 +197,16 @@ parse!(DirectiveDefinition, schema::directive_definition());
 // parse!(InlineFragment, executable::inline_fragment);
 // parse!(FragmentDefinition, executable::fragment_definition);
 // parse!(TypeCondition, executable::type_condition);
-parse!(Arc<Value>, executable::value(RECURSION_LIMIT));
+// parse!(Arc<Value>, executable::value(RECURSION_LIMIT));
 // parse!(BooleanValue, executable::boolean_value);
 // parse!(NullValue, executable::null_value);
 // parse!(EnumValue, executable::enum_value);
 // parse!(ListValue, executable::list_value);
 // parse!(ObjectValue, executable::object_value);
-parse!(VariableDefinitions, executable::variable_definitions());
-parse!(Arc<VariableDefinition>, executable::variable_definition());
+// parse!(VariableDefinitions, executable::variable_definitions());
+// parse!(Arc<VariableDefinition>, executable::variable_definition());
 // parse!(Variable, executable::variable);
-parse!(Arc<Type>, executable::ty(RECURSION_LIMIT));
+// parse!(Arc<Type>, executable::ty(RECURSION_LIMIT));
 // parse!(NamedType, executable::named_type);
 // parse!(NonNullType, executable::non_null_type);
 // parse!(Directives, executable::directives);

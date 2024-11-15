@@ -11,5 +11,10 @@ members = [
     "litho-tests",
     "litho-types",
     "litho-validation",
+    "wrom-derive",
 ]
 resolver = "2"
+
+[profile.bench]
+opt-level = 3
+lto = true

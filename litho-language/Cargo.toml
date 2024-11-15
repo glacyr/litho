@@ -15,3 +15,8 @@ unindent = "0.1.10"
 
 litho-diagnostics = { path = "../litho-diagnostics" }
 wrom = { path = "../wrom" }
+wrom-derive = { path = "../wrom-derive" }
+
+[dev-dependencies]
+async-graphql-parser = "7.0.11"
+graphql-parser = "0.4.0"

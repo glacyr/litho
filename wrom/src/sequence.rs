@@ -23,13 +23,12 @@ where
     first
         .and(second)
         .and_recover(third, move |(left, _)| recovery(left))
-        .unzip()
+        .map(|((a, b), c)| (a, b, c))
 }
 
 #[cfg(test)]
 mod tests {
     use nom::combinator::eof;
-    use nom::Parser;
 
     use crate::mock::{char, CollectUnrecognized};
     use crate::{terminal, Recoverable, RecoverableParser};
@@ -47,7 +46,7 @@ mod tests {
 
         let grammar = delimited(one, comma, two, |_| ());
 
-        let (mut input, (a, b, c)) = grammar.parser(&terminal(eof)).parse(input).unwrap();
+        let (mut input, (a, b, c)) = grammar.parse(input, &terminal(eof)).unwrap();
         assert_eq!(a, '1');
         assert_eq!(b, ',');
         assert_eq!(c, Recoverable::Present('2'));
@@ -59,7 +58,7 @@ mod tests {
 
         let input = CollectUnrecognized::new("1-,-32");
 
-        let (mut input, (a, b, c)) = grammar.parser(&three).parse(input).unwrap();
+        let (mut input, (a, b, c)) = grammar.parse(input, &three).unwrap();
         assert_eq!(a, '1');
         assert_eq!(b, ',');
         assert_eq!(c, Recoverable::Missing(()));

@@ -1,17 +1,53 @@
-use nom::error::ParseError;
-use nom::Parser;
+use nom::error::{ErrorKind, ParseError};
+use nom::{Err, IResult, Parser};
 
 use super::{Recognizer, RecoverableParser};
 
 /// Parser that succeeds if any of the recoverable parsers in `L` succeed.
 pub struct Alt<L>(L);
 
+impl<I, E, R, const N: usize> Recognizer<I, E> for Alt<[R; N]>
+where
+    I: Clone,
+    E: ParseError<I>,
+    R: Recognizer<I, E>,
+{
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        for i in 0..N {
+            if let Ok(result) = self.0[i].recognize(input.clone()) {
+                return Ok(result);
+            }
+        }
+
+        Err(Err::Error(E::from_error_kind(input, ErrorKind::Alt)))
+    }
+}
+
+impl<I, O, E, P, const N: usize> RecoverableParser<I, O, E> for Alt<[P; N]>
+where
+    I: Clone,
+    E: ParseError<I>,
+    P: RecoverableParser<I, O, E>,
+{
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
+    where
+        R: Recognizer<I, E>,
+    {
+        for i in 0..N {
+            if let Ok(result) = self.0[i].parse(input.clone(), &recovery_point) {
+                return Ok(result);
+            }
+        }
+
+        Err(Err::Error(E::from_error_kind(input, ErrorKind::Alt)))
+    }
+}
+
 /// Returns a recoverable parser that succeeds if any of the recoverable parsers
 /// in `L` succeed.
-pub fn alt<L, I, O, E>(list: L) -> impl RecoverableParser<I, O, E>
-where
-    Alt<L>: RecoverableParser<I, O, E>,
-{
+pub fn alt<L>(list: L) -> Alt<L> {
     Alt(list)
 }
 
@@ -28,19 +64,21 @@ macro_rules! alt {
         impl<I, E, $($ident),*> Recognizer<I, E> for Alt<($($ident,)*)>
         where
             I: Clone,
+            E: ParseError<I>,
             $(
                 $ident: Recognizer<I, E>,
             )*
-            E: ParseError<I>,
         {
-            fn recognizer(&self) -> impl Parser<I, (), E> {
+            #[inline(always)]
+            fn recognize(&self, input: I) -> IResult<I, (), E> {
                 let ($($ident,)*) = &self.0;
 
                 nom::branch::alt((
                     $(
-                        $ident.recognizer(),
+                        #[inline(always)]
+                        |input| $ident.recognize(input),
                     )*
-                ))
+                )).parse(input)
             }
         }
 
@@ -53,19 +91,19 @@ macro_rules! alt {
             )*
             E: ParseError<I>,
         {
-            fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
+            #[inline(always)]
+            fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
             where
                 R: Recognizer<I, E>,
             {
-                move |input: I| {
-                    let ($($ident,)*) = &self.0;
+                let ($($ident,)*) = &self.0;
 
-                    nom::branch::alt((
-                        $(
-                            $ident.parser(&recovery_point),
-                        )*
-                    )).parse(input)
-                }
+                nom::branch::alt((
+                    $(
+                        #[inline(always)]
+                        |input| $ident.parse(input, &recovery_point),
+                    )*
+                )).parse(input)
             }
         }
     };

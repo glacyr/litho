@@ -1,30 +1,28 @@
 use std::marker::PhantomData;
 
-use zipped::UnzipFrom;
-
 use nom::error::ParseError;
-use nom::{Err, Parser};
+use nom::{Err, IResult};
 
-use crate::{terminal, Missing};
-
-use super::{opt, skip_unrecognized, Boxed, Input, Opt, Recognizer, Recoverable, SkipUnrecognized};
+use super::{
+    alt, opt, skip_unrecognized, terminal, Input, Missing, Opt, Recognizer, Recoverable,
+    SkipUnrecognized,
+};
 
 /// Trait implemented by recoverable parsers, analogous to `nom::Parser`.
 pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
     /// Should return a new `nom::Parser` that can try to parse something up
     /// until the given `recovery_point`.
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
     where
         R: Recognizer<I, E>;
 
     /// Utility to parse an input entirely and directly to an output.
-    fn parse(&self, input: I) -> Result<O, Err<E>>
+    fn parse_simple(&self, input: I) -> Result<O, Err<E>>
     where
         I: Input + Clone,
         E: ParseError<I>,
     {
-        self.parser(terminal(nom::combinator::eof))
-            .parse(input)
+        self.parse(input, terminal(nom::combinator::eof))
             .map(|(_, o)| o)
     }
 
@@ -47,16 +45,6 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
         Self: Sized,
     {
         And(self, skip_unrecognized(parser))
-    }
-
-    /// Returns a recoverable parser that succeeds if both `self` and the given
-    /// `parser` succeed, and returns the output of both in a tuple. The second
-    /// parser will be used as a recovery point for the first parser.
-    fn and_opt<P>(self, parser: P) -> And<Self, Opt<SkipUnrecognized<P>>>
-    where
-        Self: Sized,
-    {
-        And(self, opt(skip_unrecognized(parser)))
     }
 
     /// Returns a recoverable parser that succeeds if both `self` and the given
@@ -96,36 +84,26 @@ pub trait RecoverableParser<I, O, E>: Recognizer<I, E> {
         Map(self, PhantomData, apply)
     }
 
-    /// Unzips the output of this parser, i.e. maps `((((A, B), C), ...), Z)` to
-    /// `(A, B, C, ..., Z)`.
-    fn unzip<N>(self) -> impl RecoverableParser<I, N, E>
-    where
-        Self: Sized,
-        I: Input,
-        N: UnzipFrom<O>,
-    {
-        self.map(N::unzip_from)
-    }
-
-    /// Returns a boxed (i.e. heap-allocated and type-erased) wrapper around
-    /// this parser.
-    fn boxed<'a>(self) -> Boxed<'a, I, O, E>
-    where
-        Self: Sized + 'a,
-    {
-        Boxed::new(self)
-    }
+    // /// Returns a boxed (i.e. heap-allocated and type-erased) wrapper around
+    // /// this parser.
+    // fn boxed<'a>(self) -> Boxed<'a, I, O, E>
+    // where
+    //     Self: Sized + 'a,
+    // {
+    //     Boxed::new(self)
+    // }
 }
 
 impl<I, O, E, P> RecoverableParser<I, O, E> for &P
 where
     P: RecoverableParser<I, O, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
     where
         R: Recognizer<I, E>,
     {
-        (*self).parser(recovery_point)
+        (*self).parse(input, recovery_point)
     }
 }
 
@@ -135,8 +113,9 @@ impl<I, E, A, B> Recognizer<I, E> for And<A, B>
 where
     A: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
@@ -147,16 +126,17 @@ where
     A: RecoverableParser<I, AO, E>,
     B: RecoverableParser<I, BO, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, (AO, BO), E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, (AO, BO), E>
     where
         R: Recognizer<I, E>,
     {
-        move |input| {
-            self.0
-                .parser((&self.1).or(&recovery_point))
-                .and(self.1.parser(&recovery_point))
-                .parse(input)
-        }
+        let (input, a) = self
+            .0
+            .parse(input, (&self.1).or(recovery_point.non_recursive()))?;
+        let (input, b) = self.1.parse(input, recovery_point)?;
+
+        Ok((input, (a, b)))
     }
 }
 
@@ -169,9 +149,10 @@ where
     A: Recognizer<I, E>,
     B: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
         let And(a, b) = &self.0;
-        a.recognizer().or(b.recognizer())
+        Recognizer::or(a, b).recognize(input)
     }
 }
 
@@ -182,11 +163,12 @@ where
     A: RecoverableParser<I, AO, E>,
     B: RecoverableParser<I, BO, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, (AO, BO), E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, (AO, BO), E>
     where
         R: Recognizer<I, E>,
     {
-        self.0.parser(recovery_point)
+        self.0.parse(input, recovery_point)
     }
 }
 
@@ -196,8 +178,9 @@ impl<I, E, P, M> Recognizer<I, E> for AndRecover<P, M>
 where
     P: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
@@ -210,22 +193,23 @@ where
     F: Fn(&AO) -> M,
     M: Missing<I>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, (AO, Recoverable<BO, M::Error>), E>
+    #[inline(always)]
+    fn parse<R>(
+        &self,
+        input: I,
+        recovery_point: R,
+    ) -> IResult<I, (AO, Recoverable<BO, M::Error>), E>
     where
         R: Recognizer<I, E>,
     {
-        let mut parser = self.0.parser(recovery_point);
+        let (input, (a, b)) = self.0.parse(input, recovery_point)?;
 
-        move |input| {
-            let (input, (a, b)) = parser.parse(input)?;
+        let b = match b {
+            Some(value) => Recoverable::Present(value),
+            None => Recoverable::Missing(self.1(&a).error(&input)),
+        };
 
-            let b = match b {
-                Some(value) => Recoverable::Present(value),
-                None => Recoverable::Missing(self.1(&a).error(&input)),
-            };
-
-            Ok((input, (a, b)))
-        }
+        Ok((input, (a, b)))
     }
 }
 
@@ -235,8 +219,9 @@ impl<I, E, P, M> Recognizer<I, E> for Recover<P, M>
 where
     P: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
@@ -247,22 +232,19 @@ where
     E: ParseError<I>,
     P: RecoverableParser<I, Option<O>, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, Recoverable<O, M::Error>, E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Recoverable<O, M::Error>, E>
     where
         R: Recognizer<I, E>,
     {
-        let mut parser = self.0.parser(recovery_point);
+        let (input, value) = self.0.parse(input, recovery_point)?;
 
-        move |input| {
-            let (input, value) = parser.parse(input)?;
+        let value = match value {
+            Some(value) => Recoverable::Present(value),
+            None => Recoverable::Missing(self.1.error(&input)),
+        };
 
-            let value = match value {
-                Some(value) => Recoverable::Present(value),
-                None => Recoverable::Missing(self.1.error(&input)),
-            };
-
-            Ok((input, value))
-        }
+        Ok((input, value))
     }
 }
 
@@ -272,8 +254,9 @@ impl<I, E, P, O, F> Recognizer<I, E> for Map<P, O, F>
 where
     P: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
@@ -282,10 +265,77 @@ where
     P: RecoverableParser<I, O, E>,
     F: Fn(O) -> O2,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O2, E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O2, E>
     where
         R: Recognizer<I, E>,
     {
-        self.0.parser(recovery_point).map(&self.2)
+        self.0.parse(input, recovery_point).map(
+            #[inline(always)]
+            |(input, value)| (input, (self.2)(value)),
+        )
     }
 }
+
+macro_rules! tuple {
+    ($($ident:ident $output:ident)+) => {
+        impl<_I, _E, $($ident,)*> Recognizer<_I, _E> for ($($ident,)*)
+        where
+        $($ident: Recognizer<_I, _E>,)*
+        {
+            #[inline(always)]
+            fn recognize(&self, input: _I) -> IResult<_I, (), _E> {
+                self.0.recognize(input)
+            }
+        }
+
+        impl<_I, _E, $($ident,)* $($output,)*> RecoverableParser<_I, ($($output,)*), _E>
+            for ($($ident,)*)
+        where
+            _I: Input + Clone,
+            _E: ParseError<_I>,
+            $($ident: RecoverableParser<_I, $output, _E>,)*
+        {
+            #[inline(always)]
+            fn parse<_R>(&self, input: _I, recovery_point: _R) -> IResult<_I, ($($output,)*), _E>
+            where
+                _R: Recognizer<_I, _E>,
+            {
+                #[allow(non_snake_case)]
+                let (
+                    $($ident,)*
+                ) = &self;
+
+                tuple!(& recovery_point input $($ident)*);
+
+                Ok((input, ($($ident,)*)))
+            }
+        }
+    };
+    (& $recovery_point:ident $input:ident $first:ident $($rest:ident)*) => {
+        #[allow(non_snake_case)]
+        let ($input, $first) = $first
+            .parse($input, alt((
+                $($rest.non_recursive(),)*
+                $recovery_point.non_recursive(),
+            )))?;
+
+        tuple!(@ $recovery_point $input $($rest)*);
+    };
+    (@ $recovery_point:ident $input:ident $first:ident $($rest:ident)*) => {
+        #[allow(non_snake_case)]
+        let ($input, $first) = skip_unrecognized($first)
+            .parse($input, alt((
+                $($rest.non_recursive(),)*
+                $recovery_point.non_recursive(),
+            )))?;
+
+        tuple!(@ $recovery_point $input $($rest)*);
+    };
+    (@ $recovery_point:ident $input:ident) => {};
+}
+
+tuple!(A AO B BO C CO);
+tuple!(A AO B BO C CO D DO);
+tuple!(A AO B BO C CO D DO E EO);
+tuple!(A AO B BO C CO D DO E EO F FO);

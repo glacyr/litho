@@ -1,5 +1,5 @@
 use nom::error::ParseError;
-use nom::Parser;
+use nom::IResult;
 
 use super::{Input, Recognizer, RecoverableParser};
 
@@ -11,8 +11,9 @@ impl<I, E, P> Recognizer<I, E> for Opt<P>
 where
     P: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
@@ -22,11 +23,15 @@ where
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, Option<O>, E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Option<O>, E>
     where
         R: Recognizer<I, E>,
     {
-        nom::combinator::opt(self.0.parser(recovery_point))
+        match self.0.parse(input.clone(), recovery_point) {
+            Ok((input, value)) => Ok((input, Some(value))),
+            Err(_) => Ok((input, None)),
+        }
     }
 }
 

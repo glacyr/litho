@@ -1,5 +1,5 @@
 use nom::error::ParseError;
-use nom::Parser;
+use nom::{IResult, Parser};
 
 use super::skip::{skip_unrecognized, SkipUnrecognized};
 use super::{Input, Recognizer, RecoverableParser};
@@ -12,8 +12,9 @@ impl<I, E, P> Recognizer<I, E> for Many<P>
 where
     P: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        self.0.recognizer()
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
@@ -23,17 +24,19 @@ where
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, Vec<O>, E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Vec<O>, E>
     where
         R: Recognizer<I, E>,
     {
-        move |input: I| {
-            let parser = self.0.parser((&recovery_point).or(&self.0));
+        let parser = {
+            #[inline(always)]
+            move |input| self.0.parse(input, (&recovery_point).or(&self.0))
+        };
 
-            match self.1 {
-                false => nom::multi::many0(parser).parse(input),
-                true => nom::multi::many1(parser).parse(input),
-            }
+        match self.1 {
+            false => nom::multi::many0(parser).parse(input),
+            true => nom::multi::many1(parser).parse(input),
         }
     }
 }
@@ -57,7 +60,6 @@ pub fn many1<P>(parser: P) -> Many<SkipUnrecognized<P>> {
 #[cfg(test)]
 mod tests {
     use nom::combinator::eof;
-    use nom::Parser;
 
     use crate::mock::{char, CollectUnrecognized};
     use crate::{terminal, RecoverableParser};
@@ -70,7 +72,7 @@ mod tests {
         let one = many0(char::<_, ()>('a'));
         let eof = terminal(eof);
 
-        let (mut input, tokens) = one.parser(&eof).parse(input).unwrap();
+        let (mut input, tokens) = one.parse(input, &eof).unwrap();
         assert_eq!(tokens, vec!['a', 'a']);
 
         assert_eq!(input.unrecognized().collect::<Vec<_>>(), vec!['b']);
@@ -82,7 +84,7 @@ mod tests {
         let one = many0(char::<_, ()>('a'));
         let eof = terminal(eof);
 
-        let (mut input, tokens) = one.parser(&eof).parse(input).unwrap();
+        let (mut input, tokens) = one.parse(input, &eof).unwrap();
         assert_eq!(tokens, vec![]);
 
         assert_eq!(input.unrecognized().collect::<Vec<_>>(), vec![]);
@@ -94,7 +96,7 @@ mod tests {
         let one = many1(char::<_, ()>('a'));
         let eof = terminal(eof);
 
-        let (mut input, tokens) = one.parser(&eof).parse(input).unwrap();
+        let (mut input, tokens) = one.parse(input, &eof).unwrap();
         assert_eq!(tokens, vec!['a', 'a']);
 
         assert_eq!(input.unrecognized().collect::<Vec<_>>(), vec!['b']);
@@ -106,6 +108,6 @@ mod tests {
         let one = many1(char::<_, ()>('a'));
         let eof = terminal(eof);
 
-        assert!(one.parser(&eof).parse(input).is_err());
+        assert!(one.parse(input, &eof).is_err());
     }
 }

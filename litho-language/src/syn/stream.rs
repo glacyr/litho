@@ -59,6 +59,7 @@ where
 {
     type Item = Token<T>;
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         self.lexer.next()
     }

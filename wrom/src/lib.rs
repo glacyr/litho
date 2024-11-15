@@ -9,7 +9,7 @@
 //! 3. Parsers can [`skip_unrecognized`] tokens when necessary.
 //! 4. [Recursive parsers](`recursive()`) with a max. depth to avoid stack overflows.
 
-mod boxed;
+// mod boxed;
 mod branch;
 mod combinator;
 mod input;
@@ -23,13 +23,13 @@ mod recursive;
 mod sequence;
 mod skip;
 
-pub use boxed::Boxed;
+// pub use boxed::Boxed;
 pub use branch::{alt, Alt};
 pub use combinator::{opt, Opt};
 pub use input::Input;
 pub use missing::Missing;
 pub use multi::{many0, many1};
-pub use parser::RecoverableParser;
+pub use parser::{Map, RecoverableParser};
 pub use recognizer::{terminal, Recognizer};
 pub use recoverable::Recoverable;
 pub use recursive::recursive;

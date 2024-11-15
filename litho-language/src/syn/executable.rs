@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use wrom::{alt, delimited, many0, many1, opt, recursive, Input, RecoverableParser};
+use wrom_derive::wrom;
 
 use crate::ast::*;
 use crate::lex::{Name, Token};
@@ -11,17 +12,17 @@ use super::combinators::{
 };
 use super::{Error, RECURSION_LIMIT};
 
+#[wrom(executable_definition())]
 pub fn executable_document<'a, T, I>(
 ) -> impl RecoverableParser<I, ExecutableDocument<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    many0(executable_definition())
-        .map(|definitions| ExecutableDocument { definitions })
-        .boxed()
+    many0(executable_definition()).map(|definitions| ExecutableDocument { definitions })
 }
 
+#[wrom(operation_definition().or(fragment_definition()))]
 pub fn executable_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, ExecutableDefinition<T>, Error> + 'a
 where
@@ -38,24 +39,24 @@ where
     ))
 }
 
+#[wrom(operation_type())]
 pub fn operation_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, OperationDefinition<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    operation_type()
-        .and(opt(name()))
-        .and(opt(variable_definitions()))
-        .and(opt(directives()))
-        .and(
-            selection_set(RECURSION_LIMIT)
-                .map(Into::into)
-                .recover(Missing::unary(
-                    Diagnostic::missing_operation_definition_selection_set,
-                )),
-        )
-        .unzip()
+    (
+        operation_type(),
+        opt(name()),
+        opt(variable_definitions()),
+        opt(directives()),
+        selection_set(RECURSION_LIMIT)
+            .map(Into::into)
+            .recover(Missing::unary(
+                Diagnostic::missing_operation_definition_selection_set,
+            )),
+    )
         .map(
             |(ty, name, variable_definitions, directives, selection_set)| OperationDefinition {
                 ty: Some(ty),
@@ -65,7 +66,6 @@ where
                 selection_set,
             },
         )
-        .boxed()
 }
 
 pub fn operation_type<'a, T, I>() -> impl RecoverableParser<I, OperationType<T>, Error> + 'a
@@ -78,9 +78,9 @@ where
         keyword("mutation").map(OperationType::Mutation),
         keyword("subscription").map(OperationType::Subscription),
     ))
-    .boxed()
 }
 
+#[wrom(punctuator("{"))]
 pub fn selection_set<'a, T, I>(
     depth: usize,
 ) -> impl RecoverableParser<I, SelectionSet<T>, Error> + 'a
@@ -98,9 +98,9 @@ where
         braces: (brace_left, brace_right),
         selections,
     })
-    .boxed()
 }
 
+#[wrom(punctuator("...").or(name()))]
 pub fn selection<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Selection<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -113,21 +113,22 @@ where
             .map(Into::into)
             .map(Selection::Field),
     ))
-    .boxed()
 }
 
+#[wrom(name())]
 pub fn field<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Field<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     alt((
-        alias()
-            .and(name().recover(Missing::unary(Diagnostic::missing_field_name)))
-            .and(opt(arguments().map(Into::into)))
-            .and(opt(directives()))
-            .and(opt(selection_set(depth).map(Into::into)))
-            .unzip()
+        (
+            alias(),
+            name().recover(Missing::unary(Diagnostic::missing_field_name)),
+            opt(arguments().map(Into::into)),
+            opt(directives()),
+            opt(selection_set(depth).map(Into::into)),
+        )
             .map(
                 |(alias, name, arguments, directives, selection_set)| Field {
                     alias: Some(alias),
@@ -137,11 +138,12 @@ where
                     selection_set,
                 },
             ),
-        name()
-            .and(opt(arguments().map(Into::into)))
-            .and(opt(directives()))
-            .and(opt(selection_set(depth).map(Into::into)))
-            .unzip()
+        (
+            name(),
+            opt(arguments().map(Into::into)),
+            opt(directives()),
+            opt(selection_set(depth).map(Into::into)),
+        )
             .map(
                 |(name, arguments, directives, selection_set): (Name<T>, _, _, _)| Field {
                     alias: None,
@@ -152,9 +154,9 @@ where
                 },
             ),
     ))
-    .boxed()
 }
 
+#[wrom(name())]
 pub fn alias<'a, T, I>() -> impl RecoverableParser<I, Alias<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -163,9 +165,9 @@ where
     name()
         .and(punctuator(":"))
         .map(|(name, colon)| Alias { name, colon })
-        .boxed()
 }
 
+#[wrom(punctuator("("))]
 pub fn arguments<'a, T, I>() -> impl RecoverableParser<I, Arguments<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -181,41 +183,39 @@ where
         parens: (left, right),
         items,
     })
-    .boxed()
 }
 
+#[wrom(name())]
 pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Arc<Argument<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    name()
-        .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_argument_colon)))
-        .and(value(RECURSION_LIMIT).recover(Missing::unary(Diagnostic::missing_argument_value)))
-        .unzip()
+    (
+        name(),
+        punctuator(":").recover(Missing::unary(Diagnostic::missing_argument_colon)),
+        value(RECURSION_LIMIT).recover(Missing::unary(Diagnostic::missing_argument_value)),
+    )
         .map(|(name, colon, value)| Argument { name, colon, value })
         .map(Into::into)
-        .boxed()
 }
 
+#[wrom(punctuator("..."))]
 pub fn fragment_spread<'a, T, I>() -> impl RecoverableParser<I, Arc<FragmentSpread<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    punctuator("...")
-        .and(name_unless("on"))
-        .and(opt(directives()))
-        .unzip()
+    (punctuator("..."), name_unless("on"), opt(directives()))
         .map(|(dots, fragment_name, directives)| FragmentSpread {
             dots,
             fragment_name,
             directives,
         })
         .map(Into::into)
-        .boxed()
 }
 
+#[wrom(punctuator("..."))]
 pub fn inline_fragment<'a, T, I>(
     depth: usize,
 ) -> impl RecoverableParser<I, InlineFragment<T>, Error> + 'a
@@ -223,17 +223,16 @@ where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    punctuator("...")
-        .and(opt(type_condition()))
-        .and(opt(directives()))
-        .and_recognize(
-            recursive(depth, selection_set)
-                .map(Into::into)
-                .recover(Missing::unary(
-                    Diagnostic::missing_inline_fragment_selection_set,
-                )),
-        )
-        .unzip()
+    (
+        punctuator("..."),
+        opt(type_condition()),
+        opt(directives()),
+        recursive(depth, selection_set)
+            .map(Into::into)
+            .recover(Missing::unary(
+                Diagnostic::missing_inline_fragment_selection_set,
+            )),
+    )
         .map(
             |(dots, type_condition, directives, selection_set)| InlineFragment {
                 dots,
@@ -242,25 +241,24 @@ where
                 selection_set,
             },
         )
-        .boxed()
 }
 
+#[wrom(keyword("fragment"))]
 pub fn fragment_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, FragmentDefinition<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    keyword("fragment")
-        .and(name_unless("on").recover(Missing::unary(Diagnostic::missing_fragment_name)))
-        .and(type_condition().recover(Missing::unary(Diagnostic::missing_fragment_type_condition)))
-        .and(opt(directives()))
-        .and(
-            selection_set(RECURSION_LIMIT)
-                .map(Into::into)
-                .recover(Missing::Unary(Diagnostic::missing_fragment_selection_set)),
-        )
-        .unzip()
+    (
+        keyword("fragment"),
+        name_unless("on").recover(Missing::unary(Diagnostic::missing_fragment_name)),
+        type_condition().recover(Missing::unary(Diagnostic::missing_fragment_type_condition)),
+        opt(directives()),
+        selection_set(RECURSION_LIMIT)
+            .map(Into::into)
+            .recover(Missing::Unary(Diagnostic::missing_fragment_selection_set)),
+    )
         .map(
             |(fragment, fragment_name, type_condition, directives, selection_set)| {
                 FragmentDefinition {
@@ -274,6 +272,7 @@ where
         )
 }
 
+#[wrom(keyword("on"))]
 pub fn type_condition<'a, T, I>() -> impl RecoverableParser<I, TypeCondition<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -303,7 +302,6 @@ where
         recursive(depth, object_value).map(Value::ObjectValue),
     ))
     .map(Into::into)
-    .boxed()
 }
 
 pub fn boolean_value<'a, T, I>() -> impl RecoverableParser<I, BooleanValue<T>, Error> + 'a
@@ -333,6 +331,7 @@ where
     name().map(EnumValue)
 }
 
+#[wrom(punctuator("["))]
 pub fn list_value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListValue<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -348,9 +347,9 @@ where
         brackets: (left, right),
         values,
     })
-    .boxed()
 }
 
+#[wrom(punctuator("{"))]
 pub fn object_value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ObjectValue<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -366,58 +365,57 @@ where
         braces: (left, right),
         object_fields,
     })
-    .boxed()
 }
 
+#[wrom(name())]
 pub fn object_field<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ObjectField<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    name()
-        .and(punctuator(":").recover(Missing::unary(Diagnostic::missing_object_field_colon)))
-        .and(value(depth).recover(Missing::unary(Diagnostic::missing_object_field_value)))
-        .unzip()
+    (
+        name(),
+        punctuator(":").recover(Missing::unary(Diagnostic::missing_object_field_colon)),
+        value(depth).recover(Missing::unary(Diagnostic::missing_object_field_value)),
+    )
         .map(|(name, colon, value)| ObjectField { name, colon, value })
-        .boxed()
 }
 
+#[wrom(punctuator("("))]
 pub fn variable_definitions<'a, T, I>(
 ) -> impl RecoverableParser<I, VariableDefinitions<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    punctuator("(")
-        .and(many0(variable_definition()))
-        .and_recover(punctuator(")"), |(left, _)| {
-            Missing::binary(Diagnostic::missing_variable_definitions_closing_parenthesis)(left)
-        })
-        .unzip()
-        .map(|(left, variable_definitions, right)| VariableDefinitions {
-            parens: (left, right),
-            variable_definitions,
-        })
-        .boxed()
+    delimited(
+        punctuator("("),
+        many0(variable_definition()),
+        punctuator(")"),
+        Missing::binary(Diagnostic::missing_variable_definitions_closing_parenthesis),
+    )
+    .map(|(left, variable_definitions, right)| VariableDefinitions {
+        parens: (left, right),
+        variable_definitions,
+    })
 }
 
+#[wrom(variable())]
 pub fn variable_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, Arc<VariableDefinition<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    variable()
-        .and(punctuator(":").recover(Missing::unary(
+    (
+        variable(),
+        punctuator(":").recover(Missing::unary(
             Diagnostic::missing_variable_definition_colon,
-        )))
-        .and(
-            ty(RECURSION_LIMIT)
-                .recover(Missing::unary(Diagnostic::missing_variable_definition_type)),
-        )
-        .and(opt(default_value()))
-        .and(opt(directives()))
-        .unzip()
+        )),
+        ty(RECURSION_LIMIT).recover(Missing::unary(Diagnostic::missing_variable_definition_type)),
+        opt(default_value()),
+        opt(directives()),
+    )
         .map(
             |(variable, colon, ty, default_value, directives)| VariableDefinition {
                 variable,
@@ -428,9 +426,9 @@ where
             },
         )
         .map(Into::into)
-        .boxed()
 }
 
+#[wrom(punctuator("$"))]
 pub fn variable<'a, T, I>() -> impl RecoverableParser<I, Variable<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -439,9 +437,9 @@ where
     punctuator("$")
         .and(name())
         .map(|(dollar, name)| Variable { dollar, name })
-        .boxed()
 }
 
+#[wrom(punctuator("="))]
 pub fn default_value<'a, T, I>() -> impl RecoverableParser<I, DefaultValue<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -452,6 +450,7 @@ where
         .map(|(eq, value)| DefaultValue { eq, value })
 }
 
+#[wrom(name().or(punctuator("[")))]
 pub fn ty<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Arc<Type<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -480,6 +479,7 @@ where
     name().map(NamedType)
 }
 
+#[wrom(punctuator("["))]
 pub fn list_type<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListType<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -495,9 +495,9 @@ where
         brackets: (left, right),
         ty,
     })
-    .boxed()
 }
 
+#[wrom(directive())]
 pub fn directives<'a, T, I>() -> impl RecoverableParser<I, Directives<T>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
@@ -506,15 +506,17 @@ where
     many1(directive()).map(|directives| Directives { directives })
 }
 
+#[wrom(punctuator("@"))]
 pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Arc<Directive<T>>, Error> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
-    punctuator("@")
-        .and(name().recover(Missing::unary(Diagnostic::missing_directive_name)))
-        .and(opt(arguments().map(Into::into)))
-        .unzip()
+    (
+        punctuator("@"),
+        name().recover(Missing::unary(Diagnostic::missing_directive_name)),
+        opt(arguments().map(Into::into)),
+    )
         .map(|(at, name, arguments)| Directive {
             at,
             name,

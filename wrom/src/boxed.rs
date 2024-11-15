@@ -1,4 +1,4 @@
-use nom::{IResult, Parser};
+use nom::IResult;
 
 use super::{Recognizer, RecoverableParser};
 
@@ -17,53 +17,33 @@ impl<'a, I, O, E> Boxed<'a, I, O, E> {
 }
 
 impl<I, O, E> Recognizer<I, E> for Boxed<'_, I, O, E> {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        |input| self.0.recognize(input)
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
     }
 }
 
 impl<I, O, E> RecoverableParser<I, O, E> for Boxed<'_, I, O, E> {
-    fn parser<R2>(&self, recovery_point: R2) -> impl Parser<I, O, E>
+    fn parse<R2>(&self, input: I, recovery_point: R2) -> IResult<I, O, E>
     where
         R2: Recognizer<I, E>,
     {
-        move |input| self.0.parse(input, &recovery_point)
+        self.0.parse(input, &recovery_point)
     }
 }
 
 mod erased {
-    use super::{IResult, Parser, Recognizer, RecoverableParser};
+    use super::{IResult, Recognizer, RecoverableParser};
 
-    pub trait ErasedRecognizer<I, E> {
-        fn recognize(&self, input: I) -> IResult<I, (), E>;
-    }
-
-    impl<'a, I, E> Recognizer<I, E> for dyn ErasedRecognizer<I, E> + 'a {
-        fn recognizer(&self) -> impl Parser<I, (), E> {
-            |input| self.recognize(input)
-        }
-    }
-
-    impl<I, E, R> ErasedRecognizer<I, E> for R
-    where
-        R: Recognizer<I, E>,
-    {
-        fn recognize(&self, input: I) -> IResult<I, (), E> {
-            Recognizer::recognizer(&self).parse(input)
-        }
-    }
-
-    pub trait ErasedRecoverableParser<I, O, E>: ErasedRecognizer<I, E> {
-        fn parse(&self, input: I, recovery_point: &dyn ErasedRecognizer<I, E>) -> IResult<I, O, E>;
+    pub trait ErasedRecoverableParser<I, O, E>: Recognizer<I, E> {
+        fn parse(&self, input: I, recovery_point: &dyn Recognizer<I, E>) -> IResult<I, O, E>;
     }
 
     impl<I, O, E, P> ErasedRecoverableParser<I, O, E> for P
     where
         P: RecoverableParser<I, O, E>,
     {
-        fn parse(&self, input: I, recovery_point: &dyn ErasedRecognizer<I, E>) -> IResult<I, O, E> {
-            let mut parser = self.parser(recovery_point);
-            parser.parse(input)
+        fn parse(&self, input: I, recovery_point: &dyn Recognizer<I, E>) -> IResult<I, O, E> {
+            RecoverableParser::parse(self, input, recovery_point)
         }
     }
 }

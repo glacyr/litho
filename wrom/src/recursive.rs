@@ -1,11 +1,36 @@
+use nom::combinator::eof;
 use nom::error::{ErrorKind, ParseError};
-use nom::{Err, Parser};
+use nom::{Err, IResult};
+
+use crate::{terminal, Input};
 
 use super::{Recognizer, RecoverableParser};
 
 pub struct Recursive<P> {
     max_depth: usize,
     parser_fn: fn(max_depth: usize) -> P,
+}
+
+pub struct StopRecursion<R>(R);
+
+impl<I, E, R> Recognizer<I, E> for StopRecursion<R>
+where
+    I: Input,
+    E: ParseError<I>,
+    R: Recognizer<I, E>,
+{
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        self.0.recognize(input)
+    }
+
+    #[inline(always)]
+    fn non_recursive(&self) -> impl Recognizer<I, E>
+    where
+        Self: Sized,
+    {
+        terminal(eof)
+    }
 }
 
 /// Returns a recursive wrapper that breaks infinite recursion and prevents
@@ -41,6 +66,7 @@ pub fn recursive<P, I, O, E>(
     parser_fn: fn(max_depth: usize) -> P,
 ) -> impl RecoverableParser<I, O, E>
 where
+    I: Input,
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
@@ -52,29 +78,33 @@ where
 
 impl<I, E, R> Recognizer<I, E> for Recursive<R>
 where
+    I: Input,
     E: ParseError<I>,
     R: Recognizer<I, E>,
 {
-    fn recognizer(&self) -> impl Parser<I, (), E> {
-        |input| match self.max_depth {
+    #[inline(always)]
+    fn recognize(&self, input: I) -> IResult<I, (), E> {
+        match self.max_depth {
             0 => Err(Err::Failure(E::from_error_kind(input, ErrorKind::Fail))),
-            n => (self.parser_fn)(n - 1).recognizer().parse(input),
+            n => (self.parser_fn)(n - 1).recognize(input),
         }
     }
 }
 
 impl<I, O, E, P> RecoverableParser<I, O, E> for Recursive<P>
 where
+    I: Input,
     E: ParseError<I>,
     P: RecoverableParser<I, O, E>,
 {
-    fn parser<R>(&self, recovery_point: R) -> impl Parser<I, O, E>
+    #[inline(always)]
+    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, O, E>
     where
         R: Recognizer<I, E>,
     {
-        move |input| match self.max_depth {
+        match self.max_depth {
             0 => Err(Err::Failure(E::from_error_kind(input, ErrorKind::Fail))),
-            n => (self.parser_fn)(n - 1).parser(&recovery_point).parse(input),
+            n => (self.parser_fn)(n - 1).parse(input, StopRecursion(recovery_point)),
         }
     }
 }
@@ -96,12 +126,11 @@ mod tests {
                     recursive(max_depth, square_brackets),
                 )))
                 .map(|(_, i)| i + 1)
-                .boxed()
         }
 
-        assert_eq!(square_brackets(128).parse("[  [ -[]]-]").unwrap(), 3);
-        assert_eq!(square_brackets(2).parse("[  [ -[]]-]").unwrap(), 3);
-        assert!(square_brackets(1).parse("[  [ -[]]-]").is_err());
-        assert!(square_brackets(0).parse("[[]]").is_err());
+        assert_eq!(square_brackets(128).parse_simple("[  [ -[]]-]").unwrap(), 3);
+        assert_eq!(square_brackets(2).parse_simple("[  [ -[]]-]").unwrap(), 3);
+        assert!(square_brackets(1).parse_simple("[  [ -[]]-]").is_err());
+        assert!(square_brackets(0).parse_simple("[[]]").is_err());
     }
 }
