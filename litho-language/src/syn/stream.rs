@@ -59,7 +59,6 @@ where
 {
     type Item = Token<T>;
 
-    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         self.lexer.next()
     }
@@ -68,6 +67,13 @@ where
     where
         I: IntoIterator<Item = Self::Item>,
     {
+        let iter = iter.into_iter().collect::<Vec<_>>();
+        todo!(
+            "Shouldn't backtrack: {:#?}",
+            iter.iter()
+                .map(|token| token.as_raw_token().kind)
+                .collect::<Vec<_>>()
+        );
         self.unexpected.extend(iter)
     }
 }

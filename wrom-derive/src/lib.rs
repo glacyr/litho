@@ -7,7 +7,6 @@ use syn::{
 #[proc_macro_attribute]
 pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as ItemFn);
-    let recognizer = parse_macro_input!(attrs as Expr);
 
     let ItemFn {
         attrs,
@@ -44,8 +43,11 @@ pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let input = &ty.args[0];
     let output = &ty.args[1];
     let error = &ty.args[2];
+    let recovery_point = &ty.args[3];
 
     let where_clause = sig.generics.where_clause.as_ref();
+
+    let name = &sig.ident;
 
     quote! {
         #(#attrs)*
@@ -54,29 +56,25 @@ pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
                 #params
             };
 
-            impl < #generics > ::wrom::Recognizer<#input, #error> for Parser
-            #where_clause
-            {
-                #[inline(always)]
-                fn recognize(&self, input: #input) -> ::nom::IResult<#input, (), Error> {
+            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error, #recovery_point> for Parser
+            #where_clause {
+                fn recovery_point(&self) -> #recovery_point {
                     let Parser {
                         #(#param_names,)*
                     } = *self;
 
-                    #recognizer.recognize(input)
-                }
-            }
+                    let parser = #block;
 
-            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error> for Parser
-            #where_clause {
-                #[inline(always)]
-                fn parse<R>(&self, input: #input, recovery_point: R) -> ::nom::IResult<#input, #output, #error>
-                where
-                    R: ::wrom::Recognizer<#input, #error>,
+                    <_ as ::wrom::RecoverableParser<#input, #output, #error, #recovery_point>>::recovery_point(&parser)
+                }
+
+                fn parse(&self, input: #input, recovery_point: #recovery_point) -> ::nom::IResult<#input, #output, #error>
                 {
                     let Parser {
                         #(#param_names,)*
                     } = *self;
+
+                    // eprintln!("{}: recovery = {:?}", stringify!(#name), recovery_point);
 
                     #block.parse(input, recovery_point)
                 }

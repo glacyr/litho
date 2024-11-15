@@ -1,3 +1,4 @@
+use enumset::EnumSetType;
 use logos::Logos;
 
 /// Represents a kind of token that appears in a GraphQL document and forms the
@@ -18,7 +19,7 @@ use logos::Logos;
 /// _StringValue_ and _Comment_ portions of GraphQL.
 ///
 /// _Source: [Sec. 2.1 Source Text](https://spec.graphql.org/October2021/#sec-Unicode)_
-#[derive(Logos, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Logos, Debug, EnumSetType)]
 pub enum TokenKind {
     /// The "Byte Order Mark" is a special Unicode character which may appear at
     /// the beginning of a file containing Unicode which programs may use to
@@ -100,20 +101,160 @@ pub enum TokenKind {
     ///
     /// _Source: [Sec. 2.1.8 Punctuators](https://spec.graphql.org/October2021/#sec-Punctuators)_
     #[token("!")]
+    Bang,
+
     #[token("$")]
+    Dollar,
+
     #[token("&")]
+    Ampersand,
+
     #[token("(")]
+    ParenLeft,
+
     #[token(")")]
+    ParenRight,
+
     #[token("...")]
+    Dots,
+
     #[token(":")]
+    Colon,
+
     #[token("=")]
+    Eq,
+
     #[token("@")]
+    At,
+
     #[token("[")]
+    BracketLeft,
+
     #[token("]")]
+    BracketRight,
+
     #[token("{")]
+    BraceLeft,
+
     #[token("|")]
+    Pipe,
+
     #[token("}")]
-    Punctuator,
+    BraceRight,
+
+    #[token("query")]
+    KeywordQuery,
+
+    #[token("mutation")]
+    KeywordMutation,
+
+    #[token("subscription")]
+    KeywordSubscription,
+
+    #[token("on")]
+    KeywordOn,
+
+    #[token("fragment")]
+    KeywordFragment,
+
+    #[token("true")]
+    KeywordTrue,
+
+    #[token("false")]
+    KeywordFalse,
+
+    #[token("null")]
+    KeywordNull,
+
+    #[token("schema")]
+    KeywordSchema,
+
+    #[token("extend")]
+    KeywordExtend,
+
+    #[token("scalar")]
+    KeywordScalar,
+
+    #[token("type")]
+    KeywordType,
+
+    #[token("implements")]
+    KeywordImplements,
+
+    #[token("interface")]
+    KeywordInterface,
+
+    #[token("union")]
+    KeywordUnion,
+
+    #[token("enum")]
+    KeywordEnum,
+
+    #[token("input")]
+    KeywordInput,
+
+    #[token("directive")]
+    KeywordDirective,
+
+    #[token("repeatable")]
+    KeywordRepeatable,
+
+    #[token("QUERY")]
+    KeywordDirectiveQuery,
+
+    #[token("MUTATION")]
+    KeywordDirectiveMutation,
+
+    #[token("SUBSCRIPTION")]
+    KeywordDirectiveSubscription,
+
+    #[token("FIELD")]
+    KeywordDirectiveField,
+
+    #[token("FRAGMENT_DEFINITION")]
+    KeywordDirectiveFragmentDefinition,
+
+    #[token("FRAGMENT_SPREAD")]
+    KeywordDirectiveFragmentSpread,
+
+    #[token("INLINE_FRAGMENT")]
+    KeywordDirectiveInlineFragment,
+
+    #[token("VARIABLE_DEFINITION")]
+    KeywordDirectiveVariableDefinition,
+
+    #[token("SCHEMA")]
+    KeywordDirectiveSchema,
+
+    #[token("SCALAR")]
+    KeywordDirectiveScalar,
+
+    #[token("OBJECT")]
+    KeywordDirectiveObject,
+
+    #[token("FIELD_DEFINITION")]
+    KeywordDirectiveFieldDefinition,
+
+    #[token("ARGUMENT_DEFINITION")]
+    KeywordDirectiveArgumentDefinition,
+
+    #[token("INTERFACE")]
+    KeywordDirectiveInterface,
+
+    #[token("UNION")]
+    KeywordDirectiveUnion,
+
+    #[token("ENUM")]
+    KeywordDirectiveEnum,
+
+    #[token("ENUM_VALUE")]
+    KeywordDirectiveEnumValue,
+
+    #[token("INPUT_OBJECT")]
+    KeywordDirectiveInputObject,
+
+    #[token("INPUT_FIELD_DEFINITION")]
+    KeywordDirectiveInputFieldDefinition,
 
     /// GraphQL Documents are full of named things: operations, fields,
     /// arguments, types, directives, fragments, and variables. All names must
@@ -213,6 +354,79 @@ pub enum TokenKind {
     #[regex("-?(0|[1-9][0-9]*)\\.[0-9]+[A-Za-z_][0-9A-Za-z]*", priority = 2)]
     #[regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?[eE][\\+\\-]?[0-9]+[A-Za-z_][0-9A-Za-z]*")]
     Error,
+}
+
+impl TokenKind {
+    pub const fn is_punctuator(&self) -> bool {
+        match self {
+            TokenKind::Bang
+            | TokenKind::Dollar
+            | TokenKind::Ampersand
+            | TokenKind::ParenLeft
+            | TokenKind::ParenRight
+            | TokenKind::Dots
+            | TokenKind::Colon
+            | TokenKind::Eq
+            | TokenKind::At
+            | TokenKind::BracketLeft
+            | TokenKind::BracketRight
+            | TokenKind::BraceLeft
+            | TokenKind::Pipe
+            | TokenKind::BraceRight => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_keyword(&self) -> bool {
+        match self {
+            TokenKind::KeywordQuery
+            | TokenKind::KeywordMutation
+            | TokenKind::KeywordSubscription
+            | TokenKind::KeywordOn
+            | TokenKind::KeywordFragment
+            | TokenKind::KeywordTrue
+            | TokenKind::KeywordFalse
+            | TokenKind::KeywordNull
+            | TokenKind::KeywordSchema
+            | TokenKind::KeywordExtend
+            | TokenKind::KeywordScalar
+            | TokenKind::KeywordType
+            | TokenKind::KeywordImplements
+            | TokenKind::KeywordInterface
+            | TokenKind::KeywordUnion
+            | TokenKind::KeywordEnum
+            | TokenKind::KeywordInput
+            | TokenKind::KeywordDirective
+            | TokenKind::KeywordRepeatable
+            | TokenKind::KeywordDirectiveQuery
+            | TokenKind::KeywordDirectiveMutation
+            | TokenKind::KeywordDirectiveSubscription
+            | TokenKind::KeywordDirectiveField
+            | TokenKind::KeywordDirectiveFragmentDefinition
+            | TokenKind::KeywordDirectiveFragmentSpread
+            | TokenKind::KeywordDirectiveInlineFragment
+            | TokenKind::KeywordDirectiveVariableDefinition
+            | TokenKind::KeywordDirectiveSchema
+            | TokenKind::KeywordDirectiveScalar
+            | TokenKind::KeywordDirectiveObject
+            | TokenKind::KeywordDirectiveFieldDefinition
+            | TokenKind::KeywordDirectiveArgumentDefinition
+            | TokenKind::KeywordDirectiveInterface
+            | TokenKind::KeywordDirectiveUnion
+            | TokenKind::KeywordDirectiveEnum
+            | TokenKind::KeywordDirectiveEnumValue
+            | TokenKind::KeywordDirectiveInputObject
+            | TokenKind::KeywordDirectiveInputFieldDefinition => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_name(&self) -> bool {
+        match self {
+            TokenKind::Name => true,
+            _ => self.is_keyword(),
+        }
+    }
 }
 
 #[cfg(test)]

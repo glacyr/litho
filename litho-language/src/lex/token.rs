@@ -68,7 +68,7 @@ pub struct Name<T>(RawToken<T>);
 
 impl<T> Name<T> {
     pub fn new(source: T) -> Name<T> {
-        Name(RawToken::name(source))
+        Name(RawToken::new(TokenKind::Name, source))
     }
 
     pub fn span(&self) -> Span {
@@ -106,7 +106,9 @@ pub struct Punctuator<T>(RawToken<T>);
 
 impl<T> Punctuator<T> {
     pub fn new(source: T) -> Punctuator<T> {
-        Punctuator(RawToken::punctuator(source))
+        // assert!(kind.is_punctuator());
+
+        Punctuator(RawToken::new(TokenKind::Ampersand, source))
     }
 
     pub fn span(&self) -> Span {
@@ -237,6 +239,17 @@ pub enum Token<T> {
 }
 
 impl<T> Token<T> {
+    pub fn as_raw_token(&self) -> &RawToken<T> {
+        match self {
+            Token::Error(error) => error.as_raw_token(),
+            Token::Name(name) => name.as_raw_token(),
+            Token::Punctuator(punct) => punct.as_raw_token(),
+            Token::IntValue(value) => value.as_raw_token(),
+            Token::FloatValue(value) => value.as_raw_token(),
+            Token::StringValue(value) => value.as_raw_token(),
+        }
+    }
+
     pub fn span(&self) -> Span {
         match self {
             Token::Error(token) => token.0.span,
@@ -253,11 +266,11 @@ impl<T> From<RawToken<T>> for Token<T> {
     fn from(raw: RawToken<T>) -> Self {
         match raw.kind {
             TokenKind::Error => Token::Error(Error(raw)),
-            TokenKind::Name => Token::Name(Name(raw)),
-            TokenKind::Punctuator => Token::Punctuator(Punctuator(raw)),
             TokenKind::IntValue => Token::IntValue(IntValue(raw)),
             TokenKind::FloatValue => Token::FloatValue(FloatValue(raw)),
             TokenKind::StringValue => Token::StringValue(StringValue(raw)),
+            kind if kind.is_name() => Token::Name(Name(raw)),
+            kind if kind.is_punctuator() => Token::Punctuator(Punctuator(raw)),
             _ => unreachable!("All other token types should have been ignored by the lexer."),
         }
     }

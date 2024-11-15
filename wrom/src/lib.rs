@@ -15,7 +15,6 @@ mod combinator;
 mod input;
 mod missing;
 mod multi;
-mod next;
 mod parser;
 mod recognizer;
 mod recoverable;

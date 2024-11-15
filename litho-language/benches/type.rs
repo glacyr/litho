@@ -4,9 +4,6 @@ extern crate test;
 
 use std::sync::Arc;
 
-use litho_language::ast::Type;
-use litho_language::lex::lexer;
-use litho_language::syn::{parser, Stream};
 use litho_language::{Document, Parse};
 use test::Bencher;
 
@@ -23,18 +20,6 @@ fn test_gitlab_litho(b: &mut Bencher) {
                 .1
                 .is_empty()
         );
-    });
-}
-
-#[bench]
-fn test_gitlab_litho_2(b: &mut Bencher) {
-    let string = include_str!("./gitlab.graphql");
-
-    assert!(string.len() <= 1_000_000);
-
-    b.iter(|| {
-        let mut lexer = lexer(Default::default(), string);
-        parser::<_, &str>(&mut lexer);
     });
 }
 

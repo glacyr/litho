@@ -7,27 +7,18 @@ use super::{Input, Recognizer, RecoverableParser};
 /// underlying parser succeeds and with `None` if the underlying parser fails.
 pub struct Opt<P>(P);
 
-impl<I, E, P> Recognizer<I, E> for Opt<P>
-where
-    P: Recognizer<I, E>,
-{
-    #[inline(always)]
-    fn recognize(&self, input: I) -> IResult<I, (), E> {
-        self.0.recognize(input)
-    }
-}
-
-impl<I, O, E, P> RecoverableParser<I, Option<O>, E> for Opt<P>
+impl<I, O, E, R, P> RecoverableParser<I, Option<O>, E, R> for Opt<P>
 where
     I: Clone + Input,
     E: ParseError<I>,
-    P: RecoverableParser<I, O, E>,
+    R: Recognizer<I, E>,
+    P: RecoverableParser<I, O, E, R>,
 {
-    #[inline(always)]
-    fn parse<R>(&self, input: I, recovery_point: R) -> IResult<I, Option<O>, E>
-    where
-        R: Recognizer<I, E>,
-    {
+    fn recovery_point(&self) -> R {
+        self.0.recovery_point()
+    }
+
+    fn parse(&self, input: I, recovery_point: R) -> IResult<I, Option<O>, E> {
         match self.0.parse(input.clone(), recovery_point) {
             Ok((input, value)) => Ok((input, Some(value))),
             Err(_) => Ok((input, None)),

@@ -12,17 +12,9 @@ pub struct RawToken<T> {
 }
 
 impl<T> RawToken<T> {
-    pub fn name(source: T) -> RawToken<T> {
+    pub fn new(kind: TokenKind, source: T) -> RawToken<T> {
         RawToken {
-            kind: TokenKind::Name,
-            source,
-            span: Default::default(),
-        }
-    }
-
-    pub fn punctuator(source: T) -> RawToken<T> {
-        RawToken {
-            kind: TokenKind::Punctuator,
+            kind,
             source,
             span: Default::default(),
         }
