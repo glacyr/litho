@@ -23,9 +23,13 @@ where
 
         let Some(name) = ty.name() else { return };
 
+        let Some(var_name) = node.variable.name.ok() else {
+            return;
+        };
+
         if self.0.type_exists(name) && !self.0.is_input_type(name) {
             accumulator.push(Diagnostic::variable_must_be_input_type(
-                node.variable.name.as_ref().to_string(),
+                var_name.as_ref().to_string(),
                 ty.to_string(),
                 ty.span(),
             ))

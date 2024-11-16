@@ -540,7 +540,7 @@ node!(
 pub struct Variable<T> {
     #[arbitrary(value = Punctuator::new("$".into()))]
     pub dollar: Punctuator<T>,
-    pub name: Name<T>,
+    pub name: Recoverable<Name<T>>,
 }
 
 node!(Variable, visit_variable, dollar, name);

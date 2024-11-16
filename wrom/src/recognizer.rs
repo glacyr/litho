@@ -26,11 +26,10 @@ where
     R: Recognizer<I, E>,
     F: Fn(I) -> IResult<I, O, E> + Clone,
 {
-    fn recovery_point(&self) -> R {
+    fn recognizer(&self) -> R {
         self.0
     }
 
-    #[inline(always)]
     fn parse(&self, input: I, _recovery_point: R) -> IResult<I, O, E> {
         self.1(input)
     }

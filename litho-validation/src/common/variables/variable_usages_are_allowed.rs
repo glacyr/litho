@@ -29,7 +29,7 @@ where
         let variable_definitions = variable_definitions
             .variable_definitions
             .iter()
-            .map(|def| (def.variable.name.as_ref(), def.as_ref()))
+            .filter_map(|def| Some((def.variable.name.ok()?.as_ref(), def.as_ref())))
             .collect();
 
         node.traverse(
@@ -118,7 +118,11 @@ where
             _ => return,
         };
 
-        let Some(definition) = self.variable_definitions.get(variable.name.as_ref()) else {
+        let Some(name) = variable.name.ok() else {
+            return;
+        };
+
+        let Some(definition) = self.variable_definitions.get(name.as_ref()) else {
             return;
         };
 
@@ -132,7 +136,7 @@ where
 
         if !is_variable_usage_allowed(self.database, definition, node) {
             accumulator.push(Diagnostic::incompatible_variable(
-                variable.name.as_ref().to_string(),
+                name.as_ref().to_string(),
                 actual.to_string(),
                 expected.to_string(),
                 definition.ty.span(),
@@ -191,7 +195,11 @@ where
             _ => return,
         };
 
-        let Some(definition) = self.variable_definitions.get(variable.name.as_ref()) else {
+        let Some(name) = variable.name.ok() else {
+            return;
+        };
+
+        let Some(definition) = self.variable_definitions.get(name.as_ref()) else {
             return;
         };
 
@@ -206,7 +214,7 @@ where
         if !is_variable_usage_allowed(self.database, definition, node) {
             accumulator.push(Diagnostic::incompatible_variable_in_fragment(
                 self.fragment_name.to_string(),
-                variable.name.as_ref().to_string(),
+                name.as_ref().to_string(),
                 actual.to_string(),
                 expected.to_string(),
                 self.fragment_span,

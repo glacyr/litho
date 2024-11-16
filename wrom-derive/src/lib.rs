@@ -58,14 +58,14 @@ pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
 
             impl < #generics > ::wrom::RecoverableParser<#input, #output, #error, #recovery_point> for Parser
             #where_clause {
-                fn recovery_point(&self) -> #recovery_point {
+                fn recognizer(&self) -> #recovery_point {
                     let Parser {
                         #(#param_names,)*
                     } = *self;
 
                     let parser = #block;
 
-                    <_ as ::wrom::RecoverableParser<#input, #output, #error, #recovery_point>>::recovery_point(&parser)
+                    <_ as ::wrom::RecoverableParser<#input, #output, #error, #recovery_point>>::recognizer(&parser)
                 }
 
                 fn parse(&self, input: #input, recovery_point: #recovery_point) -> ::nom::IResult<#input, #output, #error>

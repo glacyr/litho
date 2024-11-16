@@ -31,12 +31,12 @@ macro_rules! alt {
             E: ParseError<I>,
             R: Recognizer<I, E>,
         {
-            fn recovery_point(&self) -> R {
+            fn recognizer(&self) -> R {
                 let ($($ident,)*) = &self.0;
 
                 R::default()
                     $(
-                        .or($ident.recovery_point())
+                        .or($ident.recognizer())
                     )*
             }
 

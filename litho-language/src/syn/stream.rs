@@ -63,17 +63,7 @@ where
         self.lexer.next()
     }
 
-    fn unrecognized<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = Self::Item>,
-    {
-        let iter = iter.into_iter().collect::<Vec<_>>();
-        todo!(
-            "Shouldn't backtrack: {:#?}",
-            iter.iter()
-                .map(|token| token.as_raw_token().kind)
-                .collect::<Vec<_>>()
-        );
-        self.unexpected.extend(iter)
+    fn unrecognized(&mut self, item: Self::Item) {
+        self.unexpected.push(item)
     }
 }

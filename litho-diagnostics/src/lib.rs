@@ -287,6 +287,10 @@ diagnostics! {
         "Directive location must be defined.",
         "This directive definition here is missing a location." @ span
     },
+    E0059 => MissingVariableName @ span {
+        "Variable must have a name.",
+        "This variable here is missing a name." @ span
+    },
 
     E0100 => UnknownNamedType @ span + name {
         "Named type must exist.",

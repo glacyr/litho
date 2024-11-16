@@ -15,18 +15,15 @@ where
     R: Recognizer<I, E>,
     P: RecoverableParser<I, O, E, R>,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, Vec<O>, E>
     where
         R: Recognizer<I, E>,
     {
-        let parser = move |input| {
-            self.0
-                .parse(input, recovery_point.or(self.0.recovery_point()))
-        };
+        let parser = move |input| self.0.parse(input, recovery_point.or(self.0.recognizer()));
 
         match self.1 {
             false => nom::multi::many0(parser).parse(input),

@@ -1,0 +1,34 @@
+[E0059] Error: Variable must have a name.
+   ╭─[graphql:1:16]
+   │
+ 1 │ query example($) {
+   ·                │ 
+   ·                ╰─ This variable here is missing a name.
+───╯
+
+
+[E0019] Error: Variable definition must have a colon.
+   ╭─[graphql:1:16]
+   │
+ 1 │ query example($) {
+   ·                │ 
+   ·                ╰─ This variable definition here is missing a colon.
+───╯
+
+
+[E0020] Error: Variable definition must have a type.
+   ╭─[graphql:1:16]
+   │
+ 1 │ query example($) {
+   ·                │ 
+   ·                ╰─ This variable definition here is missing a type.
+───╯
+
+
+[E0059] Error: Variable must have a name.
+   ╭─[graphql:2:18]
+   │
+ 2 │     hello(name: $)
+   ·                  │ 
+   ·                  ╰─ This variable here is missing a name.
+───╯

@@ -1,5 +1,3 @@
-use std::iter::once;
-
 use nom::error::{ErrorKind, ParseError};
 use nom::{Err, IResult};
 
@@ -15,8 +13,8 @@ where
     I: Input + Clone,
     E: ParseError<I>,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, mut input: I, recovery_point: R) -> IResult<I, O, E> {
@@ -30,35 +28,11 @@ where
             }
 
             if let Some(token) = input.next() {
-                input.unrecognized(once(token));
+                input.unrecognized(token);
             }
 
             return Err(Err::Error(E::from_error_kind(input, ErrorKind::Fail)));
         }
-
-        // move |input: I| -> IResult<I, O, E> {
-        // This parser returns:
-        // - Ok(Some(_)) if it has parsed something
-        // - Ok(None)    if it has reached the recovery point
-        // - Err(_)      along the way
-        // let parser = self
-        //     .0
-        //     .parser(&recovery_point)
-        //     .map(Some)
-        //     .or(recovery_point.recognizer().map(|_| None));
-
-        // let mut parser = many_till(next, parser);
-
-        // let (mut input, (rest, value)) = parser.parse(input)?;
-        // match value {
-        //     Some(value) => {
-        //         assert!(rest.is_empty());
-        //         input.unrecognized(rest);
-        //         Ok((input, value))
-        //     }
-        //     None => Err(Err::Error(E::from_error_kind(input, ErrorKind::Fail))),
-        // }
-        // }
     }
 }
 

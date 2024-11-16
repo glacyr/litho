@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
+use nom::IResult;
 use wrom::{alt, delimited, many0, many1, opt, recursive, Input, RecoverableParser};
 use wrom_derive::wrom;
 
 use crate::ast::*;
-use crate::lex::{Name, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 
 use super::combinators::{
     float_value, int_value, keyword, name, name_unless, punctuator, string_value,
@@ -444,7 +445,7 @@ where
     T: for<'b> PartialEq<&'b str> + Clone + 'a,
 {
     punctuator(TokenKind::Dollar)
-        .and(name())
+        .and(name().recover(Missing::unary(Diagnostic::missing_variable_name)))
         .map(|(dollar, name)| Variable { dollar, name })
 }
 

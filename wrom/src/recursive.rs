@@ -83,10 +83,10 @@ where
     R: Recognizer<I, E>,
     P: RecoverableParser<I, O, E, R>,
 {
-    fn recovery_point(&self) -> R {
+    fn recognizer(&self) -> R {
         match self.max_depth {
             0 => Default::default(),
-            n => (self.parser_fn)(n - 1).recovery_point(),
+            n => (self.parser_fn)(n - 1).recognizer(),
         }
     }
 

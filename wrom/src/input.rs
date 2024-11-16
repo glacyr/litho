@@ -11,9 +11,7 @@ pub trait Input: Clone + InputLength + Sized {
     /// Called by parsers when one or more tokens were unrecognized.
     /// Implementors of this trait can collect these items and turn them into
     /// diagnostics.
-    fn unrecognized<I>(&mut self, iter: I)
-    where
-        I: IntoIterator<Item = Self::Item>;
+    fn unrecognized(&mut self, item: Self::Item);
 }
 
 impl<'a> Input for &'a str {
@@ -29,10 +27,7 @@ impl<'a> Input for &'a str {
         Some(f)
     }
 
-    fn unrecognized<I>(&mut self, _iter: I)
-    where
-        I: IntoIterator<Item = Self::Item>,
-    {
+    fn unrecognized(&mut self, _item: Self::Item) {
         // Discard unrecognized tokens.
     }
 }

@@ -6,13 +6,12 @@ use nom::{Err, IResult};
 use super::{
     opt, skip_unrecognized, Input, Missing, Opt, Recognizer, Recoverable, SkipUnrecognized,
 };
-
 /// Trait implemented by recoverable parsers, analogous to `nom::Parser`.
 pub trait RecoverableParser<I, O, E, R>
 where
     R: Default + Recognizer<I, E>,
 {
-    fn recovery_point(&self) -> R;
+    fn recognizer(&self) -> R;
 
     /// Should return a new `nom::Parser` that can try to parse something up
     /// until the given `recovery_point`.
@@ -97,8 +96,8 @@ where
     R: Recognizer<I, E>,
     P: RecoverableParser<I, O, E, R>,
 {
-    fn recovery_point(&self) -> R {
-        (*self).recovery_point()
+    fn recognizer(&self) -> R {
+        (*self).recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, O, E> {
@@ -116,8 +115,8 @@ where
     A: RecoverableParser<I, AO, E, R>,
     B: RecoverableParser<I, BO, E, R>,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, (AO, BO), E>
@@ -126,7 +125,7 @@ where
     {
         let (input, a) = self
             .0
-            .parse(input, self.1.recovery_point().or(recovery_point))?;
+            .parse(input, self.1.recognizer().or(recovery_point))?;
         let (input, b) = self.1.parse(input, recovery_point)?;
 
         Ok((input, (a, b)))
@@ -143,9 +142,9 @@ where
     A: RecoverableParser<I, AO, E, R>,
     B: RecoverableParser<I, BO, E, R>,
 {
-    fn recovery_point(&self) -> R {
+    fn recognizer(&self) -> R {
         let And(a, b) = &self.0;
-        a.recovery_point().or(b.recovery_point())
+        a.recognizer().or(b.recognizer())
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, (AO, BO), E>
@@ -168,8 +167,8 @@ where
     F: Fn(&AO) -> M,
     M: Missing<I>,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, (AO, Recoverable<BO, M::Error>), E> {
@@ -194,8 +193,8 @@ where
     R: Recognizer<I, E>,
     P: RecoverableParser<I, Option<O>, E, R>,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, Recoverable<O, M::Error>, E> {
@@ -218,8 +217,8 @@ where
     P: RecoverableParser<I, O, E, R>,
     F: Fn(O) -> O2,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, O2, E> {
@@ -239,8 +238,8 @@ macro_rules! tuple {
             _R: Recognizer<_I, _E>,
             $($ident: RecoverableParser<_I, $output, _E, _R>,)*
         {
-            fn recovery_point(&self) -> _R {
-                self.0.recovery_point()
+            fn recognizer(&self) -> _R {
+                self.0.recognizer()
             }
 
             fn parse(&self, input: _I, recovery_point: _R) -> IResult<_I, ($($output,)*), _E>
@@ -260,7 +259,7 @@ macro_rules! tuple {
         #[allow(non_snake_case)]
         let ($input, $first) = $first
             .parse($input, $recovery_point
-                    $(.or($rest.recovery_point()))*)?;
+                    $(.or($rest.recognizer()))*)?;
 
         tuple!(@ $recovery_point $input $($rest)*);
     };
@@ -268,7 +267,7 @@ macro_rules! tuple {
         #[allow(non_snake_case)]
         let ($input, $first) = skip_unrecognized($first)
             .parse($input, $recovery_point
-                $(.or($rest.recovery_point()))*)?;
+                $(.or($rest.recognizer()))*)?;
 
         tuple!(@ $recovery_point $input $($rest)*);
     };

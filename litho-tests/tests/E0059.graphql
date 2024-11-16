@@ -1,0 +1,7 @@
+query example($) {
+    hello(name: $)
+}
+
+type Query {
+    hello(name: String!): String!
+}

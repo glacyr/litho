@@ -14,8 +14,8 @@ where
     R: Recognizer<I, E>,
     P: RecoverableParser<I, O, E, R>,
 {
-    fn recovery_point(&self) -> R {
-        self.0.recovery_point()
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
     }
 
     fn parse(&self, input: I, recovery_point: R) -> IResult<I, Option<O>, E> {

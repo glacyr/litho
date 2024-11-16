@@ -296,9 +296,12 @@ where
                 .last()
                 .and_then(|&scope| scope)
                 .and_then(|defs| {
-                    defs.variable_definitions
-                        .iter()
-                        .find(|def| def.variable.name.as_ref() == var.name.as_ref())
+                    defs.variable_definitions.iter().find(|def| {
+                        match (def.variable.name.ok(), var.name.ok()) {
+                            (Some(a), Some(b)) => a.as_ref() == b.as_ref(),
+                            _ => false,
+                        }
+                    })
                 });
 
             if let Some(definition) = definition {

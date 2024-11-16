@@ -27,7 +27,7 @@ where
             .as_ref()
             .into_iter()
             .flat_map(|def| def.variable_definitions.iter())
-            .map(|def| def.variable.name.as_ref())
+            .filter_map(|def| Some(def.variable.name.ok()?.as_ref()))
             .collect();
 
         node.traverse(
@@ -55,12 +55,14 @@ where
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_variable(&self, node: &'a Variable<T>, accumulator: &mut Self::Accumulator) {
-        if self.variable_names.contains(node.name.as_ref()) {
+        let Some(name) = node.name.ok() else { return };
+
+        if self.variable_names.contains(name.as_ref()) {
             return;
         }
 
         accumulator.push(Diagnostic::undefined_variable(
-            node.name.as_ref().to_string(),
+            name.as_ref().to_string(),
             node.span(),
         ));
     }
@@ -110,13 +112,15 @@ where
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_variable(&self, node: &'a Variable<T>, accumulator: &mut Self::Accumulator) {
-        if self.variable_names.contains(node.name.as_ref()) {
+        let Some(name) = node.name.ok() else { return };
+
+        if self.variable_names.contains(name.as_ref()) {
             return;
         }
 
         accumulator.push(Diagnostic::undefined_variable_in_fragment(
             self.fragment_name.to_string(),
-            node.name.as_ref().to_string(),
+            name.as_ref().to_string(),
             self.fragment_span,
             node.span(),
         ));

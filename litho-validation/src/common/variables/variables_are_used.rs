@@ -32,12 +32,16 @@ where
             .iter()
             .flat_map(|def| def.variable_definitions.iter())
         {
-            if used.contains(def.variable.name.as_ref()) {
+            let Some(name) = def.variable.name.ok() else {
+                continue;
+            };
+
+            if used.contains(name.as_ref()) {
                 continue;
             }
 
             accumulator.push(Diagnostic::unused_variable(
-                def.variable.name.as_ref().to_string(),
+                name.as_ref().to_string(),
                 def.variable.span(),
             ));
         }
@@ -55,7 +59,9 @@ where
     type Accumulator = HashSet<&'a T>;
 
     fn visit_variable(&self, node: &'a Variable<T>, accumulator: &mut Self::Accumulator) {
-        accumulator.insert(node.name.as_ref());
+        let Some(name) = node.name.ok() else { return };
+
+        accumulator.insert(name.as_ref());
     }
 
     fn visit_fragment_spread(

@@ -23,14 +23,18 @@ where
         let mut map = HashMap::<&T, &Variable<T>>::new();
 
         for definition in node.variable_definitions.iter() {
-            match map.get(definition.variable.name.as_ref()) {
+            let Some(name) = definition.variable.name.ok() else {
+                continue;
+            };
+
+            match map.get(name.as_ref()) {
                 Some(first) => accumulator.push(Diagnostic::duplicate_variable(
-                    definition.variable.name.as_ref().to_string(),
+                    name.as_ref().to_string(),
                     first.name.span(),
-                    definition.variable.name.span(),
+                    name.span(),
                 )),
                 None => {
-                    map.insert(definition.variable.name.as_ref(), &definition.variable);
+                    map.insert(name.as_ref(), &definition.variable);
                 }
             }
         }
