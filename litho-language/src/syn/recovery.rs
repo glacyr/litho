@@ -46,7 +46,7 @@ where
             {
                 Ok(())
             }
-            _ => Err(Error::ExpectedName),
+            _ => Err(Error::Expected(self)),
         }
     }
 
@@ -79,7 +79,7 @@ macro_rules! token {
 
                     match input.next() {
                         Some(Token::$name(token)) => Ok(token),
-                        _ => Err(Error::ExpectedName),
+                        _ => Err(Error::Expected(*self)),
                     }
                 }
             }

@@ -1,12 +1,8 @@
-use std::iter::once;
-
-use nom::error::{ErrorKind, ParseError};
-use nom::Err;
 use wrom::{alt, many, Input, RecoverableParser};
 use wrom_derive::wrom;
 
 use crate::ast::*;
-use crate::lex::{Token, TokenKind};
+use crate::lex::Token;
 
 mod combinators;
 pub mod executable;
@@ -38,54 +34,17 @@ where
 
 #[derive(Debug)]
 pub enum Error {
-    Nom(ErrorKind),
     Incomplete,
-    ExpectedKeyword(TokenKind),
-    ExpectedName,
-    ExpectedPunctuator(TokenKind),
-    ExpectedIntValue,
-    ExpectedFloatValue,
-    ExpectedStringValue,
-    Multiple(Vec<Error>),
+    Expected(RecoveryPoint),
+    MaxRecursion(Span),
 }
 
-impl<I> ParseError<I> for Error {
-    fn from_error_kind(_input: I, kind: ErrorKind) -> Self {
-        Error::Nom(kind)
-    }
-
-    fn append(input: I, kind: ErrorKind, other: Self) -> Self {
-        Error::Multiple(vec![Self::from_error_kind(input, kind), other])
-    }
-
-    fn from_char(_input: I, _: char) -> Self {
-        unreachable!()
-    }
-
-    fn or(self, other: Self) -> Self {
-        match (self, other) {
-            (Error::Incomplete, Error::Incomplete) => Error::Incomplete,
-            (Error::ExpectedKeyword(lhs), Error::ExpectedKeyword(rhs)) if lhs == rhs => {
-                Error::ExpectedKeyword(lhs)
-            }
-            (Error::ExpectedName, Error::ExpectedName) => Error::ExpectedName,
-            (Error::ExpectedPunctuator(lhs), Error::ExpectedPunctuator(rhs)) if lhs == rhs => {
-                Error::ExpectedPunctuator(lhs)
-            }
-            (Error::ExpectedIntValue, Error::ExpectedIntValue) => Error::ExpectedIntValue,
-            (Error::ExpectedFloatValue, Error::ExpectedFloatValue) => Error::ExpectedFloatValue,
-            (Error::ExpectedStringValue, Error::ExpectedStringValue) => Error::ExpectedStringValue,
-            (Error::Multiple(lhs), Error::Multiple(rhs)) => {
-                Error::Multiple(lhs.into_iter().chain(rhs.into_iter()).collect())
-            }
-            (Error::Multiple(lhs), rhs) => {
-                Error::Multiple(lhs.into_iter().chain(once(rhs)).collect())
-            }
-            (lhs, Error::Multiple(rhs)) => {
-                Error::Multiple(once(lhs).into_iter().chain(rhs).collect())
-            }
-            (lhs, rhs) => Error::Multiple(vec![lhs, rhs]),
-        }
+impl Error {
+    pub fn max_recursion<I>(input: &mut I) -> Self
+    where
+        I: Spanned,
+    {
+        Error::MaxRecursion(input.span())
     }
 }
 
@@ -127,15 +86,14 @@ macro_rules! parse {
 
     ($name:ident, $($fn:tt)*) => {
         impl<T> Parse<T> for $name<T> {
-            fn parse<'a>(mut stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Err<Error>>
+            fn parse<'a>(mut stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Error>
             where
                 T: From<&'a str> + Clone,
             {
-                match $($fn)*
-                    .parse(&mut stream, Default::default()) {
-                    Ok(value) => Ok((value, stream.into_unexpected())),
-                    Err(err) => Err(Err::Failure(err))
-                }
+                let value = $($fn)*
+                    .parse(&mut stream, Default::default())?;
+
+                Ok((value, stream.into_unexpected()))
             }
         }
     };

@@ -102,7 +102,7 @@ where
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many(recursive(depth, selection)),
+        many(recursive(depth, selection).ok_or_else(Error::max_recursion)),
         punctuator(TokenKind::BraceRight),
         Missing::binary(Diagnostic::missing_selection_set_closing_brace),
     )
@@ -167,7 +167,7 @@ where
             .and(name().recover(Missing::unary(Diagnostic::missing_field_name)))),
         opt(arguments().map(Into::into)),
         opt(directives()),
-        opt(recursive(depth, selection_set).map(Into::into)),
+        opt(selection_set(depth).map(Into::into)),
     )
         .map(
             |(name, alias, arguments, directives, selection_set)| match alias {
@@ -251,13 +251,9 @@ where
 {
     opt(type_condition())
         .and_recognize(opt(directives()))
-        .and_recognize(
-            recursive(depth, selection_set)
-                .map(Into::into)
-                .recover(Missing::unary(
-                    Diagnostic::missing_inline_fragment_selection_set,
-                )),
-        )
+        .and_recognize(selection_set(depth).map(Into::into).recover(Missing::unary(
+            Diagnostic::missing_inline_fragment_selection_set,
+        )))
         .map(
             move |((type_condition, directives), selection_set)| InlineFragment {
                 dots: dots.clone(),
@@ -374,7 +370,7 @@ where
 {
     delimited(
         punctuator(TokenKind::BracketLeft),
-        many(recursive(depth, value)),
+        many(recursive(depth, value).ok_or_else(Error::max_recursion)),
         punctuator(TokenKind::BracketRight),
         Missing::binary(Diagnostic::missing_list_value_closing_bracket),
     )
@@ -416,7 +412,9 @@ where
         name(),
         punctuator(TokenKind::Colon)
             .recover(Missing::unary(Diagnostic::missing_object_field_colon)),
-        recursive(depth, value).recover(Missing::unary(Diagnostic::missing_object_field_value)),
+        recursive(depth, value)
+            .ok_or_else(Error::max_recursion)
+            .recover(Missing::unary(Diagnostic::missing_object_field_value)),
     )
         .map(|(name, colon, value)| ObjectField { name, colon, value })
 }
@@ -501,7 +499,9 @@ where
 {
     alt((
         named_type().map(Type::Named),
-        recursive(depth, list_type::<T, I>).map(Type::List),
+        recursive(depth, list_type::<T, I>)
+            .ok_or_else(Error::max_recursion)
+            .map(Type::List),
     ))
     .and(opt(punctuator(TokenKind::Bang)))
     .map(|(ty, bang)| match bang {

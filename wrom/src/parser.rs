@@ -1,7 +1,5 @@
 use std::marker::PhantomData;
 
-use nom::error::ParseError;
-
 use super::{opt, Input, Missing, Opt, Recognizer, Recoverable};
 
 /// Trait implemented by recoverable parsers.
@@ -22,7 +20,6 @@ where
     fn parse_simple(&mut self, input: &mut I) -> Result<O, E>
     where
         I: Input,
-        E: ParseError<I>,
     {
         self.parse(input, Default::default())
     }
@@ -70,7 +67,6 @@ where
     fn and_recognize<P, O2>(self, parser: P) -> AndRecognize<(Self, P)>
     where
         I: Input,
-        E: ParseError<I>,
         P: RecoverableParser<I, O2, E, R>,
         Self: Sized,
     {
@@ -100,6 +96,13 @@ where
     {
         Map(self, PhantomData, apply)
     }
+
+    fn ok_or_else<F>(self, err: F) -> OkOrElse<Self, F>
+    where
+        Self: Sized,
+    {
+        OkOrElse(self, err)
+    }
 }
 
 pub struct FlatMap<P, O, F>(P, PhantomData<O>, F);
@@ -107,7 +110,6 @@ pub struct FlatMap<P, O, F>(P, PhantomData<O>, F);
 impl<I, O, O2, E, R, P, P2, F> RecoverableParser<I, O2, E, R> for FlatMap<P, O, F>
 where
     I: Input,
-    E: for<'a> ParseError<&'a I>,
     R: Recognizer<I, E>,
     P: RecoverableParser<I, O, E, R>,
     P2: RecoverableParser<I, O2, E, R>,
@@ -229,6 +231,27 @@ where
     #[inline(always)]
     fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<O2, E> {
         self.0.parse(input, recovery_point).map(&mut self.2)
+    }
+}
+
+pub struct OkOrElse<P, F>(P, F);
+
+impl<I, O, E, R, P, F> RecoverableParser<I, O, E, R> for OkOrElse<P, F>
+where
+    R: Recognizer<I, E>,
+    P: RecoverableParser<I, Option<O>, E, R>,
+    F: FnMut(&mut I) -> E,
+{
+    #[inline(always)]
+    fn recognizer(&self) -> R {
+        self.0.recognizer()
+    }
+
+    #[inline(always)]
+    fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<O, E> {
+        self.0
+            .parse(input, recovery_point)?
+            .ok_or_else(|| self.1(input))
     }
 }
 

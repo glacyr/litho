@@ -1,5 +1,3 @@
-use nom::error::{ErrorKind, ParseError};
-
 use super::{Recognizer, RecoverableParser};
 
 /// Parser that succeeds if any of the recoverable parsers in `L` succeed.
@@ -19,21 +17,21 @@ macro_rules! alt {
         alt!(@ $($ident)* ;);
         alt!(@ $($ident)* $next ; $($rest)*);
     };
-    (@ $($ident:ident)* ;) => {
+    (@ $first:ident $($ident:ident)* ;) => {
         #[allow(non_snake_case)]
-        impl<I, O, E, $($ident),*, R> RecoverableParser<I, O, E, R> for Alt<($($ident,)*)>
+        impl<I, O, E, $first, $($ident,)* R> RecoverableParser<I, O, E, R> for Alt<($first, $($ident,)*)>
         where
+            $first: RecoverableParser<I, O, E, R>,
             $(
                 $ident: RecoverableParser<I, O, E, R>,
             )*
-            E: for<'b> ParseError<&'b I>,
             R: Recognizer<I, E>,
         {
             #[inline(always)]
             fn recognizer(&self) -> R {
-                let ($($ident,)*) = &self.0;
+                let ($first, $($ident,)*) = &self.0;
 
-                R::default()
+                $first.recognizer()
                     $(
                         .or($ident.recognizer())
                     )*
@@ -42,7 +40,7 @@ macro_rules! alt {
             #[inline]
             fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<O, E>
             {
-                let ($($ident,)*) = &mut self.0;
+                let ($first, $($ident,)*) = &mut self.0;
 
                 $(
                     if $ident.recognizer().recognize(input).is_ok() {
@@ -50,7 +48,7 @@ macro_rules! alt {
                     }
                 )*
 
-                Err(E::from_error_kind(input, ErrorKind::Alt))
+                $first.parse(input, recovery_point)
             }
         }
     };

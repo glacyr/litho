@@ -1,5 +1,3 @@
-use nom::error::{ErrorKind, ParseError};
-
 use super::{Input, Recognizer, RecoverableParser};
 
 pub struct Recursive<F>(usize, F);
@@ -15,12 +13,11 @@ pub fn recursive<F>(max_depth: usize, parser_fn: F) -> Recursive<F> {
     Recursive(max_depth, parser_fn)
 }
 
-impl<I, O, E, R, F, P> RecoverableParser<I, O, E, R> for Recursive<F>
+impl<I, O, E, R, F, P> RecoverableParser<I, Option<O>, E, R> for Recursive<F>
 where
     F: Fn(usize) -> P,
     P: RecoverableParser<I, O, E, R>,
     I: Input,
-    E: for<'b> ParseError<&'b I>,
     R: Recognizer<I, E>,
 {
     #[inline(always)]
@@ -29,10 +26,10 @@ where
     }
 
     #[inline(always)]
-    fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<O, E> {
+    fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<Option<O>, E> {
         match self.0 {
-            0 => Err(E::from_error_kind(input, ErrorKind::Fail)),
-            n => (self.1)(n - 1).parse(input, recovery_point),
+            0 => Ok(None),
+            n => (self.1)(n - 1).parse(input, recovery_point).map(Some),
         }
     }
 }
