@@ -2,7 +2,7 @@ use std::iter::once;
 
 use nom::error::{ErrorKind, ParseError};
 use nom::Err;
-use wrom::{alt, many0, Input, RecoverableParser};
+use wrom::{alt, many, Input, RecoverableParser};
 use wrom_derive::wrom;
 
 use crate::ast::*;
@@ -19,7 +19,7 @@ pub use parse::Parse;
 pub use recovery::RecoveryPoint;
 pub use stream::Stream;
 
-const RECURSION_LIMIT: usize = 64;
+const RECURSION_LIMIT: usize = 32;
 
 impl<I> wrom::Missing<I> for Missing
 where
@@ -27,7 +27,8 @@ where
 {
     type Error = MissingToken;
 
-    fn error(&self, input: &I) -> Self::Error {
+    #[inline]
+    fn error(&self, input: &mut I) -> Self::Error {
         MissingToken {
             span: input.span(),
             missing: *self,
@@ -92,30 +93,31 @@ impl<I> ParseError<I> for Error {
 pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    many0(definition().map(Into::into)).map(|definitions| Document { definitions })
+    many(definition().map(Into::into)).map(|definitions| Document { definitions })
 }
 
 #[wrom]
 pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    wrom::opt(schema::description())
-        .and_recognize(alt((
-            executable::executable_definition().map(Definition::ExecutableDefinition),
-            schema::type_system_definition_or_extension()
-                .map(Definition::TypeSystemDefinitionOrExtension),
-        )))
-        .map(|(_, b)| b)
+    alt((
+        executable::executable_definition().map(Definition::ExecutableDefinition),
+        schema::type_system_definition_or_extension()
+            .map(Definition::TypeSystemDefinitionOrExtension),
+    ))
 }
 
 macro_rules! parse {
     (Arc<$name:ident>, $($fn:tt)*) => {
-        impl<T> Parse<T> for Arc<$name<T>> where T: for<'b> PartialEq<&'b str> + Clone {
-            fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
+        impl<T> Parse<T> for Arc<$name<T>> {
+            fn parse<'a>(stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Err<Error>>
+            where
+                T: From<&'a str> + Clone,
+            {
                 $($fn)*
                     .parse(stream, Default::default())
                     .map(|(input, value)| (value, input.into_unexpected()))
@@ -124,11 +126,16 @@ macro_rules! parse {
     };
 
     ($name:ident, $($fn:tt)*) => {
-        impl<T> Parse<T> for $name<T> where T: for<'b> PartialEq<&'b str> + Clone {
-            fn parse(stream: Stream<T>) -> Result<(Self, Vec<Token<T>>), Err<Error>> {
-                $($fn)*
-                    .parse(stream, Default::default())
-                    .map(|(input, value)| (value, input.into_unexpected()))
+        impl<T> Parse<T> for $name<T> {
+            fn parse<'a>(mut stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Err<Error>>
+            where
+                T: From<&'a str> + Clone,
+            {
+                match $($fn)*
+                    .parse(&mut stream, Default::default()) {
+                    Ok(value) => Ok((value, stream.into_unexpected())),
+                    Err(err) => Err(Err::Failure(err))
+                }
             }
         }
     };
@@ -136,12 +143,12 @@ macro_rules! parse {
 
 parse!(Document, document());
 // parse!(Definition, definition);
-// parse!(ExecutableDocument, executable::executable_document);
+parse!(ExecutableDocument, executable::executable_document());
 // parse!(ExecutableDefinition, executable::executable_definition);
 // parse!(OperationDefinition, executable::operation_definition());
 // parse!(SchemaDefinition, schema::schema_definition());
 // parse!(ExecutableDocument, executable::executable_document());
-// parse!(TypeSystemDocument, schema::type_system_document());
+parse!(TypeSystemDocument, schema::type_system_document());
 // parse!(DirectiveDefinition, schema::directive_definition());
 // parse!(OperationType, executable::operation_type);
 // parse!(SelectionSet, executable::selection_set);

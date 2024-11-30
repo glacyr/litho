@@ -2,6 +2,33 @@
    ╭─[graphql:1:1]
    │
  1 │ ! + $ @
-   · ───┬───  
-   ·    ╰───── Couldn't recognize these tokens here.
+   · ┬  
+   · ╰── Couldn't recognize these tokens here.
+───╯
+
+
+[E0001] Error: Syntax error.
+   ╭─[graphql:1:3]
+   │
+ 1 │ ! + $ @
+   ·   ┬  
+   ·   ╰── Couldn't recognize these tokens here.
+───╯
+
+
+[E0001] Error: Syntax error.
+   ╭─[graphql:1:5]
+   │
+ 1 │ ! + $ @
+   ·     ┬  
+   ·     ╰── Couldn't recognize these tokens here.
+───╯
+
+
+[E0001] Error: Syntax error.
+   ╭─[graphql:1:7]
+   │
+ 1 │ ! + $ @
+   ·       ┬  
+   ·       ╰── Couldn't recognize these tokens here.
 ───╯

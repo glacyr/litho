@@ -18,26 +18,24 @@ where
             definitions: once(Definition::TypeSystemDefinitionOrExtension(
                 TypeSystemDefinitionOrExtension::TypeSystemDefinition(
                     TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
-                        schema: Name::new(T::from("schema")),
+                        schema: Name::new("schema"),
                         type_definitions: Recoverable::Present(RootOperationTypeDefinitions {
                             braces: (
-                                Punctuator::new(T::from("{")),
-                                Recoverable::Present(Punctuator::new(T::from("}"))),
+                                Punctuator::new("{"),
+                                Recoverable::Present(Punctuator::new("}")),
                             ),
                             definitions: Recoverable::Present(
                                 vec![
                                     (
-                                        OperationType::Query(Name::new(T::from("query"))),
+                                        OperationType::Query(Name::new("query")),
                                         self.query_type.name.as_ref(),
                                     ),
                                     (
-                                        OperationType::Mutation(Name::new(T::from("mutation"))),
+                                        OperationType::Mutation(Name::new("mutation")),
                                         self.mutation_type.as_ref().and_then(|ty| ty.name.as_ref()),
                                     ),
                                     (
-                                        OperationType::Subscription(Name::new(T::from(
-                                            "subscription",
-                                        ))),
+                                        OperationType::Subscription(Name::new("subscription")),
                                         self.subscription_type
                                             .as_ref()
                                             .and_then(|ty| ty.name.as_ref()),
@@ -47,9 +45,9 @@ where
                                 .flat_map(|(operation_type, name)| {
                                     Some(RootOperationTypeDefinition {
                                         operation_type,
-                                        colon: Recoverable::Present(Punctuator::new(T::from(":"))),
+                                        colon: Recoverable::Present(Punctuator::new(":")),
                                         named_type: Recoverable::Present(NamedType(Name::new(
-                                            T::from(name?),
+                                            name?,
                                         ))),
                                     })
                                 })
@@ -127,8 +125,8 @@ where
 {
     fn retrospect(self) -> Option<EnumTypeDefinition<T>> {
         Some(EnumTypeDefinition {
-            enum_kw: Name::new(T::from("enum")),
-            name: Recoverable::Present(Name::new(T::from(&self.name?))),
+            enum_kw: Name::new("enum"),
+            name: Recoverable::Present(Name::new(&self.name?)),
             values_definition: self.enum_values.and_then(Retrospect::retrospect),
             description: self.description.retrospect(),
             directives: None,
@@ -147,8 +145,8 @@ where
 
         Some(EnumValuesDefinition {
             braces: (
-                Punctuator::new(T::from("{")),
-                Recoverable::Present(Punctuator::new(T::from("}"))),
+                Punctuator::new("{"),
+                Recoverable::Present(Punctuator::new("}")),
             ),
             definitions: self
                 .into_iter()
@@ -165,7 +163,7 @@ where
 {
     fn retrospect(self) -> Option<EnumValueDefinition<T>> {
         Some(EnumValueDefinition {
-            enum_value: EnumValue(Name::new(T::from(&self.name))),
+            enum_value: EnumValue(Name::new(&self.name)),
             description: self.description.retrospect(),
             directives: None,
         })
@@ -178,8 +176,8 @@ where
 {
     fn retrospect(self) -> Option<InputObjectTypeDefinition<T>> {
         Some(InputObjectTypeDefinition {
-            input: Name::new(T::from("input")),
-            name: Recoverable::Present(Name::new(T::from(&self.name?))),
+            input: Name::new("input"),
+            name: Recoverable::Present(Name::new(&self.name?)),
             description: self.description.retrospect(),
             directives: None,
             fields_definition: self.input_fields.and_then(Retrospect::retrospect),
@@ -198,8 +196,8 @@ where
 
         Some(InputFieldsDefinition {
             braces: (
-                Punctuator::new(T::from("{")),
-                Recoverable::Present(Punctuator::new(T::from("}"))),
+                Punctuator::new("{"),
+                Recoverable::Present(Punctuator::new("}")),
             ),
             definitions: self
                 .into_iter()
@@ -216,8 +214,8 @@ where
 {
     fn retrospect(self) -> Option<InterfaceTypeDefinition<T>> {
         Some(InterfaceTypeDefinition {
-            interface: Name::new(T::from("interface")),
-            name: Recoverable::Present(Name::new(T::from(&self.name?))),
+            interface: Name::new("interface"),
+            name: Recoverable::Present(Name::new(&self.name?)),
             description: self.description.retrospect(),
             directives: None,
             fields_definition: self.fields.and_then(Retrospect::retrospect),
@@ -232,8 +230,8 @@ where
 {
     fn retrospect(self) -> Option<ObjectTypeDefinition<T>> {
         Some(ObjectTypeDefinition {
-            ty: Name::new(T::from("type")),
-            name: Recoverable::Present(Name::new(T::from(&self.name?))),
+            ty: Name::new("type"),
+            name: Recoverable::Present(Name::new(&self.name?)),
             description: self.description.retrospect(),
             directives: None,
             fields_definition: self.fields.and_then(Retrospect::retrospect),
@@ -249,8 +247,8 @@ where
     fn retrospect(self) -> Option<FieldsDefinition<T>> {
         Some(FieldsDefinition {
             braces: (
-                Punctuator::new(T::from("{")),
-                Recoverable::Present(Punctuator::new(T::from("}"))),
+                Punctuator::new("{"),
+                Recoverable::Present(Punctuator::new("}")),
             ),
             definitions: self
                 .into_iter()
@@ -267,8 +265,8 @@ where
 {
     fn retrospect(self) -> Option<FieldDefinition<T>> {
         Some(FieldDefinition {
-            name: Name::new(T::from(&self.name)),
-            colon: Recoverable::Present(Punctuator::new(T::from(":"))),
+            name: Name::new(&self.name),
+            colon: Recoverable::Present(Punctuator::new(":")),
             arguments_definition: self.args.retrospect().map(Arc::new),
             description: self.description.retrospect(),
             directives: None,
@@ -288,8 +286,8 @@ where
 
         Some(ArgumentsDefinition {
             parens: (
-                Punctuator::new(T::from("(")),
-                Recoverable::Present(Punctuator::new(T::from(")"))),
+                Punctuator::new("("),
+                Recoverable::Present(Punctuator::new(")")),
             ),
             definitions: self
                 .into_iter()
@@ -306,8 +304,8 @@ where
 {
     fn retrospect(self) -> Option<InputValueDefinition<T>> {
         Some(InputValueDefinition {
-            name: Name::new(T::from(&self.name)),
-            colon: Recoverable::Present(Punctuator::new(T::from(":"))),
+            name: Name::new(&self.name),
+            colon: Recoverable::Present(Punctuator::new(":")),
             ty: Recoverable::Present(self.ty.retrospect().map(Arc::new)?),
             description: self.description.retrospect(),
             default_value: None,
@@ -327,17 +325,15 @@ where
             | super::TypeKind::Interface
             | super::TypeKind::Object
             | super::TypeKind::Scalar
-            | super::TypeKind::Union => {
-                Some(Type::Named(NamedType(Name::new(T::from(&self.name?)))))
-            }
+            | super::TypeKind::Union => Some(Type::Named(NamedType(Name::new(&self.name?)))),
             super::TypeKind::NonNull => Some(Type::NonNull(NonNullType {
                 ty: self.of_type.and_then(|ty| ty.retrospect()).map(Arc::new)?,
-                bang: Punctuator::new(T::from("!")),
+                bang: Punctuator::new("!"),
             })),
             super::TypeKind::List => Some(Type::List(ListType {
                 brackets: (
-                    Punctuator::new(T::from("[")),
-                    Recoverable::Present(Punctuator::new(T::from("]"))),
+                    Punctuator::new("["),
+                    Recoverable::Present(Punctuator::new("]")),
                 ),
                 ty: Recoverable::Present(
                     self.of_type.and_then(|ty| ty.retrospect()).map(Arc::new)?,
@@ -353,8 +349,8 @@ where
 {
     fn retrospect(self) -> Option<ScalarTypeDefinition<T>> {
         Some(ScalarTypeDefinition {
-            scalar: Name::new(T::from("scalar")),
-            name: Recoverable::Present(Name::new(T::from(&self.name?))),
+            scalar: Name::new("scalar"),
+            name: Recoverable::Present(Name::new(&self.name?)),
             description: self.description.retrospect(),
             directives: None,
         })
@@ -367,8 +363,8 @@ where
 {
     fn retrospect(self) -> Option<UnionTypeDefinition<T>> {
         Some(UnionTypeDefinition {
-            union_kw: Name::new(T::from("union")),
-            name: Recoverable::Present(Name::new(T::from(&self.name?))),
+            union_kw: Name::new("union"),
+            name: Recoverable::Present(Name::new(&self.name?)),
             member_types: self.possible_types.and_then(Retrospect::retrospect),
             description: self.description.retrospect(),
             directives: None,
@@ -382,10 +378,10 @@ where
 {
     fn retrospect(self) -> Option<UnionMemberTypes<T>> {
         Some(UnionMemberTypes {
-            eq: Punctuator::new(T::from("=")),
-            first: Recoverable::Present(Arc::new(NamedType(Name::new(T::from(
+            eq: Punctuator::new("="),
+            first: Recoverable::Present(Arc::new(NamedType(Name::new(
                 self.first().and_then(|ty| ty.name.as_ref())?,
-            ))))),
+            )))),
             pipe: None,
             types: self
                 .into_iter()
@@ -393,8 +389,8 @@ where
                 .flat_map(|ty| {
                     ty.name.map(|name| {
                         (
-                            Punctuator::new(T::from("|")),
-                            Recoverable::Present(Arc::new(NamedType(Name::new(T::from(&name))))),
+                            Punctuator::new("|"),
+                            Recoverable::Present(Arc::new(NamedType(Name::new(&name)))),
                         )
                     })
                 })
@@ -409,10 +405,10 @@ where
 {
     fn retrospect(self) -> Option<ImplementsInterfaces<T>> {
         Some(ImplementsInterfaces {
-            implements: Name::new(T::from("implements")),
-            first: Recoverable::Present(Arc::new(NamedType(Name::new(T::from(
+            implements: Name::new("implements"),
+            first: Recoverable::Present(Arc::new(NamedType(Name::new(
                 self.first().and_then(|ty| ty.name.as_ref())?,
-            ))))),
+            )))),
             ampersand: None,
             types: self
                 .into_iter()
@@ -420,8 +416,8 @@ where
                 .flat_map(|ty| {
                     ty.name.map(|name| {
                         (
-                            Punctuator::new(T::from("&")),
-                            Recoverable::Present(Arc::new(NamedType(Name::new(T::from(&name))))),
+                            Punctuator::new("&"),
+                            Recoverable::Present(Arc::new(NamedType(Name::new(&name)))),
                         )
                     })
                 })

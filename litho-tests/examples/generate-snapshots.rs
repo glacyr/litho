@@ -23,6 +23,7 @@ impl Cache<SourceId> for SingleSource {
 pub fn main() {
     for entry in read_dir("tests").unwrap() {
         let entry = entry.unwrap();
+        eprintln!("Entry: {:?}", entry.path());
         let source = read_to_string(entry.path()).unwrap();
 
         let builtins = Document::<String>::parse_from_str(

@@ -43,6 +43,7 @@ where
 {
     type Item = RawToken<T>;
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
         self.lexer.next().map(|kind| RawToken {
             kind,

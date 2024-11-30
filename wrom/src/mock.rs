@@ -1,5 +1,3 @@
-use nom::InputLength;
-
 use super::Input;
 
 #[derive(Clone)]
@@ -31,21 +29,15 @@ where
     }
 }
 
-impl<I> InputLength for CollectUnrecognized<I>
+impl<I> Input for CollectUnrecognized<I>
 where
     I: Input,
 {
-    fn input_len(&self) -> usize {
-        self.input.input_len()
-    }
-}
-
-impl<I> Input for CollectUnrecognized<I>
-where
-    I: Input + Clone,
-    I::Item: Clone,
-{
     type Item = I::Item;
+
+    fn peek(&mut self) -> Option<&Self::Item> {
+        self.input.peek()
+    }
 
     fn next(&mut self) -> Option<Self::Item> {
         self.input.next()

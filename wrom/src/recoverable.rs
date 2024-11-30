@@ -13,6 +13,7 @@ pub enum Recoverable<T, E> {
 impl<T, E> Recoverable<T, E> {
     /// Returns an [`Option`] that is [`Option::Some`] when `T` was parsed
     /// successfully, or [`Option::None`] otherwise.
+    #[inline(always)]
     pub fn ok(&self) -> Option<&T> {
         match self {
             Recoverable::Present(value) => Some(value),
@@ -22,6 +23,7 @@ impl<T, E> Recoverable<T, E> {
 }
 
 impl<T, E> From<T> for Recoverable<T, E> {
+    #[inline(always)]
     fn from(value: T) -> Self {
         Recoverable::Present(value)
     }

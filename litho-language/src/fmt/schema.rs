@@ -11,7 +11,8 @@ macros::format_enum!(
     TypeSystemDefinition,
     SchemaDefinition,
     TypeDefinition,
-    DirectiveDefinition
+    DirectiveDefinition,
+    Error
 );
 
 macros::format_definitions!(TypeSystemExtensionDocument);
@@ -22,7 +23,7 @@ macros::format_enum!(
     TypeSystemExtension
 );
 
-macros::format_enum!(TypeSystemExtension, SchemaExtension, TypeExtension);
+macros::format_enum!(TypeSystemExtension, SchemaExtension, TypeExtension, Error);
 
 macros::format_unit!(Description);
 

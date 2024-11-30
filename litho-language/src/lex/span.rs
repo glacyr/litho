@@ -8,24 +8,29 @@ pub struct Span {
 }
 
 impl Span {
+    #[inline]
     pub fn before(&self, index: usize) -> bool {
         self.end < index
     }
 
+    #[inline]
     pub fn contains(&self, index: usize) -> bool {
         self.start <= index && index <= self.end
     }
 
+    #[inline]
     pub fn join(&mut self, other: Span) {
         self.start = self.start.min(other.start);
         self.end = self.end.max(other.end);
     }
 
+    #[inline]
     pub fn joined(mut self, other: Span) -> Span {
         self.join(other);
         self
     }
 
+    #[inline]
     pub fn between(left: Self, right: Self) -> Span {
         Span {
             source_id: left.source_id,
@@ -34,6 +39,7 @@ impl Span {
         }
     }
 
+    #[inline]
     pub fn collapse_to_start(self) -> Self {
         Self {
             source_id: self.source_id,
@@ -42,6 +48,7 @@ impl Span {
         }
     }
 
+    #[inline]
     pub fn collapse_to_end(self) -> Self {
         Self {
             source_id: self.source_id,

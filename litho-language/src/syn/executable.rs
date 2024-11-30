@@ -1,26 +1,25 @@
 use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
-use nom::IResult;
-use wrom::{alt, delimited, many0, many1, opt, recursive, Input, RecoverableParser};
+use wrom::{alt, delimited, many, opt, recursive, Input, Recoverable, RecoverableParser};
 use wrom_derive::wrom;
 
 use crate::ast::*;
 use crate::lex::{Token, TokenKind};
 
 use super::combinators::{
-    float_value, int_value, keyword, name, name_unless, punctuator, string_value,
+    float_value, int_value, keyword, name, name_unless_on, punctuator, string_value,
 };
-use super::{recovery::RecoveryPoint, Error, RECURSION_LIMIT};
+use super::{Error, RecoveryPoint, RECURSION_LIMIT};
 
 #[wrom]
 pub fn executable_document<'a, T, I>(
 ) -> impl RecoverableParser<I, ExecutableDocument<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    many0(executable_definition()).map(|definitions| ExecutableDocument { definitions })
+    many(executable_definition()).map(|definitions| ExecutableDocument { definitions })
 }
 
 #[wrom]
@@ -28,7 +27,7 @@ pub fn executable_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, ExecutableDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         operation_definition()
@@ -37,6 +36,16 @@ where
         fragment_definition()
             .map(Into::into)
             .map(ExecutableDefinition::FragmentDefinition),
+        selection_set(RECURSION_LIMIT)
+            .map(|selection_set| OperationDefinition {
+                ty: None,
+                name: None,
+                variable_definitions: None,
+                directives: None,
+                selection_set: Arc::new(selection_set).into(),
+            })
+            .map(Into::into)
+            .map(ExecutableDefinition::OperationDefinition),
     ))
 }
 
@@ -45,7 +54,7 @@ pub fn operation_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, OperationDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         operation_type(),
@@ -74,7 +83,7 @@ pub fn operation_type<'a, T, I>(
 ) -> impl RecoverableParser<I, OperationType<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         keyword(TokenKind::KeywordQuery).map(OperationType::Query),
@@ -89,11 +98,11 @@ pub fn selection_set<'a, T, I>(
 ) -> impl RecoverableParser<I, SelectionSet<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many0(recursive(depth, selection)),
+        many(recursive(depth, selection)),
         punctuator(TokenKind::BraceRight),
         Missing::binary(Diagnostic::missing_selection_set_closing_brace),
     )
@@ -109,15 +118,39 @@ pub fn selection<'a, T, I>(
 ) -> impl RecoverableParser<I, Selection<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
-        fragment_spread().map(Selection::FragmentSpread),
-        recursive(depth, inline_fragment).map(Selection::InlineFragment),
-        recursive(depth, field)
-            .map(Into::into)
-            .map(Selection::Field),
+        field(depth).map(Into::into).map(Selection::Field),
+        punctuator(TokenKind::Dots).flat_map(move |dots| selection_fragment_with_dots(dots, depth)),
     ))
+}
+
+#[wrom]
+pub fn selection_fragment_with_dots<'a, T, I>(
+    dots: Punctuator<T>,
+    depth: usize,
+) -> impl RecoverableParser<I, Selection<T>, Error, RecoveryPoint> + 'a
+where
+    I: Input<Item = Token<T>> + Spanned + 'a,
+    T: Clone + 'a,
+{
+    alt((
+        inline_fragment(dots.clone(), depth).map(Selection::InlineFragment),
+        fragment_spread(dots.clone()).map(Selection::FragmentSpread),
+    ))
+    .recover(Missing::unary(
+        Diagnostic::missing_inline_fragment_selection_set,
+    ))
+    .map(move |fragment| match fragment {
+        Recoverable::Present(fragment) => fragment,
+        Recoverable::Missing(missing) => Selection::InlineFragment(InlineFragment {
+            dots: dots.clone(),
+            directives: None,
+            type_condition: None,
+            selection_set: Recoverable::Missing(missing),
+        }),
+    })
 }
 
 #[wrom]
@@ -126,7 +159,7 @@ pub fn field<'a, T, I>(
 ) -> impl RecoverableParser<I, Field<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         name(),
@@ -134,7 +167,7 @@ where
             .and(name().recover(Missing::unary(Diagnostic::missing_field_name)))),
         opt(arguments().map(Into::into)),
         opt(directives()),
-        opt(selection_set(depth).map(Into::into)),
+        opt(recursive(depth, selection_set).map(Into::into)),
     )
         .map(
             |(name, alias, arguments, directives, selection_set)| match alias {
@@ -160,11 +193,11 @@ where
 pub fn arguments<'a, T, I>() -> impl RecoverableParser<I, Arguments<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::ParenLeft),
-        many0(argument()),
+        many(argument()),
         punctuator(TokenKind::ParenRight),
         Missing::binary(Diagnostic::missing_arguments_closing_parentheses),
     )
@@ -178,7 +211,7 @@ where
 pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Arc<Argument<T>>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         name(),
@@ -191,18 +224,16 @@ where
 
 #[wrom]
 pub fn fragment_spread<'a, T, I>(
+    dots: Punctuator<T>,
 ) -> impl RecoverableParser<I, Arc<FragmentSpread<T>>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    (
-        punctuator(TokenKind::Dots),
-        name_unless(TokenKind::KeywordOn),
-        opt(directives()),
-    )
-        .map(|(dots, fragment_name, directives)| FragmentSpread {
-            dots,
+    name_unless_on()
+        .and(opt(directives()))
+        .map(move |(fragment_name, directives)| FragmentSpread {
+            dots: dots.clone(),
             fragment_name,
             directives,
         })
@@ -211,25 +242,25 @@ where
 
 #[wrom]
 pub fn inline_fragment<'a, T, I>(
+    dots: Punctuator<T>,
     depth: usize,
 ) -> impl RecoverableParser<I, InlineFragment<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    (
-        punctuator(TokenKind::Dots),
-        opt(type_condition()),
-        opt(directives()),
-        recursive(depth, selection_set)
-            .map(Into::into)
-            .recover(Missing::unary(
-                Diagnostic::missing_inline_fragment_selection_set,
-            )),
-    )
+    opt(type_condition())
+        .and_recognize(opt(directives()))
+        .and_recognize(
+            recursive(depth, selection_set)
+                .map(Into::into)
+                .recover(Missing::unary(
+                    Diagnostic::missing_inline_fragment_selection_set,
+                )),
+        )
         .map(
-            |(dots, type_condition, directives, selection_set)| InlineFragment {
-                dots,
+            move |((type_condition, directives), selection_set)| InlineFragment {
+                dots: dots.clone(),
                 type_condition,
                 directives,
                 selection_set,
@@ -242,12 +273,11 @@ pub fn fragment_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, FragmentDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordFragment),
-        name_unless(TokenKind::KeywordOn)
-            .recover(Missing::unary(Diagnostic::missing_fragment_name)),
+        name_unless_on().recover(Missing::unary(Diagnostic::missing_fragment_name)),
         type_condition().recover(Missing::unary(Diagnostic::missing_fragment_type_condition)),
         opt(directives()),
         selection_set(RECURSION_LIMIT)
@@ -272,7 +302,7 @@ pub fn type_condition<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeCondition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: 'a,
 {
     keyword(TokenKind::KeywordOn)
         .and(named_type().recover(Missing::unary(
@@ -287,7 +317,7 @@ pub fn value<'a, T, I>(
 ) -> impl RecoverableParser<I, Arc<Value<T>>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         int_value().map(Value::IntValue),
@@ -297,8 +327,8 @@ where
         null_value().map(Value::NullValue),
         enum_value().map(Value::EnumValue),
         variable().map(Value::Variable),
-        recursive(depth, list_value).map(Value::ListValue),
-        recursive(depth, object_value).map(Value::ObjectValue),
+        list_value(depth).map(Value::ListValue),
+        object_value(depth).map(Value::ObjectValue),
     ))
     .map(Into::into)
 }
@@ -308,7 +338,7 @@ pub fn boolean_value<'a, T, I>(
 ) -> impl RecoverableParser<I, BooleanValue<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: 'a,
 {
     alt((
         keyword(TokenKind::KeywordTrue).map(BooleanValue::True),
@@ -320,7 +350,7 @@ where
 pub fn null_value<'a, T, I>() -> impl RecoverableParser<I, NullValue<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: 'a,
 {
     keyword(TokenKind::KeywordNull).map(NullValue)
 }
@@ -329,7 +359,7 @@ where
 pub fn enum_value<'a, T, I>() -> impl RecoverableParser<I, EnumValue<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: 'a,
 {
     name().map(EnumValue)
 }
@@ -340,11 +370,11 @@ pub fn list_value<'a, T, I>(
 ) -> impl RecoverableParser<I, ListValue<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BracketLeft),
-        many0(value(depth)),
+        many(recursive(depth, value)),
         punctuator(TokenKind::BracketRight),
         Missing::binary(Diagnostic::missing_list_value_closing_bracket),
     )
@@ -360,11 +390,11 @@ pub fn object_value<'a, T, I>(
 ) -> impl RecoverableParser<I, ObjectValue<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many0(object_field(depth)),
+        many(object_field(depth)),
         punctuator(TokenKind::BraceRight),
         Missing::binary(Diagnostic::missing_object_value_closing_brace),
     )
@@ -380,13 +410,13 @@ pub fn object_field<'a, T, I>(
 ) -> impl RecoverableParser<I, ObjectField<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         name(),
         punctuator(TokenKind::Colon)
             .recover(Missing::unary(Diagnostic::missing_object_field_colon)),
-        value(depth).recover(Missing::unary(Diagnostic::missing_object_field_value)),
+        recursive(depth, value).recover(Missing::unary(Diagnostic::missing_object_field_value)),
     )
         .map(|(name, colon, value)| ObjectField { name, colon, value })
 }
@@ -396,11 +426,11 @@ pub fn variable_definitions<'a, T, I>(
 ) -> impl RecoverableParser<I, VariableDefinitions<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::ParenLeft),
-        many0(variable_definition()),
+        many(variable_definition()),
         punctuator(TokenKind::ParenRight),
         Missing::binary(Diagnostic::missing_variable_definitions_closing_parenthesis),
     )
@@ -415,7 +445,7 @@ pub fn variable_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, Arc<VariableDefinition<T>>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         variable(),
@@ -442,7 +472,7 @@ where
 pub fn variable<'a, T, I>() -> impl RecoverableParser<I, Variable<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: 'a,
 {
     punctuator(TokenKind::Dollar)
         .and(name().recover(Missing::unary(Diagnostic::missing_variable_name)))
@@ -454,7 +484,7 @@ pub fn default_value<'a, T, I>(
 ) -> impl RecoverableParser<I, DefaultValue<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     punctuator(TokenKind::Eq)
         .and(value(RECURSION_LIMIT).recover(Missing::unary(Diagnostic::missing_default_value)))
@@ -467,14 +497,14 @@ pub fn ty<'a, T, I>(
 ) -> impl RecoverableParser<I, Arc<Type<T>>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         named_type().map(Type::Named),
-        recursive(depth, list_type).map(Type::List),
+        recursive(depth, list_type::<T, I>).map(Type::List),
     ))
     .and(opt(punctuator(TokenKind::Bang)))
-    .map(|(ty, bang): (Type<_>, Option<_>)| match bang {
+    .map(|(ty, bang)| match bang {
         Some(bang) => Type::NonNull(NonNullType {
             ty: ty.into(),
             bang,
@@ -488,7 +518,7 @@ where
 pub fn named_type<'a, T, I>() -> impl RecoverableParser<I, NamedType<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: 'a,
 {
     name().map(NamedType)
 }
@@ -499,11 +529,11 @@ pub fn list_type<'a, T, I>(
 ) -> impl RecoverableParser<I, ListType<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
-        punctuator(TokenKind::BracketLeft),
-        recursive(depth, ty).recover(Missing::unary(Diagnostic::missing_list_type_wrapped_type)),
+        RecoveryPoint::from(TokenKind::BracketLeft),
+        ty(depth).recover(Missing::unary(Diagnostic::missing_list_type_wrapped_type)),
         punctuator(TokenKind::BracketRight),
         Missing::binary(Diagnostic::missing_list_type_closing_bracket),
     )
@@ -517,9 +547,9 @@ where
 pub fn directives<'a, T, I>() -> impl RecoverableParser<I, Directives<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    many1(directive()).map(|directives| Directives { directives })
+    many(directive()).map(|directives| Directives { directives })
 }
 
 #[wrom]
@@ -527,7 +557,7 @@ pub fn directive<'a, T, I>(
 ) -> impl RecoverableParser<I, Arc<Directive<T>>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         punctuator(TokenKind::At),

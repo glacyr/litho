@@ -1,105 +1,67 @@
-use nom::Err;
-use wrom::{terminal, Input, RecoverableParser};
+use wrom::{Input, RecoverableParser};
+use wrom_derive::wrom;
 
 use crate::lex::{FloatValue, IntValue, Name, Punctuator, StringValue, Token, TokenKind};
 
 use super::recovery::RecoveryPoint;
 use super::Error;
 
+#[inline]
 pub fn name<I, T>() -> impl RecoverableParser<I, Name<T>, Error, RecoveryPoint>
 where
-    I: Input<Item = Token<T>> + Clone,
+    I: Input<Item = Token<T>>,
 {
-    terminal(TokenKind::Name.into(), |mut input: I| match input.next() {
-        Some(Token::Name(name)) => Ok((input, name)),
-        Some(_) => Err(Err::Error(Error::ExpectedName)),
-        None => Err(Err::Error(Error::Incomplete)),
-    })
+    RecoveryPoint::from(TokenKind::Name)
 }
 
-pub fn name_unless<I, T>(
-    unexpected: TokenKind,
-) -> impl RecoverableParser<I, Name<T>, Error, RecoveryPoint>
+#[inline]
+pub fn name_unless_on<I, T>() -> impl RecoverableParser<I, Name<T>, Error, RecoveryPoint>
 where
-    I: Input<Item = Token<T>> + Clone,
-    T: for<'a> PartialEq<&'a str>,
+    I: Input<Item = Token<T>>,
 {
-    terminal(TokenKind::Name.into(), move |mut input: I| {
-        match input.next() {
-            Some(Token::Name(name)) if name.as_raw_token().kind != unexpected => Ok((input, name)),
-            Some(_) => Err(Err::Error(Error::ExpectedName)),
-            None => Err(Err::Error(Error::Incomplete)),
-        }
-    })
+    RecoveryPoint::name_unless_on()
 }
 
+#[wrom]
 pub fn keyword<I, T>(
     expected: TokenKind,
 ) -> impl RecoverableParser<I, Name<T>, Error, RecoveryPoint>
 where
-    I: Input<Item = Token<T>> + Clone,
+    I: Input<Item = Token<T>>,
 {
-    terminal(expected.into(), move |mut input: I| match input.next() {
-        Some(Token::Name(name)) if name.as_raw_token().kind == expected => Ok((input, name)),
-        Some(_) => Err(Err::Error(Error::ExpectedKeyword(expected))),
-        None => Err(Err::Error(Error::Incomplete)),
-    })
+    RecoveryPoint::from(expected)
 }
 
+#[wrom]
 pub fn punctuator<I, T>(
     expected: TokenKind,
 ) -> impl RecoverableParser<I, Punctuator<T>, Error, RecoveryPoint>
 where
     I: Input<Item = Token<T>>,
 {
-    terminal(expected.into(), move |mut input: I| match input.next() {
-        Some(Token::Punctuator(punctuator)) if punctuator.as_raw_token().kind == expected => {
-            Ok((input, punctuator))
-        }
-        Some(_) => Err(Err::Error(Error::ExpectedPunctuator(expected))),
-        None => Err(Err::Error(Error::Incomplete)),
-    })
+    RecoveryPoint::from(expected)
 }
 
+#[wrom]
 pub fn int_value<T, I>() -> impl RecoverableParser<I, IntValue<T>, Error, RecoveryPoint>
 where
-    I: Input<Item = Token<T>> + Clone,
-    T: for<'a> PartialEq<&'a str>,
+    I: Input<Item = Token<T>>,
 {
-    terminal(
-        TokenKind::IntValue.into(),
-        move |mut input: I| match input.next() {
-            Some(Token::IntValue(int_value)) => Ok((input, int_value)),
-            Some(_) => Err(Err::Error(Error::ExpectedIntValue)),
-            None => Err(Err::Error(Error::Incomplete)),
-        },
-    )
+    RecoveryPoint::from(TokenKind::IntValue)
 }
 
+#[wrom]
 pub fn float_value<T, I>() -> impl RecoverableParser<I, FloatValue<T>, Error, RecoveryPoint>
 where
-    I: Input<Item = Token<T>> + Clone,
-    T: for<'a> PartialEq<&'a str>,
+    I: Input<Item = Token<T>>,
 {
-    terminal(
-        TokenKind::FloatValue.into(),
-        move |mut input: I| match input.next() {
-            Some(Token::FloatValue(float_value)) => Ok((input, float_value)),
-            Some(_) => Err(Err::Error(Error::ExpectedFloatValue)),
-            None => Err(Err::Error(Error::Incomplete)),
-        },
-    )
+    RecoveryPoint::from(TokenKind::FloatValue)
 }
 
+#[wrom]
 pub fn string_value<T, I>() -> impl RecoverableParser<I, StringValue<T>, Error, RecoveryPoint>
 where
-    I: Input<Item = Token<T>> + Clone,
+    I: Input<Item = Token<T>>,
 {
-    terminal(TokenKind::StringValue.into(), |mut input: I| {
-        match input.next() {
-            Some(Token::StringValue(value)) => Ok((input, value)),
-            Some(_) => Err(Err::Error(Error::ExpectedStringValue)),
-            None => Err(Err::Error(Error::Incomplete)),
-        }
-    })
+    RecoveryPoint::from(TokenKind::StringValue)
 }

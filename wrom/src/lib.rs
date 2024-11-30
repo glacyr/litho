@@ -20,20 +20,17 @@ mod recognizer;
 mod recoverable;
 mod recursive;
 mod sequence;
-mod skip;
 
-// pub use boxed::Boxed;
 pub use branch::{alt, Alt};
 pub use combinator::{opt, Opt};
 pub use input::Input;
 pub use missing::Missing;
-pub use multi::{many0, many1};
-pub use parser::{Map, RecoverableParser};
-pub use recognizer::{terminal, Recognizer};
+pub use multi::many;
+pub use parser::RecoverableParser;
+pub use recognizer::Recognizer;
 pub use recoverable::Recoverable;
 pub use recursive::recursive;
 pub use sequence::delimited;
-pub use skip::{skip_unrecognized, SkipUnrecognized};
 
 #[doc(hidden)]
 pub mod mock;

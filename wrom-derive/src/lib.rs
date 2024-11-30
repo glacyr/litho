@@ -1,11 +1,9 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{
-    parse_macro_input, Expr, FnArg, ItemFn, PathArguments, ReturnType, Type, TypeParamBound,
-};
+use syn::{parse_macro_input, FnArg, ItemFn, PathArguments, ReturnType, Type, TypeParamBound};
 
 #[proc_macro_attribute]
-pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
+pub fn wrom(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let item = parse_macro_input!(input as ItemFn);
 
     let ItemFn {
@@ -47,34 +45,46 @@ pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
 
     let where_clause = sig.generics.where_clause.as_ref();
 
-    let name = &sig.ident;
+    let named_generics = sig.generics.type_params().collect::<Vec<_>>();
 
     quote! {
         #(#attrs)*
         #vis #sig {
-            pub struct Parser {
+            // #block
+            pub struct Parser < #(#named_generics,)* > {
+                marker: ::std::marker::PhantomData<( #(#named_generics,)* )>,
                 #params
             };
 
-            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error, #recovery_point> for Parser
+            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error, #recovery_point> for Parser < #(#named_generics,)* >
             #where_clause {
+                #[inline(always)]
                 fn recognizer(&self) -> #recovery_point {
                     let Parser {
                         #(#param_names,)*
-                    } = *self;
+                        ..
+                    } = self;
+
+                    #(
+                        let #param_names = #param_names.clone();
+                    )*
 
                     let parser = #block;
 
                     <_ as ::wrom::RecoverableParser<#input, #output, #error, #recovery_point>>::recognizer(&parser)
                 }
 
-                fn parse(&self, input: #input, recovery_point: #recovery_point) -> ::nom::IResult<#input, #output, #error>
+                #[inline(always)]
+                fn parse(&mut self, input: &mut #input, recovery_point: #recovery_point) -> ::std::result::Result<#output, #error>
                 {
                     let Parser {
                         #(#param_names,)*
-                    } = *self;
+                        ..
+                    } = self;
 
-                    // eprintln!("{}: recovery = {:?}", stringify!(#name), recovery_point);
+                    #(
+                        let #param_names = #param_names.clone();
+                    )*
 
                     #block.parse(input, recovery_point)
                 }
@@ -82,6 +92,7 @@ pub fn wrom(attrs: TokenStream, input: TokenStream) -> TokenStream {
 
             Parser {
                 #(#param_names,)*
+                marker: ::std::marker::PhantomData,
             }
         }
     }

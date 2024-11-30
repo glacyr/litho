@@ -12,3 +12,7 @@
 | `recover(a)`           | `a`          | `map(opt(a).(r), Recoverable)`                     |
 | `map(a, f)`            | `a`          | `a(r)`                                             |
 | `skip_unrecognized(a)` | `a`          | `extend_rest(many_till(next, a(r) \| r))`          |
+
+# Rules
+
+- Every non-terminal consists of a first

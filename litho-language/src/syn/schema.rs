@@ -1,11 +1,11 @@
 use litho_diagnostics::Diagnostic;
-use wrom::{alt, delimited, many0, many1, opt, Input, RecoverableParser};
+use wrom::{alt, delimited, many, opt, Input, RecoverableParser};
 use wrom_derive::wrom;
 
 use crate::ast::*;
 use crate::lex::{Token, TokenKind};
 
-use super::combinators::{keyword, name, name_unless, punctuator, string_value};
+use super::combinators::{keyword, name, name_unless_on, punctuator, string_value};
 use super::executable::{default_value, directives, enum_value, named_type, operation_type, ty};
 use super::recovery::RecoveryPoint;
 use super::{Error, RECURSION_LIMIT};
@@ -15,9 +15,9 @@ pub fn type_system_document<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeSystemDocument<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    many0(type_system_definition()).map(|definitions| TypeSystemDocument { definitions })
+    many(type_system_definition()).map(|definitions| TypeSystemDocument { definitions })
 }
 
 #[wrom]
@@ -25,14 +25,33 @@ pub fn type_system_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
-        schema_definition().map(TypeSystemDefinition::SchemaDefinition),
-        type_definition()
+        description().flat_map(|description| {
+            opt(type_system_definition_with_description(Some(
+                description.clone(),
+            )))
+            .map(move |opt| opt.unwrap_or_else(|| TypeSystemDefinition::Error(description.clone())))
+        }),
+        type_system_definition_with_description(None),
+    ))
+}
+
+#[wrom]
+pub fn type_system_definition_with_description<'a, T, I>(
+    description: Option<Description<T>>,
+) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error, RecoveryPoint> + 'a
+where
+    I: Input<Item = Token<T>> + Spanned + 'a,
+    T: Clone + 'a,
+{
+    alt((
+        schema_definition(description.clone()).map(TypeSystemDefinition::SchemaDefinition),
+        type_definition(description.clone())
             .map(Into::into)
             .map(TypeSystemDefinition::TypeDefinition),
-        directive_definition()
+        directive_definition(description)
             .map(Into::into)
             .map(TypeSystemDefinition::DirectiveDefinition),
     ))
@@ -43,9 +62,9 @@ pub fn type_system_extension_document<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeSystemExtensionDocument<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    many0(type_system_definition_or_extension())
+    many(type_system_definition_or_extension())
         .map(|definitions| TypeSystemExtensionDocument { definitions })
 }
 
@@ -54,7 +73,7 @@ pub fn type_system_definition_or_extension<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeSystemDefinitionOrExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         type_system_definition().map(TypeSystemDefinitionOrExtension::TypeSystemDefinition),
@@ -67,14 +86,26 @@ pub fn type_system_extension<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    alt((
-        schema_extension().map(TypeSystemExtension::SchemaExtension),
-        type_extension()
+    keyword(TokenKind::KeywordExtend).flat_map(type_system_extension_with_extend)
+}
+
+#[wrom]
+pub fn type_system_extension_with_extend<'a, T, I>(
+    extend: Name<T>,
+) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error, RecoveryPoint> + 'a
+where
+    I: Input<Item = Token<T>> + Spanned + 'a,
+    T: Clone + 'a,
+{
+    opt(alt((
+        schema_extension(extend.clone()).map(TypeSystemExtension::SchemaExtension),
+        type_extension(extend.clone())
             .map(Into::into)
             .map(TypeSystemExtension::TypeExtension),
-    ))
+    )))
+    .map(move |opt| opt.unwrap_or(TypeSystemExtension::Error(extend.clone())))
 }
 
 #[wrom]
@@ -82,17 +113,18 @@ pub fn description<'a, T, I>(
 ) -> impl RecoverableParser<I, Description<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     string_value().map(Description)
 }
 
 #[wrom]
 pub fn schema_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, SchemaDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordSchema),
@@ -101,12 +133,14 @@ where
             Diagnostic::missing_root_operation_type_definitions,
         )),
     )
-        .map(|(schema, directives, type_definitions)| SchemaDefinition {
-            description: None,
-            schema,
-            directives,
-            type_definitions,
-        })
+        .map(
+            move |(schema, directives, type_definitions)| SchemaDefinition {
+                description: description.clone(),
+                schema,
+                directives,
+                type_definitions,
+            },
+        )
 }
 
 #[wrom]
@@ -114,11 +148,11 @@ pub fn root_operation_type_definitions<'a, T, I>(
 ) -> impl RecoverableParser<I, RootOperationTypeDefinitions<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many1(root_operation_type_definition()).recover(Missing::unary(
+        many(root_operation_type_definition()).recover(Missing::unary(
             Diagnostic::missing_root_operation_type_definitions,
         )),
         punctuator(TokenKind::BraceRight),
@@ -135,7 +169,7 @@ pub fn root_operation_type_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, RootOperationTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         operation_type(),
@@ -157,20 +191,20 @@ where
 
 #[wrom]
 pub fn schema_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, SchemaExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordSchema),
         opt(directives()),
         opt(root_operation_type_definitions()),
     )
         .map(
-            |(extend, schema, directives, type_definitions)| SchemaExtension {
-                extend_schema: (extend, schema),
+            move |(schema, directives, type_definitions)| SchemaExtension {
+                extend_schema: (extend.clone(), schema),
                 directives,
                 type_definitions,
             },
@@ -179,44 +213,48 @@ where
 
 #[wrom]
 pub fn type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, TypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
-        scalar_type_definition().map(TypeDefinition::ScalarTypeDefinition),
-        object_type_definition().map(TypeDefinition::ObjectTypeDefinition),
-        interface_type_definition().map(TypeDefinition::InterfaceTypeDefinition),
-        union_type_definition().map(TypeDefinition::UnionTypeDefinition),
-        enum_type_definition().map(TypeDefinition::EnumTypeDefinition),
-        input_object_type_definition().map(TypeDefinition::InputObjectTypeDefinition),
+        scalar_type_definition(description.clone()).map(TypeDefinition::ScalarTypeDefinition),
+        object_type_definition(description.clone()).map(TypeDefinition::ObjectTypeDefinition),
+        interface_type_definition(description.clone()).map(TypeDefinition::InterfaceTypeDefinition),
+        union_type_definition(description.clone()).map(TypeDefinition::UnionTypeDefinition),
+        enum_type_definition(description.clone()).map(TypeDefinition::EnumTypeDefinition),
+        input_object_type_definition(description.clone())
+            .map(TypeDefinition::InputObjectTypeDefinition),
     ))
 }
 
 #[wrom]
 pub fn type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, TypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
-        scalar_type_extension().map(TypeExtension::ScalarTypeExtension),
-        object_type_extension().map(TypeExtension::ObjectTypeExtension),
-        interface_type_extension().map(TypeExtension::InterfaceTypeExtension),
-        union_type_extension().map(TypeExtension::UnionTypeExtension),
-        enum_type_extension().map(TypeExtension::EnumTypeExtension),
-        input_object_type_extension().map(TypeExtension::InputObjectTypeExtension),
+        scalar_type_extension(extend.clone()).map(TypeExtension::ScalarTypeExtension),
+        object_type_extension(extend.clone()).map(TypeExtension::ObjectTypeExtension),
+        interface_type_extension(extend.clone()).map(TypeExtension::InterfaceTypeExtension),
+        union_type_extension(extend.clone()).map(TypeExtension::UnionTypeExtension),
+        enum_type_extension(extend.clone()).map(TypeExtension::EnumTypeExtension),
+        input_object_type_extension(extend.clone()).map(TypeExtension::InputObjectTypeExtension),
     ))
 }
 
 #[wrom]
 pub fn scalar_type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, ScalarTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     keyword(TokenKind::KeywordScalar)
         .and(name().recover(Missing::unary(
@@ -224,7 +262,7 @@ where
         )))
         .and(opt(directives()))
         .map(|((scalar, name), directives)| ScalarTypeDefinition {
-            description: None,
+            description: description.clone(),
             scalar,
             name,
             directives,
@@ -233,13 +271,13 @@ where
 
 #[wrom]
 pub fn scalar_type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, ScalarTypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordScalar),
         named_type().recover(Missing::unary(
             Diagnostic::missing_scalar_type_extension_name,
@@ -248,8 +286,8 @@ where
             Diagnostic::missing_scalar_type_extension_directives,
         )),
     )
-        .map(|(extend, scalar, name, directives)| ScalarTypeExtension {
-            extend_scalar: (extend, scalar),
+        .map(move |(scalar, name, directives)| ScalarTypeExtension {
+            extend_scalar: (extend.clone(), scalar),
             name,
             directives,
         })
@@ -257,10 +295,11 @@ where
 
 #[wrom]
 pub fn object_type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, ObjectTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordType),
@@ -274,7 +313,7 @@ where
         .map(
             |(ty, name, implements_interfaces, directives, fields_definition)| {
                 ObjectTypeDefinition {
-                    description: None,
+                    description: description.clone(),
                     ty,
                     name,
                     implements_interfaces,
@@ -290,7 +329,7 @@ pub fn implements_interfaces<'a, T, I>(
 ) -> impl RecoverableParser<I, ImplementsInterfaces<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordImplements),
@@ -298,7 +337,7 @@ where
         named_type().map(Into::into).recover(Missing::unary(
             Diagnostic::missing_first_implements_interface,
         )),
-        many0(
+        many(
             punctuator(TokenKind::Ampersand).and(named_type().map(Into::into).recover(
                 Missing::unary(Diagnostic::missing_second_implements_interface),
             )),
@@ -319,11 +358,11 @@ pub fn fields_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, FieldsDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many0(field_definition().map(Into::into)),
+        many(field_definition().map(Into::into)),
         punctuator(TokenKind::BraceRight),
         Missing::binary(Diagnostic::missing_fields_definition_closing_brace),
     )
@@ -338,7 +377,7 @@ pub fn field_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, FieldDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     opt(description())
         .and_recognize((
@@ -366,11 +405,11 @@ pub fn arguments_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, ArgumentsDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::ParenLeft),
-        many0(input_value_definition().map(Into::into)),
+        many(input_value_definition().map(Into::into)),
         punctuator(TokenKind::ParenRight),
         Missing::binary(Diagnostic::missing_arguments_definition_closing_parenthesis),
     )
@@ -385,22 +424,22 @@ pub fn input_value_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, InputValueDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
-    (
-        opt(description()),
-        name(),
-        punctuator(TokenKind::Colon).recover(Missing::unary(
-            Diagnostic::missing_input_value_definition_colon,
-        )),
-        ty(RECURSION_LIMIT).recover(Missing::unary(
-            Diagnostic::missing_input_value_definition_type,
-        )),
-        opt(default_value()),
-        opt(directives()),
-    )
+    opt(description())
+        .and_recognize((
+            name(),
+            punctuator(TokenKind::Colon).recover(Missing::unary(
+                Diagnostic::missing_input_value_definition_colon,
+            )),
+            ty(RECURSION_LIMIT).recover(Missing::unary(
+                Diagnostic::missing_input_value_definition_type,
+            )),
+            opt(default_value()),
+            opt(directives()),
+        ))
         .map(
-            |(description, name, colon, ty, default_value, directives)| InputValueDefinition {
+            |(description, (name, colon, ty, default_value, directives))| InputValueDefinition {
                 description,
                 name,
                 colon,
@@ -413,13 +452,13 @@ where
 
 #[wrom]
 pub fn object_type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, ObjectTypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordType),
         named_type().recover(Missing::unary(
             Diagnostic::missing_object_type_extension_name,
@@ -429,9 +468,9 @@ where
         opt(fields_definition()),
     )
         .map(
-            |(extend, ty, name, implements_interfaces, directives, fields_definition)| {
+            move |(ty, name, implements_interfaces, directives, fields_definition)| {
                 ObjectTypeExtension {
-                    extend_type: (extend, ty),
+                    extend_type: (extend.clone(), ty.into()),
                     name,
                     implements_interfaces,
                     directives,
@@ -443,10 +482,11 @@ where
 
 #[wrom]
 pub fn interface_type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, InterfaceTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordInterface),
@@ -460,7 +500,7 @@ where
         .map(
             |(interface, name, implements_interfaces, directives, fields_definition)| {
                 InterfaceTypeDefinition {
-                    description: None,
+                    description: description.clone(),
                     interface,
                     name,
                     implements_interfaces,
@@ -473,13 +513,13 @@ where
 
 #[wrom]
 pub fn interface_type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, InterfaceTypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordInterface),
         named_type().recover(Missing::unary(
             Diagnostic::missing_interface_type_extension_name,
@@ -489,9 +529,9 @@ where
         opt(fields_definition()),
     )
         .map(
-            |(extend, interface, name, implements_interfaces, directives, fields_definition)| {
+            move |(interface, name, implements_interfaces, directives, fields_definition)| {
                 InterfaceTypeExtension {
-                    extend_interface: (extend, interface),
+                    extend_interface: (extend.clone(), interface),
                     name,
                     implements_interfaces,
                     directives,
@@ -503,10 +543,11 @@ where
 
 #[wrom]
 pub fn union_type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, UnionTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordUnion),
@@ -518,7 +559,7 @@ where
     )
         .map(
             |(union_kw, name, directives, member_types)| UnionTypeDefinition {
-                description: None,
+                description: description.clone(),
                 union_kw,
                 name,
                 directives,
@@ -532,7 +573,7 @@ pub fn union_member_types<'a, T, I>(
 ) -> impl RecoverableParser<I, UnionMemberTypes<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         punctuator(TokenKind::Eq),
@@ -540,7 +581,7 @@ where
         named_type()
             .map(Into::into)
             .recover(Missing::unary(Diagnostic::missing_first_union_member_type)),
-        many0(
+        many(
             punctuator(TokenKind::Pipe).and(
                 named_type()
                     .map(Into::into)
@@ -558,13 +599,13 @@ where
 
 #[wrom]
 pub fn union_type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, UnionTypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordUnion),
         named_type().recover(Missing::unary(
             Diagnostic::missing_union_type_extension_name,
@@ -573,8 +614,8 @@ where
         opt(union_member_types()),
     )
         .map(
-            |(extend, union_kw, name, directives, member_types)| UnionTypeExtension {
-                extend_union: (extend, union_kw),
+            move |(union_kw, name, directives, member_types)| UnionTypeExtension {
+                extend_union: (extend.clone(), union_kw),
                 name,
                 directives,
                 member_types,
@@ -584,10 +625,11 @@ where
 
 #[wrom]
 pub fn enum_type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, EnumTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordEnum),
@@ -599,7 +641,7 @@ where
     )
         .map(
             |(enum_kw, name, directives, values_definition)| EnumTypeDefinition {
-                description: None,
+                description: description.clone(),
                 enum_kw,
                 name,
                 directives,
@@ -613,11 +655,11 @@ pub fn enum_values_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, EnumValuesDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many0(enum_value_definition().map(Into::into)),
+        many(enum_value_definition().map(Into::into)),
         punctuator(TokenKind::BraceRight),
         Missing::binary(Diagnostic::missing_enum_values_closing_brace),
     )
@@ -632,7 +674,7 @@ pub fn enum_value_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, EnumValueDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     opt(description())
         .and_recognize(enum_value())
@@ -648,21 +690,21 @@ where
 
 #[wrom]
 pub fn enum_type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, EnumTypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordEnum),
         named_type().recover(Missing::unary(Diagnostic::missing_enum_type_extension_name)),
         opt(directives()),
         opt(enum_values_definition()),
     )
         .map(
-            |(extend, enum_kw, name, directives, values_definition)| EnumTypeExtension {
-                extend_enum: (extend, enum_kw),
+            move |(enum_kw, name, directives, values_definition)| EnumTypeExtension {
+                extend_enum: (extend.clone(), enum_kw),
                 name,
                 directives,
                 values_definition,
@@ -672,10 +714,11 @@ where
 
 #[wrom]
 pub fn input_object_type_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, InputObjectTypeDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordInput),
@@ -687,7 +730,7 @@ where
     )
         .map(
             |(input, name, directives, fields_definition)| InputObjectTypeDefinition {
-                description: None,
+                description: description.clone(),
                 input,
                 name,
                 directives,
@@ -701,11 +744,11 @@ pub fn input_fields_definition<'a, T, I>(
 ) -> impl RecoverableParser<I, InputFieldsDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     delimited(
         punctuator(TokenKind::BraceLeft),
-        many0(input_value_definition().map(Into::into)),
+        many(input_value_definition().map(Into::into)),
         punctuator(TokenKind::BraceRight),
         Missing::binary(Diagnostic::missing_input_fields_definition_closing_brace),
     )
@@ -717,13 +760,13 @@ where
 
 #[wrom]
 pub fn input_object_type_extension<'a, T, I>(
+    extend: Name<T>,
 ) -> impl RecoverableParser<I, InputObjectTypeExtension<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
-        keyword(TokenKind::KeywordExtend),
         keyword(TokenKind::KeywordInput),
         named_type().recover(Missing::unary(
             Diagnostic::missing_input_object_type_extension_name,
@@ -732,8 +775,8 @@ where
         opt(input_fields_definition()),
     )
         .map(
-            |(extend, input, name, directives, fields_definition)| InputObjectTypeExtension {
-                extend_input: (extend, input),
+            move |(input, name, directives, fields_definition)| InputObjectTypeExtension {
+                extend_input: (extend.clone(), input),
                 name,
                 directives,
                 fields_definition,
@@ -743,16 +786,17 @@ where
 
 #[wrom]
 pub fn directive_definition<'a, T, I>(
+    description: Option<Description<T>>,
 ) -> impl RecoverableParser<I, DirectiveDefinition<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordDirective),
         punctuator(TokenKind::At)
             .recover(Missing::unary(Diagnostic::missing_directive_definition_at)),
-        name_unless(TokenKind::KeywordOn).recover(Missing::unary(
+        name_unless_on().recover(Missing::unary(
             Diagnostic::missing_directive_definition_name,
         )),
         opt(arguments_definition().map(Into::into)),
@@ -764,7 +808,7 @@ where
         .map(
             |(directive, at, name, arguments_definition, repeatable, locations)| {
                 DirectiveDefinition {
-                    description: None,
+                    description: description.clone(),
                     directive,
                     at,
                     name,
@@ -781,13 +825,13 @@ pub fn directive_locations<'a, T, I>(
 ) -> impl RecoverableParser<I, DirectiveLocations<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     (
         keyword(TokenKind::KeywordOn),
         opt(punctuator(TokenKind::Pipe)),
         directive_location().recover(Missing::unary(Diagnostic::missing_first_directive_location)),
-        many0(
+        many(
             punctuator(TokenKind::Pipe).and(directive_location().recover(Missing::unary(
                 Diagnostic::missing_second_directive_location,
             ))),
@@ -806,7 +850,7 @@ pub fn directive_location<'a, T, I>(
 ) -> impl RecoverableParser<I, DirectiveLocation<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         executable_directive_location().map(DirectiveLocation::ExecutableDirectiveLocation),
@@ -819,7 +863,7 @@ pub fn executable_directive_location<'a, T, I>(
 ) -> impl RecoverableParser<I, ExecutableDirectiveLocation<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         keyword(TokenKind::KeywordDirectiveQuery).map(ExecutableDirectiveLocation::Query),
@@ -843,7 +887,7 @@ pub fn type_system_directive_location<'a, T, I>(
 ) -> impl RecoverableParser<I, TypeSystemDirectiveLocation<T>, Error, RecoveryPoint> + 'a
 where
     I: Input<Item = Token<T>> + Spanned + 'a,
-    T: for<'b> PartialEq<&'b str> + Clone + 'a,
+    T: Clone + 'a,
 {
     alt((
         keyword(TokenKind::KeywordDirectiveSchema).map(TypeSystemDirectiveLocation::Schema),

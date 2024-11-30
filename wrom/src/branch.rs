@@ -1,5 +1,4 @@
-use nom::error::ParseError;
-use nom::{IResult, Parser};
+use nom::error::{ErrorKind, ParseError};
 
 use super::{Recognizer, RecoverableParser};
 
@@ -24,13 +23,13 @@ macro_rules! alt {
         #[allow(non_snake_case)]
         impl<I, O, E, $($ident),*, R> RecoverableParser<I, O, E, R> for Alt<($($ident,)*)>
         where
-            I: Clone,
             $(
                 $ident: RecoverableParser<I, O, E, R>,
             )*
-            E: ParseError<I>,
+            E: for<'b> ParseError<&'b I>,
             R: Recognizer<I, E>,
         {
+            #[inline(always)]
             fn recognizer(&self) -> R {
                 let ($($ident,)*) = &self.0;
 
@@ -40,15 +39,18 @@ macro_rules! alt {
                     )*
             }
 
-            fn parse(&self, input: I, recovery_point: R) -> IResult<I, O, E>
+            #[inline]
+            fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<O, E>
             {
-                let ($($ident,)*) = &self.0;
+                let ($($ident,)*) = &mut self.0;
 
-                nom::branch::alt((
-                    $(
-                        |input| $ident.parse(input, recovery_point),
-                    )*
-                )).parse(input)
+                $(
+                    if $ident.recognizer().recognize(input).is_ok() {
+                        return $ident.parse(input, recovery_point);
+                    }
+                )*
+
+                Err(E::from_error_kind(input, ErrorKind::Alt))
             }
         }
     };

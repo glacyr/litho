@@ -51,6 +51,7 @@ macro_rules! diagnostics {
             paste::paste! {
                 $(
                     #[doc = concat!("(", stringify!($code), ") ", $message)]
+                    #[inline]
                     pub fn [<$name:snake>](
                         $($($var: String,)*)?
                         $(

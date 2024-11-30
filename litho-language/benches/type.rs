@@ -2,10 +2,41 @@
 
 extern crate test;
 
-use std::sync::Arc;
-
-use litho_language::{Document, Parse};
+use litho_language::ast::{ExecutableDocument, TypeSystemDocument};
+use litho_language::Parse;
 use test::Bencher;
+
+#[bench]
+fn test_github_litho(b: &mut Bencher) {
+    let string = include_str!("./github.graphql");
+
+    b.iter(|| {
+        assert!(
+            TypeSystemDocument::<&str>::parse_from_str(Default::default(), &string)
+                .unwrap()
+                .1
+                .is_empty()
+        );
+    });
+}
+
+#[bench]
+fn test_github_competitor_async_graphql_parser(b: &mut Bencher) {
+    let string = include_str!("./github.graphql");
+
+    b.iter(|| {
+        assert!(async_graphql_parser::parse_schema(&string).is_ok());
+    });
+}
+
+#[bench]
+fn test_github_competitor_graphql_parser(b: &mut Bencher) {
+    let string = include_str!("./github.graphql");
+
+    b.iter(|| {
+        assert!(graphql_parser::parse_schema::<&str>(string).is_ok());
+    });
+}
 
 #[bench]
 fn test_gitlab_litho(b: &mut Bencher) {
@@ -15,7 +46,7 @@ fn test_gitlab_litho(b: &mut Bencher) {
 
     b.iter(|| {
         assert!(
-            Document::<&str>::parse_from_str(Default::default(), &string)
+            TypeSystemDocument::<&str>::parse_from_str(Default::default(), &string)
                 .unwrap()
                 .1
                 .is_empty()
@@ -52,12 +83,14 @@ fn test_kitchen_sink_litho(b: &mut Bencher) {
     assert!(string.len() <= 1_000_000);
 
     b.iter(|| {
-        assert!(
-            Document::<&str>::parse_from_str(Default::default(), &string)
-                .unwrap()
-                .1
-                .is_empty()
-        );
+        for _ in 0..1000 {
+            assert!(
+                ExecutableDocument::<&str>::parse_from_str(Default::default(), &string)
+                    .unwrap()
+                    .1
+                    .is_empty()
+            );
+        }
     });
 }
 
@@ -68,7 +101,9 @@ fn test_kitchen_sink_competitor_async_graphql_parser(b: &mut Bencher) {
     assert!(string.len() <= 1_000_000);
 
     b.iter(|| {
-        assert!(async_graphql_parser::parse_query(&string).is_ok());
+        for _ in 0..1000 {
+            assert!(async_graphql_parser::parse_query(&string).is_ok());
+        }
     });
 }
 
@@ -79,7 +114,26 @@ fn test_kitchen_sink_competitor_graphql_parser(b: &mut Bencher) {
     assert!(string.len() <= 1_000_000);
 
     b.iter(|| {
-        assert!(graphql_parser::parse_query::<&str>(string).is_ok());
+        for _ in 0..1000 {
+            assert!(graphql_parser::parse_query::<&str>(string).is_ok());
+        }
+    });
+}
+
+#[bench]
+fn test_kitchen_sink_competitor_stellate(b: &mut Bencher) {
+    use graphql_query::ast::{ASTContext, Document, ParseNode, PrintNode};
+
+    let string = include_str!("./kitchen_sink.graphql");
+
+    assert!(string.len() <= 1_000_000);
+
+    b.iter(|| {
+        for _ in 0..1000 {
+            let ctx = ASTContext::new();
+            // Parse the source_string with the context
+            assert!(Document::parse(&ctx, string).is_ok());
+        }
     });
 }
 

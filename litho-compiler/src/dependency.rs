@@ -122,6 +122,7 @@ where
             TypeSystemDefinition::DirectiveDefinition(definition) => definition.product(),
             TypeSystemDefinition::SchemaDefinition(definition) => definition.product(),
             TypeSystemDefinition::TypeDefinition(definition) => definition.product(),
+            TypeSystemDefinition::Error(_) => None,
         }
     }
 }
@@ -162,6 +163,7 @@ where
         match self {
             TypeSystemExtension::SchemaExtension(extension) => extension.product(),
             TypeSystemExtension::TypeExtension(extension) => extension.product(),
+            TypeSystemExtension::Error(_) => None,
         }
     }
 }

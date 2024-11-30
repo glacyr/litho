@@ -1,6 +1,6 @@
 use litho_diagnostics::Diagnostic;
 
-use crate::ast::{Node, Recoverable, Visit};
+use crate::ast::{Node, Recoverable, TypeSystemDefinition, TypeSystemExtension, Visit};
 use crate::lex::{Span, Token};
 
 pub trait Errors<T> {
@@ -25,12 +25,13 @@ where
 {
     let mut errors = vec![];
     ast.0.traverse(&CollectErrors, &mut errors);
-    match ast.1.first().zip(ast.1.last()) {
-        Some((first, last)) => errors.push(Diagnostic::unrecognized_tokens(
-            first.span().joined(last.span()),
-        )),
-        None => {}
-    };
+
+    errors.extend(
+        ast.1
+            .iter()
+            .map(Token::span)
+            .map(Diagnostic::unrecognized_tokens),
+    );
     errors
 }
 
@@ -41,6 +42,26 @@ where
     T: 'ast,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
+
+    fn visit_type_system_definition(
+        &self,
+        node: &'ast TypeSystemDefinition<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let TypeSystemDefinition::Error(error) = node {
+            accumulator.push(Diagnostic::unrecognized_tokens(error.span()))
+        }
+    }
+
+    fn visit_type_system_extension(
+        &self,
+        node: &'ast TypeSystemExtension<T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
+        if let TypeSystemExtension::Error(error) = node {
+            accumulator.push(Diagnostic::unrecognized_tokens(error.span()))
+        }
+    }
 
     fn visit_recoverable<U>(
         &self,

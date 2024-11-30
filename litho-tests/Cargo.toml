@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 ariadne = "0.1.5"
+strip-ansi-escapes = "0.1.1"
 
 litho-diagnostics = { path = "../litho-diagnostics" }
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }
 litho-validation = { path = "../litho-validation" }
-strip-ansi-escapes = "0.1.1"

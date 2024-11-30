@@ -11,13 +11,13 @@ pub trait Missing<I> {
 
     /// Called by parsers when something (like a token or a sequence of tokens)
     /// is expected but missing.
-    fn error(&self, input: &I) -> Self::Error;
+    fn error(&self, input: &mut I) -> Self::Error;
 }
 
 impl<I> Missing<I> for () {
     type Error = ();
 
-    fn error(&self, _input: &I) -> Self::Error {
+    fn error(&self, _input: &mut I) -> Self::Error {
         ()
     }
 }

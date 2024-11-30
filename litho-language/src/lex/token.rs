@@ -1,10 +1,9 @@
 use std::borrow::Borrow;
-use std::collections::VecDeque;
+use std::iter::Peekable;
 use std::num::{ParseFloatError, ParseIntError};
 use std::str::FromStr;
 
 use logos::Logos;
-use nom::InputLength;
 use unindent::unindent;
 
 use super::raw::{raw_lexer, RawLexer, RawToken};
@@ -18,6 +17,7 @@ impl<T> Error<T> {
         self.0.span
     }
 
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
     }
@@ -67,14 +67,60 @@ impl<T> Error<T> {
 pub struct Name<T>(RawToken<T>);
 
 impl<T> Name<T> {
-    pub fn new(source: T) -> Name<T> {
-        Name(RawToken::new(TokenKind::Name, source))
+    pub fn new<'a>(source: &'a str) -> Name<T>
+    where
+        T: From<&'a str>,
+    {
+        let kind = match source {
+            "query" => TokenKind::KeywordQuery,
+            "mutation" => TokenKind::KeywordMutation,
+            "subscription" => TokenKind::KeywordSubscription,
+            "on" => TokenKind::KeywordOn,
+            "fragment" => TokenKind::KeywordFragment,
+            "true" => TokenKind::KeywordTrue,
+            "false" => TokenKind::KeywordFalse,
+            "null" => TokenKind::KeywordNull,
+            "schema" => TokenKind::KeywordSchema,
+            "extend" => TokenKind::KeywordExtend,
+            "scalar" => TokenKind::KeywordScalar,
+            "type" => TokenKind::KeywordType,
+            "implements" => TokenKind::KeywordImplements,
+            "interface" => TokenKind::KeywordInterface,
+            "union" => TokenKind::KeywordUnion,
+            "enum" => TokenKind::KeywordEnum,
+            "input" => TokenKind::KeywordInput,
+            "directive" => TokenKind::KeywordDirective,
+            "repeatable" => TokenKind::KeywordRepeatable,
+            "QUERY" => TokenKind::KeywordDirectiveQuery,
+            "MUTATION" => TokenKind::KeywordDirectiveMutation,
+            "SUBSCRIPTION" => TokenKind::KeywordDirectiveSubscription,
+            "FIELD" => TokenKind::KeywordDirectiveField,
+            "FRAGMENT_DEFINITION" => TokenKind::KeywordDirectiveFragmentDefinition,
+            "FRAGMENT_SPREAD" => TokenKind::KeywordDirectiveFragmentSpread,
+            "INLINE_FRAGMENT" => TokenKind::KeywordDirectiveInlineFragment,
+            "VARIABLE_DEFINITION" => TokenKind::KeywordDirectiveVariableDefinition,
+            "SCHEMA" => TokenKind::KeywordDirectiveSchema,
+            "SCALAR" => TokenKind::KeywordDirectiveScalar,
+            "OBJECT" => TokenKind::KeywordDirectiveObject,
+            "FIELD_DEFINITION" => TokenKind::KeywordDirectiveFieldDefinition,
+            "ARGUMENT_DEFINITION" => TokenKind::KeywordDirectiveArgumentDefinition,
+            "INTERFACE" => TokenKind::KeywordDirectiveInterface,
+            "UNION" => TokenKind::KeywordDirectiveUnion,
+            "ENUM" => TokenKind::KeywordDirectiveEnum,
+            "ENUM_VALUE" => TokenKind::KeywordDirectiveEnumValue,
+            "INPUT_OBJECT" => TokenKind::KeywordDirectiveInputObject,
+            "INPUT_FIELD_DEFINITION" => TokenKind::KeywordDirectiveInputFieldDefinition,
+            _ => TokenKind::Name,
+        };
+
+        Name(RawToken::new(kind, T::from(source)))
     }
 
     pub fn span(&self) -> Span {
         self.0.span
     }
 
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
     }
@@ -105,16 +151,36 @@ impl<T> AsRef<T> for Name<T> {
 pub struct Punctuator<T>(RawToken<T>);
 
 impl<T> Punctuator<T> {
-    pub fn new(source: T) -> Punctuator<T> {
-        // assert!(kind.is_punctuator());
+    pub fn new(source: &'static str) -> Punctuator<T>
+    where
+        T: From<&'static str>,
+    {
+        let kind = match source {
+            "&" => TokenKind::Ampersand,
+            "@" => TokenKind::At,
+            "!" => TokenKind::Bang,
+            "{" => TokenKind::BraceLeft,
+            "}" => TokenKind::BraceRight,
+            "[" => TokenKind::BracketLeft,
+            "]" => TokenKind::BracketRight,
+            ":" => TokenKind::Colon,
+            "$" => TokenKind::Dollar,
+            "..." => TokenKind::Dots,
+            "=" => TokenKind::Eq,
+            "(" => TokenKind::ParenLeft,
+            ")" => TokenKind::ParenRight,
+            "|" => TokenKind::Pipe,
+            _ => todo!(),
+        };
 
-        Punctuator(RawToken::new(TokenKind::Ampersand, source))
+        Punctuator(RawToken::new(kind, T::from(source)))
     }
 
     pub fn span(&self) -> Span {
         self.0.span
     }
 
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
     }
@@ -135,6 +201,7 @@ impl<T> IntValue<T> {
         self.0.span
     }
 
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
     }
@@ -158,6 +225,7 @@ impl<T> FloatValue<T> {
         self.0.span
     }
 
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
     }
@@ -180,6 +248,7 @@ impl<T> StringValue<T> {
         self.0.span
     }
 
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         &self.0
     }
@@ -239,6 +308,7 @@ pub enum Token<T> {
 }
 
 impl<T> Token<T> {
+    #[inline(always)]
     pub fn as_raw_token(&self) -> &RawToken<T> {
         match self {
             Token::Error(error) => error.as_raw_token(),
@@ -250,6 +320,7 @@ impl<T> Token<T> {
         }
     }
 
+    #[inline(always)]
     pub fn span(&self) -> Span {
         match self {
             Token::Error(token) => token.0.span,
@@ -263,6 +334,7 @@ impl<T> Token<T> {
 }
 
 impl<T> From<RawToken<T>> for Token<T> {
+    #[inline(always)]
     fn from(raw: RawToken<T>) -> Self {
         match raw.kind {
             TokenKind::Error => Token::Error(Error(raw)),
@@ -282,19 +354,30 @@ impl<T> From<Name<T>> for Token<T> {
     }
 }
 
-#[derive(Clone)]
-pub struct Lexer<'a, T> {
-    lexer: RawLexer<'a, T>,
+pub struct Lexer<'a, T>
+where
+    T: From<&'a str>,
+{
+    lexer: Peekable<TokenIter<RawLexer<'a, T>>>,
+    last_span: Option<Span>,
 }
 
 impl<'a, T> Lexer<'a, T>
 where
     T: From<&'a str>,
 {
-    pub fn exact(self) -> ExactLexer<T> {
-        ExactLexer {
-            tokens: self.collect(),
-            last_span: None,
+    #[inline(always)]
+    pub fn peek(&mut self) -> Option<&Token<T>> {
+        self.lexer.peek()
+    }
+
+    #[inline(always)]
+    pub fn span(&mut self) -> Span {
+        match (self.last_span, self.peek()) {
+            (Some(left), Some(right)) => Span::between(left, right.span()),
+            (Some(left), None) => left.collapse_to_end(),
+            (None, Some(right)) => right.span().collapse_to_start(),
+            (None, None) => todo!(),
         }
     }
 }
@@ -305,99 +388,38 @@ where
 {
     type Item = Token<T>;
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        Some(self.lexer.next()?.into())
+        let token = self.lexer.next()?;
+
+        self.last_span.replace(token.span());
+        Some(token)
     }
 }
 
-#[derive(Clone)]
-pub struct FastLexer<'a, T> {
-    tokens: &'a [Token<T>],
-    position: usize,
-    last_span: Option<Span>,
-}
+pub struct TokenIter<I>(I);
 
-impl<'a, T> FastLexer<'a, T> {
-    pub fn new(tokens: &'a [Token<T>]) -> FastLexer<'a, T> {
-        FastLexer {
-            tokens,
-            position: 0,
-            last_span: Default::default(),
-        }
-    }
-
-    pub fn span(&self) -> Span {
-        match (self.last_span.as_ref(), self.tokens.get(self.position)) {
-            (Some(&left), Some(right)) => Span::between(left, right.span()),
-            (Some(&left), None) => left.collapse_to_end(),
-            (None, Some(right)) => right.span().collapse_to_start(),
-            (None, None) => todo!(),
-        }
-    }
-}
-
-impl<'a, T> Iterator for FastLexer<'a, T>
+impl<I, T> Iterator for TokenIter<I>
 where
-    T: Clone,
+    I: Iterator<Item = RawToken<T>>,
 {
     type Item = Token<T>;
 
+    #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.tokens.get(self.position) {
-            Some(token) => {
-                self.position += 1;
-                self.last_span.replace(token.span());
-                Some(token.clone())
-            }
-            None => None,
-        }
+        self.0.next().map(Into::into)
     }
 }
 
-impl<'a, T> InputLength for FastLexer<'a, T> {
-    fn input_len(&self) -> usize {
-        self.tokens.len() - self.position
-    }
-}
-
-#[derive(Clone)]
-pub struct ExactLexer<T> {
-    pub tokens: VecDeque<Token<T>>,
-    last_span: Option<Span>,
-}
-
-impl<T> ExactLexer<T> {
-    pub fn span(&self) -> Span {
-        match (self.last_span.as_ref(), self.tokens.get(0)) {
-            (Some(&left), Some(right)) => Span::between(left, right.span()),
-            (Some(&left), None) => left.collapse_to_end(),
-            (None, Some(right)) => right.span().collapse_to_start(),
-            (None, None) => todo!(),
-        }
-    }
-}
-
-impl<T> Iterator for ExactLexer<T> {
-    type Item = Token<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let token = self.tokens.pop_front();
-        self.last_span = token.as_ref().map(|token| token.span());
-        token
-    }
-}
-
-impl<T> InputLength for ExactLexer<T> {
-    fn input_len(&self) -> usize {
-        self.tokens.len()
-    }
-}
-
-pub fn lexer<T>(source_id: SourceId, source: &str) -> Lexer<T> {
+pub fn lexer<'a, T>(source_id: SourceId, source: &'a str) -> Lexer<T>
+where
+    T: From<&'a str>,
+{
     let _: <TokenKind as Logos>::Source;
 
     Lexer {
-        lexer: raw_lexer(source_id, TokenKind::lexer(source)),
+        lexer: TokenIter(raw_lexer(source_id, TokenKind::lexer(source))).peekable(),
+        last_span: Default::default(),
     }
 }
 
