@@ -41,7 +41,6 @@ pub fn wrom(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let input = &ty.args[0];
     let output = &ty.args[1];
     let error = &ty.args[2];
-    let recovery_point = &ty.args[3];
 
     let where_clause = sig.generics.where_clause.as_ref();
 
@@ -56,10 +55,10 @@ pub fn wrom(_attr: TokenStream, input: TokenStream) -> TokenStream {
                 #params
             };
 
-            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error, #recovery_point> for Parser < #(#named_generics,)* >
+            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error> for Parser < #(#named_generics,)* >
             #where_clause {
                 #[inline(always)]
-                fn recognizer(&self) -> #recovery_point {
+                fn recognizer(&self) -> #input::Recognizer {
                     let Parser {
                         #(#param_names,)*
                         ..
@@ -71,11 +70,11 @@ pub fn wrom(_attr: TokenStream, input: TokenStream) -> TokenStream {
 
                     let parser = #block;
 
-                    <_ as ::wrom::RecoverableParser<#input, #output, #error, #recovery_point>>::recognizer(&parser)
+                    <_ as ::wrom::RecoverableParser<#input, #output, #error>>::recognizer(&parser)
                 }
 
                 #[inline(always)]
-                fn parse(&mut self, input: &mut #input, recovery_point: #recovery_point) -> ::std::result::Result<#output, #error>
+                fn parse(&mut self, input: &mut #input, recovery_point: #input::Recognizer) -> ::std::result::Result<#output, #error>
                 {
                     let Parser {
                         #(#param_names,)*

@@ -1,45 +1,28 @@
-use super::{Input, Recognizer, RecoverableParser};
+use super::{Input, RecoverableParser};
 
 /// Recoverable parser that invokes an underlying parser multiple times and
 /// returns a `Vec<T>` of results.
 pub struct Many<P>(P);
 
-impl<I, O, E, R, P> RecoverableParser<I, Vec<O>, E, R> for Many<P>
+impl<I, O, E, P> RecoverableParser<I, Vec<O>, E> for Many<P>
 where
     I: Input,
-    R: Recognizer<I, E>,
-    P: RecoverableParser<I, O, E, R>,
+    P: RecoverableParser<I, O, E>,
 {
     #[inline(always)]
-    fn recognizer(&self) -> R {
+    fn recognizer(&self) -> I::Recognizer {
         self.0.recognizer()
     }
 
     #[inline(never)]
-    fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<Vec<O>, E>
-    where
-        R: Recognizer<I, E>,
-    {
+    fn parse(&mut self, input: &mut I, recovery_point: I::Recognizer) -> Result<Vec<O>, E> {
         let mut results = Vec::new();
 
-        let next_recovery_point = recovery_point.or(self.0.recognizer());
+        let next_recovery_point = recovery_point | self.0.recognizer();
 
-        loop {
-            if self.0.recognizer().recognize(input).is_ok() {
-                let result = self.0.parse(input, next_recovery_point)?;
-                results.push(result);
-                continue;
-            }
-
-            if recovery_point.recognize(input).is_ok() {
-                break;
-            }
-
-            if let Some(token) = input.next() {
-                input.unrecognized(token);
-            } else {
-                break;
-            }
+        while input.discard(self.0.recognizer(), recovery_point) {
+            let result = self.0.parse(input, next_recovery_point)?;
+            results.push(result);
         }
 
         Ok(results)

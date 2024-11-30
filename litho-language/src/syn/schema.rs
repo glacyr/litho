@@ -12,9 +12,9 @@ use super::{Error, RECURSION_LIMIT};
 
 #[wrom]
 pub fn type_system_document<'a, T, I>(
-) -> impl RecoverableParser<I, TypeSystemDocument<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemDocument<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     many(type_system_definition()).map(|definitions| TypeSystemDocument { definitions })
@@ -22,9 +22,9 @@ where
 
 #[wrom]
 pub fn type_system_definition<'a, T, I>(
-) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -41,9 +41,9 @@ where
 #[wrom]
 pub fn type_system_definition_with_description<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -59,9 +59,9 @@ where
 
 #[wrom]
 pub fn type_system_extension_document<'a, T, I>(
-) -> impl RecoverableParser<I, TypeSystemExtensionDocument<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemExtensionDocument<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     many(type_system_definition_or_extension())
@@ -70,9 +70,9 @@ where
 
 #[wrom]
 pub fn type_system_definition_or_extension<'a, T, I>(
-) -> impl RecoverableParser<I, TypeSystemDefinitionOrExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemDefinitionOrExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -83,9 +83,9 @@ where
 
 #[wrom]
 pub fn type_system_extension<'a, T, I>(
-) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     keyword(TokenKind::KeywordExtend).flat_map(type_system_extension_with_extend)
@@ -94,9 +94,9 @@ where
 #[wrom]
 pub fn type_system_extension_with_extend<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     opt(alt((
@@ -109,10 +109,9 @@ where
 }
 
 #[wrom]
-pub fn description<'a, T, I>(
-) -> impl RecoverableParser<I, Description<T>, Error, RecoveryPoint> + 'a
+pub fn description<'a, T, I>() -> impl RecoverableParser<I, Description<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     string_value().map(Description)
@@ -121,9 +120,9 @@ where
 #[wrom]
 pub fn schema_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, SchemaDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, SchemaDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -145,9 +144,9 @@ where
 
 #[wrom]
 pub fn root_operation_type_definitions<'a, T, I>(
-) -> impl RecoverableParser<I, RootOperationTypeDefinitions<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, RootOperationTypeDefinitions<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     delimited(
@@ -166,9 +165,9 @@ where
 
 #[wrom]
 pub fn root_operation_type_definition<'a, T, I>(
-) -> impl RecoverableParser<I, RootOperationTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, RootOperationTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -192,9 +191,9 @@ where
 #[wrom]
 pub fn schema_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, SchemaExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, SchemaExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -214,9 +213,9 @@ where
 #[wrom]
 pub fn type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, TypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -233,9 +232,9 @@ where
 #[wrom]
 pub fn type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, TypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -251,9 +250,9 @@ where
 #[wrom]
 pub fn scalar_type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, ScalarTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ScalarTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     keyword(TokenKind::KeywordScalar)
@@ -272,9 +271,9 @@ where
 #[wrom]
 pub fn scalar_type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, ScalarTypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ScalarTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -296,9 +295,9 @@ where
 #[wrom]
 pub fn object_type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, ObjectTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ObjectTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -326,9 +325,9 @@ where
 
 #[wrom]
 pub fn implements_interfaces<'a, T, I>(
-) -> impl RecoverableParser<I, ImplementsInterfaces<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ImplementsInterfaces<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -354,10 +353,9 @@ where
 }
 
 #[wrom]
-pub fn fields_definition<'a, T, I>(
-) -> impl RecoverableParser<I, FieldsDefinition<T>, Error, RecoveryPoint> + 'a
+pub fn fields_definition<'a, T, I>() -> impl RecoverableParser<I, FieldsDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     delimited(
@@ -373,10 +371,9 @@ where
 }
 
 #[wrom]
-pub fn field_definition<'a, T, I>(
-) -> impl RecoverableParser<I, FieldDefinition<T>, Error, RecoveryPoint> + 'a
+pub fn field_definition<'a, T, I>() -> impl RecoverableParser<I, FieldDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     opt(description())
@@ -402,9 +399,9 @@ where
 
 #[wrom]
 pub fn arguments_definition<'a, T, I>(
-) -> impl RecoverableParser<I, ArgumentsDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ArgumentsDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     delimited(
@@ -421,9 +418,9 @@ where
 
 #[wrom]
 pub fn input_value_definition<'a, T, I>(
-) -> impl RecoverableParser<I, InputValueDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, InputValueDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     opt(description())
@@ -453,9 +450,9 @@ where
 #[wrom]
 pub fn object_type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, ObjectTypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ObjectTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -483,9 +480,9 @@ where
 #[wrom]
 pub fn interface_type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, InterfaceTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, InterfaceTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -514,9 +511,9 @@ where
 #[wrom]
 pub fn interface_type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, InterfaceTypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, InterfaceTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -544,9 +541,9 @@ where
 #[wrom]
 pub fn union_type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, UnionTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, UnionTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -569,10 +566,9 @@ where
 }
 
 #[wrom]
-pub fn union_member_types<'a, T, I>(
-) -> impl RecoverableParser<I, UnionMemberTypes<T>, Error, RecoveryPoint> + 'a
+pub fn union_member_types<'a, T, I>() -> impl RecoverableParser<I, UnionMemberTypes<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -600,9 +596,9 @@ where
 #[wrom]
 pub fn union_type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, UnionTypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, UnionTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -626,9 +622,9 @@ where
 #[wrom]
 pub fn enum_type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, EnumTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, EnumTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -652,9 +648,9 @@ where
 
 #[wrom]
 pub fn enum_values_definition<'a, T, I>(
-) -> impl RecoverableParser<I, EnumValuesDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, EnumValuesDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     delimited(
@@ -671,9 +667,9 @@ where
 
 #[wrom]
 pub fn enum_value_definition<'a, T, I>(
-) -> impl RecoverableParser<I, EnumValueDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, EnumValueDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     opt(description())
@@ -691,9 +687,9 @@ where
 #[wrom]
 pub fn enum_type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, EnumTypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, EnumTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -715,9 +711,9 @@ where
 #[wrom]
 pub fn input_object_type_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, InputObjectTypeDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, InputObjectTypeDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -741,9 +737,9 @@ where
 
 #[wrom]
 pub fn input_fields_definition<'a, T, I>(
-) -> impl RecoverableParser<I, InputFieldsDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, InputFieldsDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     delimited(
@@ -761,9 +757,9 @@ where
 #[wrom]
 pub fn input_object_type_extension<'a, T, I>(
     extend: Name<T>,
-) -> impl RecoverableParser<I, InputObjectTypeExtension<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, InputObjectTypeExtension<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -787,9 +783,9 @@ where
 #[wrom]
 pub fn directive_definition<'a, T, I>(
     description: Option<Description<T>>,
-) -> impl RecoverableParser<I, DirectiveDefinition<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, DirectiveDefinition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -822,9 +818,9 @@ where
 
 #[wrom]
 pub fn directive_locations<'a, T, I>(
-) -> impl RecoverableParser<I, DirectiveLocations<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, DirectiveLocations<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     (
@@ -846,10 +842,9 @@ where
 }
 
 #[wrom]
-pub fn directive_location<'a, T, I>(
-) -> impl RecoverableParser<I, DirectiveLocation<T>, Error, RecoveryPoint> + 'a
+pub fn directive_location<'a, T, I>() -> impl RecoverableParser<I, DirectiveLocation<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -860,9 +855,9 @@ where
 
 #[wrom]
 pub fn executable_directive_location<'a, T, I>(
-) -> impl RecoverableParser<I, ExecutableDirectiveLocation<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, ExecutableDirectiveLocation<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((
@@ -884,9 +879,9 @@ where
 
 #[wrom]
 pub fn type_system_directive_location<'a, T, I>(
-) -> impl RecoverableParser<I, TypeSystemDirectiveLocation<T>, Error, RecoveryPoint> + 'a
+) -> impl RecoverableParser<I, TypeSystemDirectiveLocation<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((

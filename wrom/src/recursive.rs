@@ -1,4 +1,4 @@
-use super::{Input, Recognizer, RecoverableParser};
+use super::{Input, RecoverableParser};
 
 pub struct Recursive<F>(usize, F);
 
@@ -13,20 +13,19 @@ pub fn recursive<F>(max_depth: usize, parser_fn: F) -> Recursive<F> {
     Recursive(max_depth, parser_fn)
 }
 
-impl<I, O, E, R, F, P> RecoverableParser<I, Option<O>, E, R> for Recursive<F>
+impl<I, O, E, F, P> RecoverableParser<I, Option<O>, E> for Recursive<F>
 where
-    F: Fn(usize) -> P,
-    P: RecoverableParser<I, O, E, R>,
     I: Input,
-    R: Recognizer<I, E>,
+    F: Fn(usize) -> P,
+    P: RecoverableParser<I, O, E>,
 {
     #[inline(always)]
-    fn recognizer(&self) -> R {
+    fn recognizer(&self) -> I::Recognizer {
         (self.1)(self.0).recognizer()
     }
 
     #[inline(always)]
-    fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<Option<O>, E> {
+    fn parse(&mut self, input: &mut I, recovery_point: I::Recognizer) -> Result<Option<O>, E> {
         match self.0 {
             0 => Ok(None),
             n => (self.1)(n - 1).parse(input, recovery_point).map(Some),

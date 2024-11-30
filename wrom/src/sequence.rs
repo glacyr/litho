@@ -1,38 +1,33 @@
-use super::{opt, Input, Missing, Opt, Recognizer, Recoverable, RecoverableParser};
+use super::{opt, Input, Missing, Opt, Recoverable, RecoverableParser};
 
 pub struct Delimited<F, G, H, J>(F, G, H, J);
 
-impl<F, G, H, J, I, FO, GO, HO, M, E, R>
-    RecoverableParser<I, (FO, GO, Recoverable<HO, M::Error>), E, R> for Delimited<F, G, H, J>
+impl<F, G, H, J, I, FO, GO, HO, M, E> RecoverableParser<I, (FO, GO, Recoverable<HO, M::Error>), E>
+    for Delimited<F, G, H, J>
 where
     I: Input,
-    R: Recognizer<I, E>,
-    F: RecoverableParser<I, FO, E, R>,
-    G: RecoverableParser<I, GO, E, R>,
-    H: RecoverableParser<I, Option<HO>, E, R>,
+    F: RecoverableParser<I, FO, E>,
+    G: RecoverableParser<I, GO, E>,
+    H: RecoverableParser<I, Option<HO>, E>,
     J: Fn(&FO) -> M,
     M: Missing<I>,
 {
     #[inline(always)]
-    fn recognizer(&self) -> R {
+    fn recognizer(&self) -> I::Recognizer {
         self.0.recognizer()
     }
 
-    #[inline]
+    #[inline(always)]
     fn parse(
         &mut self,
         input: &mut I,
-        recovery_point: R,
+        recovery_point: I::Recognizer,
     ) -> Result<(FO, GO, Recoverable<HO, M::Error>), E> {
         let a = self.0.parse(
             input,
-            recovery_point
-                .or(self.1.recognizer())
-                .or(self.2.recognizer()),
+            recovery_point | self.1.recognizer() | self.2.recognizer(),
         )?;
-        let b = self
-            .1
-            .parse(input, recovery_point.or(self.2.recognizer()))?;
+        let b = self.1.parse(input, recovery_point | self.2.recognizer())?;
         let c = self.2.parse(input, recovery_point)?;
 
         let c = match c {

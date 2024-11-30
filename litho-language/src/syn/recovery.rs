@@ -1,5 +1,7 @@
+use std::ops::BitOr;
+
 use enumset::EnumSet;
-use wrom::{Input, Recognizer, RecoverableParser};
+use wrom::{Input, RecoverableParser};
 
 use crate::ast::{FloatValue, IntValue, Name, Punctuator, StringValue};
 use crate::lex::{Token, TokenKind};
@@ -8,8 +10,8 @@ use super::Error;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct RecoveryPoint {
-    include: EnumSet<TokenKind>,
-    exclude_on: bool,
+    pub(crate) include: EnumSet<TokenKind>,
+    pub(crate) exclude_on: bool,
 }
 
 impl From<TokenKind> for RecoveryPoint {
@@ -32,28 +34,13 @@ impl RecoveryPoint {
     }
 }
 
-impl<I, T> Recognizer<I, Error> for RecoveryPoint
-where
-    I: Input<Item = Token<T>>,
-{
-    #[inline(always)]
-    fn recognize(self, input: &mut I) -> Result<(), Error> {
-        match input.peek() {
-            Some(token) if self.include.contains(token.as_raw_token().kind) => Ok(()),
-            Some(Token::Name(name))
-                if self.include.contains(TokenKind::Name)
-                    && (!self.exclude_on || name.as_raw_token().kind != TokenKind::KeywordOn) =>
-            {
-                Ok(())
-            }
-            _ => Err(Error::Expected(self)),
-        }
-    }
+impl BitOr for RecoveryPoint {
+    type Output = RecoveryPoint;
 
     #[inline(always)]
-    fn or(self, other: Self) -> Self {
+    fn bitor(self, other: Self) -> Self {
         RecoveryPoint {
-            include: self.include.union(other.include),
+            include: self.include | other.include,
             exclude_on: (self.exclude_on || other.exclude_on)
                 && (!self.include.contains(TokenKind::Name) || self.exclude_on)
                 && (!other.include.contains(TokenKind::Name) || other.exclude_on),
@@ -64,18 +51,19 @@ where
 macro_rules! token {
     ($($name:ident)*) => {
         $(
-            impl<I, T> RecoverableParser<I, $name<T>, Error, RecoveryPoint> for RecoveryPoint
+            impl<I, T> RecoverableParser<I, $name<T>, Error> for RecoveryPoint
             where
-                I: Input<Item = Token<T>>,
+                I: Input<Recognizer = Self> + Iterator<Item = Token<T>>,
             {
                 #[inline(always)]
-                fn recognizer(&self) -> RecoveryPoint {
+                fn recognizer(&self) -> I::Recognizer {
                     *self
                 }
 
                 #[inline(always)]
-                fn parse(&mut self, input: &mut I, _recovery_point: RecoveryPoint) -> Result<$name<T>, Error> {
-                    self.recognize(input)?;
+                fn parse(&mut self, input: &mut I, _recovery_point: I::Recognizer) -> Result<$name<T>, Error> {
+                    assert_eq!(input.recognize(*self), true);
+                    // self.recognize(input)?;
 
                     match input.next() {
                         Some(Token::$name(token)) => Ok(token),

@@ -34,7 +34,6 @@ where
 
 #[derive(Debug)]
 pub enum Error {
-    Incomplete,
     Expected(RecoveryPoint),
     MaxRecursion(Span),
 }
@@ -49,18 +48,18 @@ impl Error {
 }
 
 #[wrom]
-pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error, RecoveryPoint> + 'a
+pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     many(definition().map(Into::into)).map(|definitions| Document { definitions })
 }
 
 #[wrom]
-pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error, RecoveryPoint> + 'a
+pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a
 where
-    I: Input<Item = Token<T>> + Spanned + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
     T: Clone + 'a,
 {
     alt((

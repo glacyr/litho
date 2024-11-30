@@ -1,4 +1,4 @@
-use super::{Recognizer, RecoverableParser};
+use super::{Input, RecoverableParser};
 
 /// Parser that succeeds if any of the recoverable parsers in `L` succeed.
 pub struct Alt<L>(L);
@@ -19,31 +19,31 @@ macro_rules! alt {
     };
     (@ $first:ident $($ident:ident)* ;) => {
         #[allow(non_snake_case)]
-        impl<I, O, E, $first, $($ident,)* R> RecoverableParser<I, O, E, R> for Alt<($first, $($ident,)*)>
+        impl<I, O, E, $first, $($ident,)*> RecoverableParser<I, O, E> for Alt<($first, $($ident,)*)>
         where
-            $first: RecoverableParser<I, O, E, R>,
+            I: Input,
+            $first: RecoverableParser<I, O, E>,
             $(
-                $ident: RecoverableParser<I, O, E, R>,
+                $ident: RecoverableParser<I, O, E>,
             )*
-            R: Recognizer<I, E>,
         {
             #[inline(always)]
-            fn recognizer(&self) -> R {
+            fn recognizer(&self) -> I::Recognizer {
                 let ($first, $($ident,)*) = &self.0;
 
                 $first.recognizer()
                     $(
-                        .or($ident.recognizer())
+                        | $ident.recognizer()
                     )*
             }
 
-            #[inline]
-            fn parse(&mut self, input: &mut I, recovery_point: R) -> Result<O, E>
+            #[inline(always)]
+            fn parse(&mut self, input: &mut I, recovery_point: I::Recognizer) -> Result<O, E>
             {
                 let ($first, $($ident,)*) = &mut self.0;
 
                 $(
-                    if $ident.recognizer().recognize(input).is_ok() {
+                    if input.recognize($ident.recognizer()) {
                         return $ident.parse(input, recovery_point);
                     }
                 )*

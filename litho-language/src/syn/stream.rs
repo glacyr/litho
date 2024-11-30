@@ -1,8 +1,8 @@
 use wrom::Input;
 
-use crate::lex::{Lexer, Token};
+use crate::lex::{Lexer, Token, TokenKind};
 
-use super::{Span, Spanned};
+use super::{RecoveryPoint, Span, Spanned};
 
 pub struct Stream<'a, T>
 where
@@ -46,7 +46,7 @@ where
     }
 }
 
-impl<'a, T> Input for Stream<'a, T>
+impl<'a, T> Iterator for Stream<'a, T>
 where
     T: From<&'a str>,
 {
@@ -56,14 +56,43 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.lexer.next()
     }
+}
+
+impl<'a, T> Input for Stream<'a, T>
+where
+    T: From<&'a str>,
+{
+    type Recognizer = RecoveryPoint;
 
     #[inline(always)]
-    fn peek(&mut self) -> Option<&Self::Item> {
-        self.lexer.peek()
+    fn recognize(&mut self, recognizer: Self::Recognizer) -> bool {
+        match self.lexer.peek() {
+            Some(token) if recognizer.include.contains(token.as_raw_token().kind) => true,
+            Some(Token::Name(name))
+                if recognizer.include.contains(TokenKind::Name)
+                    && (!recognizer.exclude_on
+                        || name.as_raw_token().kind != TokenKind::KeywordOn) =>
+            {
+                true
+            }
+            _ => false,
+        }
     }
 
     #[inline(always)]
-    fn unrecognized(&mut self, item: Self::Item) {
-        self.unexpected.push(item)
+    fn discard(&mut self, recognizer: Self::Recognizer, recovery_point: Self::Recognizer) -> bool {
+        loop {
+            if self.recognize(recognizer) {
+                break true;
+            } else if self.recognize(recovery_point) {
+                break false;
+            } else if let Some(token) = self.lexer.next() {
+                self.unexpected.push(token);
+
+                continue;
+            } else {
+                break false;
+            }
+        }
     }
 }
