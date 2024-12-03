@@ -13,6 +13,8 @@ pub use types::{Format, Formatter, Shape};
 
 #[cfg(test)]
 mod tests {
+    use bumpalo::Bump;
+
     use super::Format;
 
     use crate::ast::Document;
@@ -20,7 +22,9 @@ mod tests {
 
     #[test]
     fn test_example() {
-        let node: Document<&'static str> = Document::parse_from_str(
+        let bump = Bump::new();
+
+        let node: Document<&str> = Document::parse_from_str(
             Default::default(),
             "\"\"\"
             Hello World!
@@ -39,6 +43,7 @@ mod tests {
 
         query example { id }
         ",
+            &bump,
         )
         .unwrap()
         .0;

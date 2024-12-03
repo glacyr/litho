@@ -1,11 +1,14 @@
 use crate::lex::Span;
 
-use super::{Recoverable, Visit};
+use super::{ContextValue, List, Recoverable, Visit};
 
-pub trait Node<T> {
+pub trait Node<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>;
+        V: Visit<'ast, 'a, T>;
 
     fn span(&self) -> Span {
         let mut span = None;
@@ -18,13 +21,14 @@ pub trait Node<T> {
         T: PartialEq;
 }
 
-impl<N, T> Node<T> for &N
+impl<'a, N, T> Node<'a, T> for &N
 where
-    N: Node<T>,
+    T: ContextValue<'a>,
+    N: Node<'a, T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         (*self).traverse(visitor, accumulator)
     }
@@ -39,7 +43,10 @@ where
 
 pub struct SpanCollector;
 
-impl<'ast, T> Visit<'ast, T> for SpanCollector {
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for SpanCollector
+where
+    T: ContextValue<'a>,
+{
     type Accumulator = Option<Span>;
 
     fn visit_span(&self, span: crate::lex::Span, accumulator: &mut Self::Accumulator) {
@@ -47,13 +54,14 @@ impl<'ast, T> Visit<'ast, T> for SpanCollector {
     }
 }
 
-impl<T, N> Node<T> for Vec<N>
+impl<'a, T, N> Node<'a, T> for List<'a, T, N>
 where
-    N: Node<T>,
+    T: ContextValue<'a>,
+    N: Node<'a, T> + Clone,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         self.iter()
             .for_each(|item| item.traverse(visitor, accumulator))
@@ -71,13 +79,14 @@ where
     }
 }
 
-impl<T, N> Node<T> for Option<N>
+impl<'a, T, N> Node<'a, T> for Option<N>
 where
-    N: Node<T>,
+    T: ContextValue<'a>,
+    N: Node<'a, T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         self.iter()
             .for_each(|item| item.traverse(visitor, accumulator))
@@ -95,14 +104,15 @@ where
     }
 }
 
-impl<T, A, B> Node<T> for (A, B)
+impl<'a, T, A, B> Node<'a, T> for (A, B)
 where
-    A: Node<T>,
-    B: Node<T>,
+    T: ContextValue<'a>,
+    A: Node<'a, T>,
+    B: Node<'a, T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         let (a, b) = self;
         a.traverse(visitor, accumulator);
@@ -117,13 +127,14 @@ where
     }
 }
 
-impl<T, N> Node<T> for Recoverable<N>
+impl<'a, T, N> Node<'a, T> for Recoverable<N>
 where
-    N: Node<T>,
+    T: ContextValue<'a>,
+    N: Node<'a, T>,
 {
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         visitor.visit_recoverable(self, accumulator);
 
@@ -142,17 +153,20 @@ where
 }
 
 macro_rules! node {
-    (Arc<$ty:ident>, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
-        node!(Arc<$ty<T>>, $visit $(+ $post)?, $($fields),*);
+    (Shared<'a, T, $ty:ident>, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
+        node!(Shared<'a, T, $ty<'a, T>>, $visit $(+ $post)?, $($fields),*);
     };
     ($ty:ident, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
-        node!($ty<T>, $visit $(+ $post)?, $($fields),*);
+        node!($ty<'a, T>, $visit $(+ $post)?, $($fields),*);
     };
     ($ty:ty, $visit:ident $(+ $post:ident)?, $($fields:ident),*) => {
-        impl<T> Node<T> for $ty {
+        impl<'a, T> Node<'a, T> for $ty
+        where
+            T: ContextValue<'a>,
+        {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, T>,
+                V: Visit<'ast, 'a, T>,
             {
                 visitor.$visit(self, accumulator);
 
@@ -179,11 +193,14 @@ macro_rules! node {
 pub(crate) use node;
 
 macro_rules! node_enum {
-    (Arc<$ty:ident>, $visit:ident $(+ $post:ident)?, $($variants:ident),* $(,)?) => {
-        impl<T> Node<T> for $ty<T> {
+    (Shared<'a, T, $ty:ident>, $visit:ident $(+ $post:ident)?, $($variants:ident),* $(,)?) => {
+        impl<'a, T> Node<'a, T> for $ty<'a, T>
+        where
+            T: ContextValue<'a>,
+        {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, T>,
+                V: Visit<'ast, 'a, T>,
             {
                 match self {
                     $(
@@ -205,10 +222,13 @@ macro_rules! node_enum {
             }
         }
 
-        impl<T> Node<T> for Arc<$ty<T>> {
+        impl<'a, T> Node<'a, T> for Shared<'a, T, $ty<'a, T>>
+        where
+            T: ContextValue<'a>,
+        {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, T>,
+                V: Visit<'ast, 'a, T>,
             {
                 visitor.$visit(self, accumulator);
 
@@ -224,10 +244,13 @@ macro_rules! node_enum {
         }
     };
     ($ty:ident, $visit:ident $(+ $post:ident)?, $($variants:ident),* $(,)?) => {
-        impl<T> Node<T> for $ty<T> {
+        impl<'a, T> Node<'a, T> for $ty<'a, T>
+        where
+            T: ContextValue<'a>,
+        {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, T>,
+                V: Visit<'ast, 'a, T>,
             {
                 visitor.$visit(self, accumulator);
 
@@ -259,10 +282,13 @@ pub(crate) use node_enum;
 
 macro_rules! node_unit {
     ($ty:ident, $visit:ident) => {
-        impl<T> Node<T> for $ty<T> {
+        impl<'a, T> Node<'a, T> for $ty<'a, T>
+        where
+            T: ContextValue<'a>,
+        {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, T>,
+                V: Visit<'ast, 'a, T>,
             {
                 visitor.$visit(self, accumulator);
 
@@ -283,10 +309,13 @@ pub(crate) use node_unit;
 
 macro_rules! node_arc {
     ($ty:ident) => {
-        impl<T> Node<T> for Arc<$ty<T>> {
+        impl<'a, T> Node<'a, T> for Shared<'a, T, $ty<'a, T>>
+        where
+            T: ContextValue<'a>,
+        {
             fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
             where
-                V: Visit<'ast, T>,
+                V: Visit<'ast, 'a, T>,
             {
                 self.as_ref().traverse(visitor, accumulator);
             }

@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::iter::Peekable;
+use std::marker::PhantomData;
 use std::num::{ParseFloatError, ParseIntError};
 use std::str::FromStr;
 
@@ -10,15 +11,15 @@ use super::raw::{raw_lexer, RawLexer, RawToken};
 use super::{SourceId, Span, TokenKind};
 
 #[derive(Clone, Copy, Debug)]
-pub struct Error<T>(RawToken<T>);
+pub struct Error<'a, T>(RawToken<'a, T>);
 
-impl<T> Error<T> {
+impl<'a, T> Error<'a, T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         &self.0
     }
 }
@@ -64,10 +65,10 @@ impl<T> Error<T> {
 ///
 /// _Source: [Sec. 2.1.9 Names](https://spec.graphql.org/October2021/#sec-Names)_
 #[derive(Clone, Copy, Debug)]
-pub struct Name<T>(RawToken<T>);
+pub struct Name<'a, T>(RawToken<'a, T>);
 
-impl<T> Name<T> {
-    pub fn new<'a>(source: &'a str) -> Name<T>
+impl<'a, T> Name<'a, T> {
+    pub fn new(source: &'a str) -> Name<'a, T>
     where
         T: From<&'a str>,
     {
@@ -121,12 +122,12 @@ impl<T> Name<T> {
     }
 
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         &self.0
     }
 }
 
-impl<T> AsRef<T> for Name<T> {
+impl<'a, T> AsRef<T> for Name<'a, T> {
     fn as_ref(&self) -> &T {
         self.0.source.borrow()
     }
@@ -148,10 +149,10 @@ impl<T> AsRef<T> for Name<T> {
 /// __Implementation note:__ any punctuator that's not part of the grammar
 /// listed above is considered an [Error].
 #[derive(Clone, Copy, Debug)]
-pub struct Punctuator<T>(RawToken<T>);
+pub struct Punctuator<'a, T>(RawToken<'a, T>);
 
-impl<T> Punctuator<T> {
-    pub fn new(source: &'static str) -> Punctuator<T>
+impl<'a, T> Punctuator<'a, T> {
+    pub fn new(source: &'static str) -> Punctuator<'a, T>
     where
         T: From<&'static str>,
     {
@@ -181,12 +182,12 @@ impl<T> Punctuator<T> {
     }
 
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         &self.0
     }
 }
 
-impl<T> AsRef<T> for Punctuator<T> {
+impl<'a, T> AsRef<T> for Punctuator<'a, T> {
     fn as_ref(&self) -> &T {
         self.0.source.borrow()
     }
@@ -194,20 +195,20 @@ impl<T> AsRef<T> for Punctuator<T> {
 
 /// Represents an int value (literal) in a GraphQL document.
 #[derive(Clone, Copy, Debug)]
-pub struct IntValue<T>(RawToken<T>);
+pub struct IntValue<'a, T>(RawToken<'a, T>);
 
-impl<T> IntValue<T> {
+impl<'a, T> IntValue<'a, T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         &self.0
     }
 }
 
-impl<T> IntValue<T>
+impl<'a, T> IntValue<'a, T>
 where
     T: Borrow<str>,
 {
@@ -218,20 +219,20 @@ where
 
 /// Represents a float value (literal) in a GraphQL document.
 #[derive(Clone, Copy, Debug)]
-pub struct FloatValue<T>(RawToken<T>);
+pub struct FloatValue<'a, T>(RawToken<'a, T>);
 
-impl<T> FloatValue<T> {
+impl<'a, T> FloatValue<'a, T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         &self.0
     }
 }
 
-impl<T> FloatValue<T>
+impl<'a, T> FloatValue<'a, T>
 where
     T: Borrow<str>,
 {
@@ -241,24 +242,24 @@ where
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct StringValue<T>(RawToken<T>);
+pub struct StringValue<'a, T>(RawToken<'a, T>);
 
-impl<T> StringValue<T> {
+impl<'a, T> StringValue<'a, T> {
     pub fn span(&self) -> Span {
         self.0.span
     }
 
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         &self.0
     }
 }
 
-impl<T> StringValue<T>
+impl<'a, T> StringValue<'a, T>
 where
-    for<'a> T: From<&'a str>,
+    T: for<'b> From<&'b str>,
 {
-    pub fn block<S>(value: S) -> StringValue<T>
+    pub fn block<S>(value: S) -> StringValue<'a, T>
     where
         S: Borrow<str>,
     {
@@ -269,11 +270,12 @@ where
                 value.borrow().replace(r#"""""#, "\"\"\"")
             )),
             span: Default::default(),
+            marker: PhantomData,
         })
     }
 }
 
-impl<T> ToString for StringValue<T>
+impl<'a, T> ToString for StringValue<'a, T>
 where
     T: Borrow<str>,
 {
@@ -288,28 +290,28 @@ where
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Token<T> {
-    Error(Error<T>),
+pub enum Token<'a, T> {
+    Error(Error<'a, T>),
 
     /// Represents a [Name] in GraphQL.
-    Name(Name<T>),
+    Name(Name<'a, T>),
 
     /// Represents a [Punctuator] in GraphQL.
-    Punctuator(Punctuator<T>),
+    Punctuator(Punctuator<'a, T>),
 
     /// Represents an [IntValue] in GraphQL.
-    IntValue(IntValue<T>),
+    IntValue(IntValue<'a, T>),
 
     /// Represents a [FloatValue] in GraphQL.
-    FloatValue(FloatValue<T>),
+    FloatValue(FloatValue<'a, T>),
 
     /// Represents a [StringValue] in GraphQL.
-    StringValue(StringValue<T>),
+    StringValue(StringValue<'a, T>),
 }
 
-impl<T> Token<T> {
+impl<'a, T> Token<'a, T> {
     #[inline(always)]
-    pub fn as_raw_token(&self) -> &RawToken<T> {
+    pub fn as_raw_token(&self) -> &RawToken<'a, T> {
         match self {
             Token::Error(error) => error.as_raw_token(),
             Token::Name(name) => name.as_raw_token(),
@@ -333,9 +335,9 @@ impl<T> Token<T> {
     }
 }
 
-impl<T> From<RawToken<T>> for Token<T> {
+impl<'a, T> From<RawToken<'a, T>> for Token<'a, T> {
     #[inline(always)]
-    fn from(raw: RawToken<T>) -> Self {
+    fn from(raw: RawToken<'a, T>) -> Self {
         match raw.kind {
             TokenKind::Error => Token::Error(Error(raw)),
             TokenKind::IntValue => Token::IntValue(IntValue(raw)),
@@ -348,8 +350,8 @@ impl<T> From<RawToken<T>> for Token<T> {
     }
 }
 
-impl<T> From<Name<T>> for Token<T> {
-    fn from(name: Name<T>) -> Self {
+impl<'a, T> From<Name<'a, T>> for Token<'a, T> {
+    fn from(name: Name<'a, T>) -> Self {
         Token::Name(name)
     }
 }
@@ -367,7 +369,7 @@ where
     T: From<&'a str>,
 {
     #[inline(always)]
-    pub fn peek(&mut self) -> Option<&Token<T>> {
+    pub fn peek(&mut self) -> Option<&Token<'a, T>> {
         self.lexer.peek()
     }
 
@@ -386,7 +388,7 @@ impl<'a, T> Iterator for Lexer<'a, T>
 where
     T: From<&'a str>,
 {
-    type Item = Token<T>;
+    type Item = Token<'a, T>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -399,11 +401,11 @@ where
 
 pub struct TokenIter<I>(I);
 
-impl<I, T> Iterator for TokenIter<I>
+impl<'a, I, T> Iterator for TokenIter<I>
 where
-    I: Iterator<Item = RawToken<T>>,
+    I: Iterator<Item = RawToken<'a, T>>,
 {
-    type Item = Token<T>;
+    type Item = Token<'a, T>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -411,7 +413,7 @@ where
     }
 }
 
-pub fn lexer<'a, T>(source_id: SourceId, source: &'a str) -> Lexer<T>
+pub fn lexer<'a, T>(source_id: SourceId, source: &'a str) -> Lexer<'a, T>
 where
     T: From<&'a str>,
 {
@@ -429,7 +431,7 @@ mod display {
 
     use super::Name;
 
-    impl<T> Display for Name<T>
+    impl<'a, T> Display for Name<'a, T>
     where
         T: Borrow<str>,
     {

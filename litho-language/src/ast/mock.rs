@@ -1,14 +1,16 @@
+use std::marker::PhantomData;
+
 use arbitrary::{Arbitrary, Result, Unstructured};
 
 use crate::lex::raw::RawToken;
 use crate::lex::{Token, TokenKind};
 
-use super::types::*;
+use super::{types::*, ContextValue};
 
-pub fn arbitrary_punctuators<T>(
+pub fn arbitrary_punctuators<'a, T>(
     lhs: &'static str,
     rhs: &'static str,
-) -> (Punctuator<T>, Recoverable<Punctuator<T>>)
+) -> (Punctuator<'a, T>, Recoverable<Punctuator<'a, T>>)
 where
     T: From<&'static str>,
 {
@@ -18,33 +20,33 @@ where
     )
 }
 
-pub fn arbitrary_at_least_one<'a, T>(u: &mut Unstructured<'a>) -> Result<Vec<T>>
-where
-    T: Arbitrary<'a>,
+pub fn arbitrary_at_least_one<'a, T>(u: &mut Unstructured<'a>) -> Result<T>
+// where
+//     T: Arbitrary<'a>,
 {
-    let value = Vec::<T>::arbitrary(u)?;
+    todo!()
+    // let value = Vec::<T>::arbitrary(u)?;
 
-    match value.is_empty() {
-        true => Ok(vec![T::arbitrary(u)?]),
-        false => Ok(value),
-    }
+    // match value.is_empty() {
+    //     true => Ok(vec![T::arbitrary(u)?]),
+    //     false => Ok(value),
+    // }
 }
 
-pub fn arbitrary_present_at_least_one<'a, T>(
-    u: &mut Unstructured<'a>,
-) -> Result<Recoverable<Vec<T>>>
+pub fn arbitrary_present_at_least_one<'a, T>(u: &mut Unstructured<'a>) -> Result<Recoverable<T>>
 where
-    T: Arbitrary<'a>,
+    // T: Arbitrary<'a>,
 {
-    let value = Vec::<T>::arbitrary(u)?;
+    todo!()
+    // let value = Vec::<T>::arbitrary(u)?;
 
-    match value.is_empty() {
-        true => Ok(vec![T::arbitrary(u)?].into()),
-        false => Ok(value.into()),
-    }
+    // match value.is_empty() {
+    //     true => Ok(vec![T::arbitrary(u)?].into()),
+    //     false => Ok(value.into()),
+    // }
 }
 
-impl<'a, T> Arbitrary<'a> for Name<T>
+impl<'a, T> Arbitrary<'a> for Name<'a, T>
 where
     T: From<&'static str>,
 {
@@ -56,7 +58,7 @@ where
     }
 }
 
-impl<'a, T> Arbitrary<'a> for IntValue<T>
+impl<'a, T> Arbitrary<'a> for IntValue<'a, T>
 where
     T: From<&'static str>,
 {
@@ -68,6 +70,7 @@ where
             span: Default::default(),
             kind: TokenKind::IntValue,
             source: value.into(),
+            marker: PhantomData,
         });
 
         match token {
@@ -77,7 +80,7 @@ where
     }
 }
 
-impl<'a, T> Arbitrary<'a> for FloatValue<T>
+impl<'a, T> Arbitrary<'a> for FloatValue<'a, T>
 where
     T: From<&'static str>,
 {
@@ -89,6 +92,7 @@ where
             span: Default::default(),
             kind: TokenKind::FloatValue,
             source: value.into(),
+            marker: PhantomData,
         });
 
         match token {
@@ -98,7 +102,7 @@ where
     }
 }
 
-impl<'a, T> Arbitrary<'a> for StringValue<T>
+impl<'a, T> Arbitrary<'a> for StringValue<'a, T>
 where
     T: From<&'static str>,
 {
@@ -110,6 +114,7 @@ where
             span: Default::default(),
             kind: TokenKind::StringValue,
             source: value.into(),
+            marker: PhantomData,
         });
 
         match token {
@@ -119,19 +124,20 @@ where
     }
 }
 
-impl<'a, T> Arbitrary<'a> for NonNullType<T>
+impl<'a, 'arbitrary, T> Arbitrary<'arbitrary> for NonNullType<'a, T>
 where
-    T: From<&'static str>,
+    T: ContextValue<'a> + From<&'static str>,
 {
-    fn arbitrary(u: &mut Unstructured<'a>) -> Result<Self> {
-        let ty = Type::arbitrary(u)?;
+    fn arbitrary(u: &mut Unstructured<'arbitrary>) -> Result<Self> {
+        todo!()
+        // let ty = Type::arbitrary(u)?;
 
-        Ok(match ty {
-            Type::NonNull(ty) => ty,
-            _ => NonNullType {
-                ty: ty.into(),
-                bang: Punctuator::new("!".into()),
-            },
-        })
+        // Ok(match ty {
+        //     Type::NonNull(ty) => ty,
+        //     _ => NonNullType {
+        //         ty: ty.into(),
+        //         bang: Punctuator::new("!".into()),
+        //     },
+        // })
     }
 }

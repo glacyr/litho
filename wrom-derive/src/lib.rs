@@ -44,18 +44,23 @@ pub fn wrom(_attr: TokenStream, input: TokenStream) -> TokenStream {
 
     let where_clause = sig.generics.where_clause.as_ref();
 
+    let lifetimes = sig.generics.lifetimes();
     let named_generics = sig.generics.type_params().collect::<Vec<_>>();
 
     quote! {
         #(#attrs)*
         #vis #sig {
             // #block
-            pub struct Parser < #(#named_generics,)* > {
-                marker: ::std::marker::PhantomData<( #(#named_generics,)* )>,
+            pub struct Parser < #generics >
+            #where_clause {
+                marker: ::std::marker::PhantomData<(
+                    #(&#lifetimes)*
+                    #(#named_generics,)*
+                )>,
                 #params
             };
 
-            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error> for Parser < #(#named_generics,)* >
+            impl < #generics > ::wrom::RecoverableParser<#input, #output, #error> for Parser < #generics >
             #where_clause {
                 #[inline(always)]
                 fn recognizer(&self) -> #input::Recognizer {

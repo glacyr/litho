@@ -1,6 +1,5 @@
 use std::fmt::{Result, Write};
 use std::ops::Range;
-use std::sync::Arc;
 
 use crate::ast::*;
 
@@ -272,9 +271,10 @@ where
     }
 }
 
-impl<T> Format for Arc<T>
+impl<'a, T, U> Format for Shared<'a, T, U>
 where
-    T: Format,
+    T: ContextValue<'a>,
+    U: Format,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where

@@ -1,11 +1,14 @@
 use crate::lex::{FloatValue, IntValue, Name, Punctuator, StringValue};
 
-use super::{Node, Visit};
+use super::{ContextValue, Node, Visit};
 
-impl<T> Node<T> for Name<T> {
+impl<'a, T> Node<'a, T> for Name<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         visitor.visit_span(self.span(), accumulator);
     }
@@ -18,10 +21,13 @@ impl<T> Node<T> for Name<T> {
     }
 }
 
-impl<T> Node<T> for Punctuator<T> {
+impl<'a, T> Node<'a, T> for Punctuator<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         visitor.visit_span(self.span(), accumulator);
     }
@@ -34,10 +40,13 @@ impl<T> Node<T> for Punctuator<T> {
     }
 }
 
-impl<T> Node<T> for IntValue<T> {
+impl<'a, T> Node<'a, T> for IntValue<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         visitor.visit_int_value(self, accumulator);
         visitor.visit_span(self.span(), accumulator);
@@ -51,10 +60,13 @@ impl<T> Node<T> for IntValue<T> {
     }
 }
 
-impl<T> Node<T> for FloatValue<T> {
+impl<'a, T> Node<'a, T> for FloatValue<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         visitor.visit_float_value(self, accumulator);
         visitor.visit_span(self.span(), accumulator);
@@ -68,10 +80,13 @@ impl<T> Node<T> for FloatValue<T> {
     }
 }
 
-impl<T> Node<T> for StringValue<T> {
+impl<'a, T> Node<'a, T> for StringValue<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn traverse<'ast, V>(&'ast self, visitor: &V, accumulator: &mut V::Accumulator)
     where
-        V: Visit<'ast, T>,
+        V: Visit<'ast, 'a, T>,
     {
         visitor.visit_string_value(self, accumulator);
         visitor.visit_span(self.span(), accumulator);

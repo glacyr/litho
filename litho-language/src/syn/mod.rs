@@ -6,13 +6,17 @@ use crate::lex::Token;
 
 mod combinators;
 pub mod executable;
+mod many;
 mod parse;
 mod recovery;
 pub mod schema;
+mod shared;
 mod stream;
 
+pub use many::{many_ext, ManyExt};
 pub use parse::Parse;
 pub use recovery::RecoveryPoint;
+pub use shared::RecoverableParserExt;
 pub use stream::Stream;
 
 const RECURSION_LIMIT: usize = 32;
@@ -48,19 +52,27 @@ impl Error {
 }
 
 #[wrom]
-pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<T>, Error> + 'a
+pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<'a, T>, Error> + 'a
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
-    T: Clone + 'a,
+    I: Input<Recognizer = RecoveryPoint>
+        + Iterator<Item = Token<'a, T>>
+        + Context<'a, T>
+        + Spanned
+        + 'a,
+    T: ContextValue<'a> + 'a,
 {
-    many(definition().map(Into::into)).map(|definitions| Document { definitions })
+    many_ext(definition().into_shared()).map(|definitions| Document { definitions })
 }
 
 #[wrom]
-pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<T>, Error> + 'a
+pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<'a, T>, Error> + 'a
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>> + Spanned + 'a,
-    T: Clone + 'a,
+    I: Input<Recognizer = RecoveryPoint>
+        + Iterator<Item = Token<'a, T>>
+        + Context<'a, T>
+        + Spanned
+        + 'a,
+    T: ContextValue<'a> + 'a,
 {
     alt((
         executable::executable_definition().map(Definition::ExecutableDefinition),
@@ -71,10 +83,14 @@ where
 
 macro_rules! parse {
     (Arc<$name:ident>, $($fn:tt)*) => {
-        impl<T> Parse<T> for Arc<$name<T>> {
-            fn parse<'a>(stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Err<Error>>
+        impl<'a, T> Parse<'a, T> for Arc<$name<'a, T>>
+        where
+            T: ContextValue<'a>,
+        {
+            fn parse(stream: Stream<'a, T>) -> Result<(Self, Vec<Token<'a, T>>), Err<Error>>
             where
-                T: From<&'a str> + Clone,
+                Stream<'a, T>: Context<'a, T>,
+                T: From<&'a str> + Clone + 'a,
             {
                 $($fn)*
                     .parse(stream, Default::default())
@@ -84,10 +100,14 @@ macro_rules! parse {
     };
 
     ($name:ident, $($fn:tt)*) => {
-        impl<T> Parse<T> for $name<T> {
-            fn parse<'a>(mut stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Error>
+        impl<'a, T> Parse<'a, T> for $name<'a, T>
+        where
+            T: ContextValue<'a>,
+        {
+            fn parse(mut stream: Stream<'a, T>) -> Result<(Self, Vec<Token<'a, T>>), Error>
             where
-                T: From<&'a str> + Clone,
+                Stream<'a, T>: Context<'a, T>,
+                T: ContextValue<'a> + From<&'a str> + 'a,
             {
                 let value = $($fn)*
                     .parse(&mut stream, Default::default())?;

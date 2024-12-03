@@ -1,8 +1,8 @@
-use std::borrow::Borrow;
 use std::fmt::{Result, Write};
 
 use unindent::unindent;
 
+use crate::ast::ContextValue;
 use crate::lex::*;
 
 use super::{macros, Format, Formatter};
@@ -12,9 +12,9 @@ macros::format_token!(Punctuator);
 macros::format_token!(IntValue);
 macros::format_token!(FloatValue);
 
-impl<T> Format for StringValue<T>
+impl<'a, T> Format for StringValue<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where

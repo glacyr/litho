@@ -51,9 +51,9 @@ impl BitOr for RecoveryPoint {
 macro_rules! token {
     ($($name:ident)*) => {
         $(
-            impl<I, T> RecoverableParser<I, $name<T>, Error> for RecoveryPoint
+            impl<'a, I, T> RecoverableParser<I, $name<'a, T>, Error> for RecoveryPoint
             where
-                I: Input<Recognizer = Self> + Iterator<Item = Token<T>>,
+                I: Input<Recognizer = Self> + Iterator<Item = Token<'a, T>>,
             {
                 #[inline(always)]
                 fn recognizer(&self) -> I::Recognizer {
@@ -61,7 +61,7 @@ macro_rules! token {
                 }
 
                 #[inline(always)]
-                fn parse(&mut self, input: &mut I, _recovery_point: I::Recognizer) -> Result<$name<T>, Error> {
+                fn parse(&mut self, input: &mut I, _recovery_point: I::Recognizer) -> Result<$name<'a, T>, Error> {
                     assert_eq!(input.recognize(*self), true);
                     // self.recognize(input)?;
 

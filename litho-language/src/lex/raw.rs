@@ -5,23 +5,25 @@ use logos::Lexer;
 use super::{SourceId, Span, TokenKind};
 
 #[derive(Clone, Copy, Debug)]
-pub struct RawToken<T> {
+pub struct RawToken<'a, T> {
     pub kind: TokenKind,
     pub source: T,
     pub span: Span,
+    pub marker: PhantomData<&'a ()>,
 }
 
-impl<T> RawToken<T> {
-    pub fn new(kind: TokenKind, source: T) -> RawToken<T> {
+impl<'a, T> RawToken<'a, T> {
+    pub fn new(kind: TokenKind, source: T) -> RawToken<'a, T> {
         RawToken {
             kind,
             source,
             span: Default::default(),
+            marker: PhantomData,
         }
     }
 }
 
-impl<T> RawToken<T>
+impl<'a, T> RawToken<'a, T>
 where
     T: PartialEq,
 {
@@ -41,7 +43,7 @@ impl<'a, T> Iterator for RawLexer<'a, T>
 where
     T: From<&'a str>,
 {
-    type Item = RawToken<T>;
+    type Item = RawToken<'a, T>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
@@ -53,6 +55,7 @@ where
                 start: self.lexer.span().start,
                 end: self.lexer.span().end,
             },
+            marker: PhantomData,
         })
     }
 }

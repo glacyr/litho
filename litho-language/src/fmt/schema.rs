@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::fmt::{Result, Write};
 
 use crate::ast::*;
@@ -27,9 +26,9 @@ macros::format_enum!(TypeSystemExtension, SchemaExtension, TypeExtension, Error)
 
 macros::format_unit!(Description);
 
-impl<T> Format for SchemaDefinition<T>
+impl<'a, T> Format for SchemaDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -47,9 +46,9 @@ where
     }
 }
 
-impl<T> Format for RootOperationTypeDefinitions<T>
+impl<'a, T> Format for RootOperationTypeDefinitions<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -63,9 +62,9 @@ where
     }
 }
 
-impl<T> Format for RootOperationTypeDefinition<T>
+impl<'a, T> Format for RootOperationTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -79,9 +78,9 @@ where
     }
 }
 
-impl<T> Format for SchemaExtension<T>
+impl<'a, T> Format for SchemaExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -115,9 +114,9 @@ macros::format_enum!(
     InputObjectTypeExtension
 );
 
-impl<T> Format for ScalarTypeDefinition<T>
+impl<'a, T> Format for ScalarTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -134,9 +133,9 @@ where
     }
 }
 
-impl<T> Format for ScalarTypeExtension<T>
+impl<'a, T> Format for ScalarTypeExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -149,9 +148,9 @@ where
     }
 }
 
-impl<T> Format for ObjectTypeDefinition<T>
+impl<'a, T> Format for ObjectTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -170,9 +169,9 @@ where
     }
 }
 
-impl<T> Format for ImplementsInterfaces<T>
+impl<'a, T> Format for ImplementsInterfaces<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -192,9 +191,9 @@ where
     }
 }
 
-impl<T> Format for FieldsDefinition<T>
+impl<'a, T> Format for FieldsDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -207,9 +206,9 @@ where
     }
 }
 
-impl<T> Format for FieldDefinition<T>
+impl<'a, T> Format for FieldDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -231,9 +230,9 @@ where
     }
 }
 
-impl<T> Format for ArgumentsDefinition<T>
+impl<'a, T> Format for ArgumentsDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -266,9 +265,9 @@ where
     }
 }
 
-impl<T> Format for InputValueDefinition<T>
+impl<'a, T> Format for InputValueDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -294,9 +293,9 @@ where
     }
 }
 
-impl<T> Format for ObjectTypeExtension<T>
+impl<'a, T> Format for ObjectTypeExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -312,9 +311,9 @@ where
     }
 }
 
-impl<T> Format for InterfaceTypeDefinition<T>
+impl<'a, T> Format for InterfaceTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -334,9 +333,9 @@ where
     }
 }
 
-impl<T> Format for InterfaceTypeExtension<T>
+impl<'a, T> Format for InterfaceTypeExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -352,9 +351,9 @@ where
     }
 }
 
-impl<T> Format for UnionTypeDefinition<T>
+impl<'a, T> Format for UnionTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -373,9 +372,9 @@ where
     }
 }
 
-impl<T> Format for UnionMemberTypes<T>
+impl<'a, T> Format for UnionMemberTypes<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -411,9 +410,9 @@ where
     }
 }
 
-impl<T> Format for UnionTypeExtension<T>
+impl<'a, T> Format for UnionTypeExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -428,9 +427,9 @@ where
     }
 }
 
-impl<T> Format for EnumTypeDefinition<T>
+impl<'a, T> Format for EnumTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -449,9 +448,9 @@ where
     }
 }
 
-impl<T> Format for EnumValuesDefinition<T>
+impl<'a, T> Format for EnumValuesDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -465,9 +464,9 @@ where
     }
 }
 
-impl<T> Format for EnumValueDefinition<T>
+impl<'a, T> Format for EnumValueDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -486,9 +485,9 @@ where
     }
 }
 
-impl<T> Format for EnumTypeExtension<T>
+impl<'a, T> Format for EnumTypeExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -503,9 +502,9 @@ where
     }
 }
 
-impl<T> Format for InputObjectTypeDefinition<T>
+impl<'a, T> Format for InputObjectTypeDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -524,9 +523,9 @@ where
     }
 }
 
-impl<T> Format for InputFieldsDefinition<T>
+impl<'a, T> Format for InputFieldsDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -540,9 +539,9 @@ where
     }
 }
 
-impl<T> Format for InputObjectTypeExtension<T>
+impl<'a, T> Format for InputObjectTypeExtension<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -557,9 +556,9 @@ where
     }
 }
 
-impl<T> Format for DirectiveDefinition<T>
+impl<'a, T> Format for DirectiveDefinition<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -580,9 +579,9 @@ where
     }
 }
 
-impl<T> Format for DirectiveLocations<T>
+impl<'a, T> Format for DirectiveLocations<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where

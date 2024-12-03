@@ -1,21 +1,28 @@
-use std::sync::Arc;
-
 use crate::lex::{FloatValue, IntValue, Span, StringValue};
 
 use super::types::*;
+use super::{ContextValue, Shared};
 
 macro_rules! visit {
     ($name:ident, Arc<$ty:ident>) => {
-        fn $name(&self, node: &'ast Arc<$ty<T>>, accumulator: &mut Self::Accumulator) {}
+        fn $name(
+            &self,
+            node: &'ast Shared<'a, T, $ty<'a, T>>,
+            accumulator: &mut Self::Accumulator,
+        ) {
+        }
     };
 
     ($name:ident, $ty:ident) => {
-        fn $name(&self, node: &'ast $ty<T>, accumulator: &mut Self::Accumulator) {}
+        fn $name(&self, node: &'ast $ty<'a, T>, accumulator: &mut Self::Accumulator) {}
     };
 }
 
 #[allow(unused_variables)]
-pub trait Visit<'ast, T> {
+pub trait Visit<'ast, 'a, T>
+where
+    T: ContextValue<'a>,
+{
     type Accumulator;
 
     fn visit_recoverable<U>(

@@ -1,21 +1,27 @@
+use bumpalo::Bump;
+
+use crate::ast::{Context, ContextValue};
 use crate::lex::{lexer, SourceId, Token};
 
 use super::{Error, Stream};
 
-pub trait Parse<T>: Sized {
-    fn parse<'a>(stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Error>
+pub trait Parse<'a, T>: Sized {
+    fn parse(stream: Stream<'a, T>) -> Result<(Self, Vec<Token<T>>), Error>
     where
-        T: From<&'a str> + Clone;
+        Stream<'a, T>: Context<'a, T>,
+        T: ContextValue<'a> + From<&'a str> + 'a;
 
-    fn parse_from_str<'a>(
+    fn parse_from_str(
         source_id: SourceId,
         input: &'a str,
-    ) -> Result<(Self, Vec<Token<T>>), Error>
+        bump: &'a Bump,
+    ) -> Result<(Self, Vec<Token<'a, T>>), Error>
     where
-        T: From<&'a str> + Clone,
+        Stream<'a, T>: Context<'a, T>,
+        T: ContextValue<'a> + From<&'a str> + 'a,
     {
         let lexer = lexer(source_id, input);
-        let stream = Stream::from(lexer);
+        let stream = Stream::new(lexer, bump);
         Self::parse(stream)
     }
 }

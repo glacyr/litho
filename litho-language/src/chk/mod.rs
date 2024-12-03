@@ -1,15 +1,18 @@
 use litho_diagnostics::Diagnostic;
 
-use crate::ast::{Node, Recoverable, TypeSystemDefinition, TypeSystemExtension, Visit};
+use crate::ast::{
+    ContextValue, Node, Recoverable, TypeSystemDefinition, TypeSystemExtension, Visit,
+};
 use crate::lex::{Span, Token};
 
 pub trait Errors<T> {
     fn errors(&self) -> Vec<Diagnostic<Span>>;
 }
 
-impl<T, N> Errors<T> for N
+impl<'a, T, N> Errors<T> for N
 where
-    N: Node<T>,
+    T: ContextValue<'a>,
+    N: Node<'a, T>,
 {
     fn errors(&self) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
@@ -18,10 +21,10 @@ where
     }
 }
 
-pub fn collect_errors<N, T>(ast: &(N, Vec<Token<T>>)) -> Vec<Diagnostic<Span>>
+pub fn collect_errors<'a, N, T>(ast: &(N, Vec<Token<'a, T>>)) -> Vec<Diagnostic<Span>>
 where
-    N: Node<T>,
-    T: Clone,
+    T: ContextValue<'a>,
+    N: Node<'a, T>,
 {
     let mut errors = vec![];
     ast.0.traverse(&CollectErrors, &mut errors);
@@ -37,15 +40,15 @@ where
 
 pub struct CollectErrors;
 
-impl<'ast, T> Visit<'ast, T> for CollectErrors
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for CollectErrors
 where
-    T: 'ast,
+    T: ContextValue<'a>,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_type_system_definition(
         &self,
-        node: &'ast TypeSystemDefinition<T>,
+        node: &'ast TypeSystemDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let TypeSystemDefinition::Error(error) = node {
@@ -55,7 +58,7 @@ where
 
     fn visit_type_system_extension(
         &self,
-        node: &'ast TypeSystemExtension<T>,
+        node: &'ast TypeSystemExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let TypeSystemExtension::Error(error) = node {

@@ -1,8 +1,8 @@
 macro_rules! format_token {
     ($ident:ident) => {
-        impl<T> Format for $ident<T>
+        impl<'a, T> Format for $ident<'a, T>
         where
-            T: Borrow<str>,
+            T: ContextValue<'a>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
@@ -18,9 +18,9 @@ pub(crate) use format_token;
 
 macro_rules! format_enum {
     ($ident:ident, $($variant:ident),*) => {
-        impl<T> Format for $ident<T>
+        impl<'a, T> Format for $ident<'a, T>
         where
-            T: Borrow<str>,
+            T: ContextValue<'a>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
@@ -67,9 +67,9 @@ pub(crate) use format_enum;
 
 macro_rules! format_definitions {
     ($ident:ident) => {
-        impl<T> Format for $ident<T>
+        impl<'a, T> Format for $ident<'a, T>
         where
-            T: Borrow<str>,
+            T: ContextValue<'a>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
@@ -85,9 +85,9 @@ pub(crate) use format_definitions;
 
 macro_rules! format_unit {
     ($ident:ident) => {
-        impl<T> Format for $ident<T>
+        impl<'a, T> Format for $ident<'a, T>
         where
-            T: Borrow<str>,
+            T: ContextValue<'a>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where

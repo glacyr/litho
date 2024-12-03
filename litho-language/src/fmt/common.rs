@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::fmt::{Result, Write};
 
 use crate::ast::*;
@@ -15,9 +14,9 @@ macros::format_enum!(
 
 macros::format_enum!(OperationType, Query, Mutation, Subscription);
 
-impl<T> Format for Arguments<T>
+impl<'a, T> Format for Arguments<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -48,9 +47,9 @@ where
     }
 }
 
-impl<T> Format for Argument<T>
+impl<'a, T> Format for Argument<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -85,9 +84,9 @@ macros::format_enum!(BooleanValue, True, False);
 macros::format_unit!(NullValue);
 macros::format_unit!(EnumValue);
 
-impl<T> Format for ListValue<T>
+impl<'a, T> Format for ListValue<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -126,9 +125,9 @@ where
     }
 }
 
-impl<T> Format for ObjectValue<T>
+impl<'a, T> Format for ObjectValue<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -157,9 +156,9 @@ where
     }
 }
 
-impl<T> Format for ObjectField<T>
+impl<'a, T> Format for ObjectField<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -177,9 +176,9 @@ where
     }
 }
 
-impl<T> Format for Variable<T>
+impl<'a, T> Format for Variable<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -194,9 +193,9 @@ where
 
 macros::format_unit!(NamedType);
 
-impl<T> Format for Directives<T>
+impl<'a, T> Format for Directives<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -221,9 +220,9 @@ where
     }
 }
 
-impl<T> Format for Directive<T>
+impl<'a, T> Format for Directive<'a, T>
 where
-    T: Borrow<str>,
+    T: ContextValue<'a>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where

@@ -6,58 +6,60 @@ use crate::lex::{FloatValue, IntValue, Name, Punctuator, StringValue, Token, Tok
 use super::recovery::RecoveryPoint;
 use super::Error;
 
-#[inline]
-pub fn name<I, T>() -> impl RecoverableParser<I, Name<T>, Error>
+#[wrom]
+pub fn name<'a, I, T>() -> impl RecoverableParser<I, Name<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::from(TokenKind::Name)
 }
 
-#[inline]
-pub fn name_unless_on<I, T>() -> impl RecoverableParser<I, Name<T>, Error>
+#[wrom]
+pub fn name_unless_on<'a, I, T>() -> impl RecoverableParser<I, Name<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::name_unless_on()
 }
 
 #[wrom]
-pub fn keyword<I, T>(expected: TokenKind) -> impl RecoverableParser<I, Name<T>, Error>
+pub fn keyword<'a, I, T>(expected: TokenKind) -> impl RecoverableParser<I, Name<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::from(expected)
 }
 
 #[wrom]
-pub fn punctuator<I, T>(expected: TokenKind) -> impl RecoverableParser<I, Punctuator<T>, Error>
+pub fn punctuator<'a, I, T>(
+    expected: TokenKind,
+) -> impl RecoverableParser<I, Punctuator<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::from(expected)
 }
 
 #[wrom]
-pub fn int_value<T, I>() -> impl RecoverableParser<I, IntValue<T>, Error>
+pub fn int_value<'a, I, T>() -> impl RecoverableParser<I, IntValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::from(TokenKind::IntValue)
 }
 
 #[wrom]
-pub fn float_value<T, I>() -> impl RecoverableParser<I, FloatValue<T>, Error>
+pub fn float_value<'a, I, T>() -> impl RecoverableParser<I, FloatValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::from(TokenKind::FloatValue)
 }
 
 #[wrom]
-pub fn string_value<T, I>() -> impl RecoverableParser<I, StringValue<T>, Error>
+pub fn string_value<'a, I, T>() -> impl RecoverableParser<I, StringValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<T>>,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + 'a,
 {
     RecoveryPoint::from(TokenKind::StringValue)
 }

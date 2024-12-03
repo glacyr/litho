@@ -1,26 +1,57 @@
+use std::marker::PhantomData;
+use std::rc::Rc;
+
+use bumpalo::boxed::Box;
+use bumpalo::Bump;
 use wrom::Input;
 
+use crate::ast::{Context, ContextValue, List, Shared};
 use crate::lex::{Lexer, Token, TokenKind};
 
-use super::{RecoveryPoint, Span, Spanned};
+use super::{BumpBox, RecoveryPoint, Span, Spanned};
 
 pub struct Stream<'a, T>
 where
     T: From<&'a str>,
 {
     pub(crate) lexer: Lexer<'a, T>,
-    unexpected: Vec<Token<T>>,
+    bump: &'a Bump,
+    unexpected: Vec<Token<'a, T>>,
 }
 
 impl<'a, T> Stream<'a, T>
 where
     T: From<&'a str>,
 {
+    pub fn new(lexer: Lexer<'a, T>, bump: &'a Bump) -> Stream<'a, T> {
+        Stream {
+            lexer,
+            bump,
+            unexpected: Default::default(),
+        }
+    }
+
     pub fn into_unexpected<U>(self) -> U
     where
-        U: FromIterator<Token<T>>,
+        U: FromIterator<Token<'a, T>>,
     {
         self.lexer.chain(self.unexpected).collect()
+    }
+}
+
+impl<'a> Context<'a, &'a str> for Stream<'a, &'a str> {
+    fn shared<U>(&self, value: U) -> Shared<'a, &'a str, U>
+    where
+        U: 'a,
+    {
+        Shared::new(BumpBox(self.bump.alloc(value) as *const _, PhantomData))
+    }
+
+    fn list<U>(&self) -> List<'a, &'a str, U>
+    where
+        U: Clone + 'a,
+    {
+        List::new(bumpalo::collections::Vec::new_in(&self.bump))
     }
 }
 
@@ -34,23 +65,11 @@ where
     }
 }
 
-impl<'a, T> From<Lexer<'a, T>> for Stream<'a, T>
-where
-    T: From<&'a str>,
-{
-    fn from(lexer: Lexer<'a, T>) -> Self {
-        Stream {
-            lexer,
-            unexpected: vec![],
-        }
-    }
-}
-
 impl<'a, T> Iterator for Stream<'a, T>
 where
     T: From<&'a str>,
 {
-    type Item = Token<T>;
+    type Item = Token<'a, T>;
 
     #[inline(always)]
     fn next(&mut self) -> Option<Self::Item> {
