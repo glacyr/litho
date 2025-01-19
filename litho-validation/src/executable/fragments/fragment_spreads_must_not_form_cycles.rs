@@ -1,23 +1,22 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct FragmentSpreadsMustNotFormCycles<'a, T>(pub &'a Database<T>)
+pub struct FragmentSpreadsMustNotFormCycles<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for FragmentSpreadsMustNotFormCycles<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for FragmentSpreadsMustNotFormCycles<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_fragment_definition(
         &self,
-        node: &'a Arc<FragmentDefinition<T>>,
+        node: &'ast Shared<'a, T, FragmentDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.fragment_name.ok().map(AsRef::as_ref) else {
@@ -35,28 +34,28 @@ where
     }
 }
 
-pub struct State<'a, T>
+pub struct State<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    name: &'a T,
-    stack: Vec<(&'a T, &'a FragmentSpread<T>)>,
-    diagnostics: &'a mut Vec<Diagnostic<Span>>,
+    name: &'ast T,
+    stack: Vec<(&'ast T, &'ast FragmentSpread<'a, T>)>,
+    diagnostics: &'ast mut Vec<Diagnostic<Span>>,
 }
 
-pub struct DetectFragmentCycles<'a, T>(pub &'a Database<T>)
+pub struct DetectFragmentCycles<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for DetectFragmentCycles<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for DetectFragmentCycles<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
-    type Accumulator = State<'a, T>;
+    type Accumulator = State<'ast, 'a, T>;
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.push((node.fragment_name.as_ref(), node));
@@ -85,7 +84,7 @@ where
 
     fn post_visit_fragment_spread(
         &self,
-        _node: &'a Arc<FragmentSpread<T>>,
+        _node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();

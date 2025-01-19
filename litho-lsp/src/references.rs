@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 use lsp_types::*;
 use smol_str::SmolStr;
@@ -40,12 +38,12 @@ struct ReferencesVisitor<'a> {
     offset: usize,
 }
 
-impl<'a> Visit<'a, SmolStr> for ReferencesVisitor<'a> {
+impl<'a> Visit<'a, 'static, SmolStr> for ReferencesVisitor<'a> {
     type Accumulator = Vec<Location>;
 
     fn visit_fragment_definition(
         &self,
-        node: &'a Arc<FragmentDefinition<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, FragmentDefinition<'static, SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.fragment_name.span().contains(self.offset) {

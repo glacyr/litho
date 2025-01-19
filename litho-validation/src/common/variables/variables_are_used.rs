@@ -1,25 +1,24 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::iter::once;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct VariablesAreUsed<'a, T>(pub &'a Database<T>)
+pub struct VariablesAreUsed<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for VariablesAreUsed<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariablesAreUsed<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_operation_definition(
         &self,
-        node: &'a Arc<OperationDefinition<T>>,
+        node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let mut used = HashSet::new();
@@ -48,17 +47,17 @@ where
     }
 }
 
-pub struct VariableUsage<'a, T>(&'a Database<T>, HashSet<&'a T>)
+pub struct VariableUsage<'ast, 'a, T>(&'ast Database<'a, T>, HashSet<&'ast T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for VariableUsage<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariableUsage<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
-    type Accumulator = HashSet<&'a T>;
+    type Accumulator = HashSet<&'ast T>;
 
-    fn visit_variable(&self, node: &'a Variable<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_variable(&self, node: &'ast Variable<'a, T>, accumulator: &mut Self::Accumulator) {
         let Some(name) = node.name.ok() else { return };
 
         accumulator.insert(name.as_ref());
@@ -66,7 +65,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if self.1.contains(node.fragment_name.as_ref()) {

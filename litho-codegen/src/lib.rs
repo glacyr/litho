@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::path::Path;
 
+use litho_language::ast::ContextValue;
 use litho_language::lex::SourceId;
 use litho_types::Database;
 
@@ -22,13 +23,13 @@ impl From<TypescriptError> for CodegenError {
     }
 }
 
-pub fn codegen<T, P>(
-    database: &Database<T>,
+pub fn codegen<'a, T, P>(
+    database: &Database<'a, T>,
     source_map: HashMap<SourceId, (&str, &str)>,
     path: P,
 ) -> Result<(), CodegenError>
 where
-    T: Eq + Hash + Borrow<str>,
+    T: ContextValue<'a> + Eq + Hash + Borrow<str>,
     P: AsRef<Path>,
 {
     let path = path.as_ref();

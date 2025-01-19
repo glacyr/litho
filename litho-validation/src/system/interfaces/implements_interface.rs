@@ -1,24 +1,23 @@
 use std::collections::HashSet;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct ImplementsInterface<'a, T>(pub &'a Database<T>)
+pub struct ImplementsInterface<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> ImplementsInterface<'a, T>
+impl<'ast, 'a, T> ImplementsInterface<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     fn check_inherited_implementations(
         &self,
-        interface_named_type: &'a NamedType<T>,
-        name: &'a T,
-        implements_interfaces: &ImplementsInterfaces<T>,
+        interface_named_type: &'ast NamedType<'a, T>,
+        name: &'ast T,
+        implements_interfaces: &ImplementsInterfaces<'a, T>,
     ) -> Option<Diagnostic<Span>> {
         for inherited in self
             .0
@@ -39,8 +38,8 @@ where
 
     fn check_valid_implementation(
         &self,
-        interface_name: &'a NamedType<T>,
-        concrete_name: &'a T,
+        interface_name: &'ast NamedType<'a, T>,
+        concrete_name: &'ast T,
     ) -> Vec<Diagnostic<Span>> {
         let interface_fields = self.0.field_definitions(interface_name.0.as_ref());
 
@@ -155,8 +154,8 @@ where
 
     pub fn is_valid_implementation_field_type(
         &self,
-        field_type: &Type<T>,
-        implemented_field_type: &Type<T>,
+        field_type: &Type<'a, T>,
+        implemented_field_type: &Type<'a, T>,
     ) -> bool {
         match (field_type, implemented_field_type) {
             (Type::NonNull(field_type), Type::NonNull(implemented_field_type)) => {
@@ -185,9 +184,9 @@ where
 
     pub fn check_interface(
         &self,
-        name: &'a T,
-        implements_interfaces: &ImplementsInterfaces<T>,
-        interface_named_type: &'a NamedType<T>,
+        name: &'ast T,
+        implements_interfaces: &ImplementsInterfaces<'a, T>,
+        interface_named_type: &'ast NamedType<'a, T>,
     ) -> Vec<Diagnostic<Span>> {
         match self
             .0
@@ -220,8 +219,8 @@ where
 
     pub fn check_type(
         &self,
-        name: &'a T,
-        implements_interfaces: &'a ImplementsInterfaces<T>,
+        name: &'ast T,
+        implements_interfaces: &'ast ImplementsInterfaces<'a, T>,
     ) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
 
@@ -240,7 +239,7 @@ where
                 .implemented_interfaces_by_name(name, interface.0.as_ref())
                 .next()
             {
-                Some(exists) if !Arc::ptr_eq(exists, interface) => {
+                Some(exists) if !Shared::ptr_eq(exists, interface) => {
                     errors.push(Diagnostic::duplicate_implements_interface(
                         name.to_string(),
                         interface.0.as_ref().to_string(),
@@ -259,15 +258,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for ImplementsInterface<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for ImplementsInterface<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_type_definition(
         &self,
-        node: &'a Arc<TypeDefinition<T>>,
+        node: &'ast Shared<'a, T, TypeDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(ty) = node.name().ok() else { return };
@@ -281,7 +280,7 @@ where
 
     fn visit_type_extension(
         &self,
-        node: &'a Arc<TypeExtension<T>>,
+        node: &'ast Shared<'a, T, TypeExtension<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(ty) = node.name() else { return };

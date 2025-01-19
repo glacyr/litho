@@ -1,4 +1,5 @@
 // #![warn(missing_docs)]
+#![deny(unsafe_code)]
 
 pub mod ast;
 pub mod chk;

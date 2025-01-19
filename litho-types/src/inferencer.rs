@@ -1,25 +1,24 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_language::ast::*;
 
 use super::Database;
 
-pub struct InferenceState<'a, T>
+pub struct InferenceState<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    database: &'a mut Database<T>,
-    var_scopes: Vec<Option<&'a VariableDefinitions<T>>>,
+    database: &'ast mut Database<'a, T>,
+    var_scopes: Vec<Option<&'ast VariableDefinitions<'a, T>>>,
     stack: Vec<Option<T>>,
-    value_type: Vec<Option<Arc<Type<T>>>>,
+    value_type: Vec<Option<Shared<'a, T, Type<'a, T>>>>,
 }
 
-impl<'a, T> InferenceState<'a, T>
+impl<'ast, 'a, T> InferenceState<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn new(database: &'a mut Database<T>) -> InferenceState<'a, T> {
+    pub fn new(database: &'ast mut Database<'a, T>) -> InferenceState<'ast, 'a, T> {
         InferenceState {
             database,
             var_scopes: vec![],
@@ -31,15 +30,16 @@ where
 
 pub struct Inferencer;
 
-impl<'ast, T> Visit<'ast, T> for Inferencer
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for Inferencer
 where
-    T: From<&'static str> + Clone + Eq + Hash + 'ast,
+    T: ContextValue<'a> + From<&'a str> + Clone + Eq + Hash + 'a,
+    'a: 'ast,
 {
-    type Accumulator = InferenceState<'ast, T>;
+    type Accumulator = InferenceState<'ast, 'a, T>;
 
     fn visit_operation_definition(
         &self,
-        node: &'ast Arc<OperationDefinition<T>>,
+        node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let selection_set = match node.selection_set.ok() {
@@ -61,7 +61,7 @@ where
             .database
             .inference
             .type_by_selection_set
-            .insert(selection_set, &Arc::new(name.to_owned()));
+            .insert(selection_set, name.to_owned());
 
         accumulator.stack.push(Some(name));
 
@@ -72,7 +72,7 @@ where
 
     fn post_visit_operation_definition(
         &self,
-        _node: &'ast Arc<OperationDefinition<T>>,
+        _node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();
@@ -81,7 +81,7 @@ where
 
     fn visit_fragment_definition(
         &self,
-        node: &'ast Arc<FragmentDefinition<T>>,
+        node: &'ast Shared<'a, T, FragmentDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let name = node
@@ -97,13 +97,13 @@ where
                 .database
                 .inference
                 .type_by_selection_set
-                .insert(selection_set, &Arc::new(name.to_owned()));
+                .insert(selection_set, name.to_owned());
         }
     }
 
     fn post_visit_fragment_definition(
         &self,
-        _node: &'ast Arc<FragmentDefinition<T>>,
+        _node: &'ast Shared<'a, T, FragmentDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();
@@ -111,7 +111,7 @@ where
 
     fn visit_inline_fragment(
         &self,
-        node: &'ast InlineFragment<T>,
+        node: &'ast InlineFragment<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         match node.type_condition.as_ref() {
@@ -124,7 +124,7 @@ where
                         .database
                         .inference
                         .type_by_selection_set
-                        .insert(selection_set, &Arc::new(name.to_owned()));
+                        .insert(selection_set, name.to_owned());
                 }
             }
             None => {
@@ -142,13 +142,17 @@ where
 
     fn post_visit_inline_fragment(
         &self,
-        _node: &'ast InlineFragment<T>,
+        _node: &'ast InlineFragment<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.stack.pop();
     }
 
-    fn visit_field(&self, node: &'ast Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(
+        &self,
+        node: &'ast Shared<'a, T, Field<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let ty = accumulator.stack.last().into_iter().flatten().next();
         let name = node.name.ok();
 
@@ -178,7 +182,7 @@ where
                     .database
                     .inference
                     .type_by_selection_set
-                    .insert(set, &Arc::new(ty.to_owned()));
+                    .insert(set, ty.to_owned());
             }
 
             accumulator.stack.push(ty);
@@ -199,7 +203,11 @@ where
         }
     }
 
-    fn visit_arguments(&self, node: &'ast Arc<Arguments<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_arguments(
+        &self,
+        node: &'ast Shared<'a, T, Arguments<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let Some(definition) = accumulator
             .database
             .inference
@@ -226,7 +234,11 @@ where
         }
     }
 
-    fn visit_argument(&self, node: &'ast Arc<Argument<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_argument(
+        &self,
+        node: &'ast Shared<'a, T, Argument<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let ty = accumulator
             .database
             .inference
@@ -255,19 +267,23 @@ where
 
     fn post_visit_argument(
         &self,
-        _node: &'ast Arc<Argument<T>>,
+        _node: &'ast Shared<'a, T, Argument<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.pop();
     }
 
-    fn post_visit_field(&self, _node: &'ast Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
+    fn post_visit_field(
+        &self,
+        _node: &'ast Shared<'a, T, Field<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         accumulator.stack.pop();
     }
 
     fn visit_input_value_definition(
         &self,
-        node: &'ast Arc<InputValueDefinition<T>>,
+        node: &'ast Shared<'a, T, InputValueDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.push(node.ty.ok().cloned());
@@ -275,13 +291,17 @@ where
 
     fn post_visit_input_value_definition(
         &self,
-        _node: &'ast Arc<InputValueDefinition<T>>,
+        _node: &'ast Shared<'a, T, InputValueDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.pop();
     }
 
-    fn visit_value(&self, node: &'ast Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'ast Shared<'a, T, Value<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if let Some(ty) = accumulator.value_type.last().and_then(|ty| ty.as_ref()) {
             accumulator
                 .database
@@ -314,7 +334,7 @@ where
         }
     }
 
-    fn visit_list_value(&self, _node: &'ast ListValue<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_list_value(&self, _node: &'ast ListValue<'a, T>, accumulator: &mut Self::Accumulator) {
         let ty = accumulator
             .value_type
             .last()
@@ -327,13 +347,17 @@ where
 
     fn post_visit_list_value(
         &self,
-        _node: &'ast ListValue<T>,
+        _node: &'ast ListValue<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.pop();
     }
 
-    fn visit_object_field(&self, node: &'ast ObjectField<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_object_field(
+        &self,
+        node: &'ast ObjectField<'a, T>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let ty = accumulator
             .value_type
             .last()
@@ -352,7 +376,7 @@ where
 
     fn post_visit_object_field(
         &self,
-        _node: &'ast ObjectField<T>,
+        _node: &'ast ObjectField<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.pop();
@@ -360,7 +384,7 @@ where
 
     fn visit_variable_definition(
         &self,
-        node: &'ast VariableDefinition<T>,
+        node: &'ast VariableDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.push(node.ty.ok().cloned());
@@ -368,7 +392,7 @@ where
 
     fn post_visit_variable_definition(
         &self,
-        _node: &'ast VariableDefinition<T>,
+        _node: &'ast VariableDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.value_type.pop();
@@ -376,7 +400,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'ast Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(definition) = accumulator
@@ -395,7 +419,11 @@ where
             .track(definition, node);
     }
 
-    fn visit_directive(&self, node: &'ast Arc<Directive<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_directive(
+        &self,
+        node: &'ast Shared<'a, T, Directive<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let Some(name) = node.name.ok() else { return };
 
         let definition = accumulator

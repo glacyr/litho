@@ -1,32 +1,31 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::{Database, DirectiveLocationKind, DirectiveTarget};
 
-pub struct DirectivesAreInValidLocations<'a, T>(pub &'a Database<T>)
+pub struct DirectivesAreInValidLocations<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> DirectivesAreInValidLocations<'a, T>
+impl<'ast, 'a, T> DirectivesAreInValidLocations<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
-    fn check<N>(&self, node: &'a N, diagnostics: &mut Vec<Diagnostic<Span>>)
+    fn check<N>(&self, node: &'ast N, diagnostics: &mut Vec<Diagnostic<Span>>)
     where
-        N: DirectiveTarget<T>,
+        N: DirectiveTarget<'a, T>,
     {
         self.check_location(node, node.valid_location(), diagnostics);
     }
 
     fn check_location<N>(
         &self,
-        node: &'a N,
+        node: &'ast N,
         expected: DirectiveLocationKind,
         diagnostics: &mut Vec<Diagnostic<Span>>,
     ) where
-        N: DirectiveTarget<T>,
+        N: DirectiveTarget<'a, T>,
     {
         for directive in node
             .directives()
@@ -65,27 +64,31 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for DirectivesAreInValidLocations<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for DirectivesAreInValidLocations<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_operation_definition(
         &self,
-        node: &'a Arc<OperationDefinition<T>>,
+        node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node.as_ref(), accumulator)
     }
 
-    fn visit_field(&self, node: &'a Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(
+        &self,
+        node: &'ast Shared<'a, T, Field<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         self.check(node.as_ref(), accumulator);
     }
 
     fn visit_fragment_definition(
         &self,
-        node: &'a Arc<FragmentDefinition<T>>,
+        node: &'ast Shared<'a, T, FragmentDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node.as_ref(), accumulator);
@@ -93,7 +96,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node.as_ref(), accumulator);
@@ -101,7 +104,7 @@ where
 
     fn visit_inline_fragment(
         &self,
-        node: &'a InlineFragment<T>,
+        node: &'ast InlineFragment<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -109,7 +112,7 @@ where
 
     fn visit_variable_definition(
         &self,
-        node: &'a VariableDefinition<T>,
+        node: &'ast VariableDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -117,7 +120,7 @@ where
 
     fn visit_schema_definition(
         &self,
-        node: &'a SchemaDefinition<T>,
+        node: &'ast SchemaDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -125,7 +128,7 @@ where
 
     fn visit_schema_extension(
         &self,
-        node: &'a SchemaExtension<T>,
+        node: &'ast SchemaExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -133,7 +136,7 @@ where
 
     fn visit_scalar_type_definition(
         &self,
-        node: &'a ScalarTypeDefinition<T>,
+        node: &'ast ScalarTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -141,7 +144,7 @@ where
 
     fn visit_scalar_type_extension(
         &self,
-        node: &'a ScalarTypeExtension<T>,
+        node: &'ast ScalarTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -149,7 +152,7 @@ where
 
     fn visit_object_type_definition(
         &self,
-        node: &'a ObjectTypeDefinition<T>,
+        node: &'ast ObjectTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -157,7 +160,7 @@ where
 
     fn visit_object_type_extension(
         &self,
-        node: &'a ObjectTypeExtension<T>,
+        node: &'ast ObjectTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -165,7 +168,7 @@ where
 
     fn visit_field_definition(
         &self,
-        node: &'a Arc<FieldDefinition<T>>,
+        node: &'ast Shared<'a, T, FieldDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node.as_ref(), accumulator);
@@ -173,7 +176,7 @@ where
 
     fn visit_arguments_definition(
         &self,
-        node: &'a Arc<ArgumentsDefinition<T>>,
+        node: &'ast Shared<'a, T, ArgumentsDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         for node in node.definitions.iter() {
@@ -187,7 +190,7 @@ where
 
     fn visit_interface_type_definition(
         &self,
-        node: &'a InterfaceTypeDefinition<T>,
+        node: &'ast InterfaceTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -195,7 +198,7 @@ where
 
     fn visit_union_type_definition(
         &self,
-        node: &'a UnionTypeDefinition<T>,
+        node: &'ast UnionTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -203,7 +206,7 @@ where
 
     fn visit_enum_type_definition(
         &self,
-        node: &'a EnumTypeDefinition<T>,
+        node: &'ast EnumTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -211,7 +214,7 @@ where
 
     fn visit_enum_value_definition(
         &self,
-        node: &'a EnumValueDefinition<T>,
+        node: &'ast EnumValueDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         self.check(node, accumulator);
@@ -219,7 +222,7 @@ where
 
     fn visit_input_fields_definition(
         &self,
-        node: &'a InputFieldsDefinition<T>,
+        node: &'ast InputFieldsDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         for node in node.definitions.iter() {

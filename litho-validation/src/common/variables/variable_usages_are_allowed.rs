@@ -1,25 +1,24 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::iter::once;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct VariableUsagesAreAllowed<'a, T>(pub &'a Database<T>)
+pub struct VariableUsagesAreAllowed<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for VariableUsagesAreAllowed<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariableUsagesAreAllowed<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_operation_definition(
         &self,
-        node: &'a Arc<OperationDefinition<T>>,
+        node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(variable_definitions) = node.variable_definitions.as_ref() else {
@@ -42,13 +41,13 @@ where
     }
 }
 
-fn is_variable_usage_allowed<T>(
-    database: &Database<T>,
-    definition: &VariableDefinition<T>,
-    value: &Arc<Value<T>>,
+fn is_variable_usage_allowed<'a, T>(
+    database: &Database<'a, T>,
+    definition: &VariableDefinition<'a, T>,
+    value: &Shared<'a, T, Value<'a, T>>,
 ) -> bool
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
     let definition_default_value = definition
         .default_value
@@ -67,15 +66,15 @@ where
 
     let expected_nullable = match (definition_default_value, location_default_value) {
         (None, None) => expected,
-        (_, _) => expected.as_nullable(),
+        (_, _) => Type::as_nullable(expected),
     };
 
     are_types_compatible(actual, expected_nullable)
 }
 
-fn are_types_compatible<T>(variable_type: &Type<T>, location_type: &Type<T>) -> bool
+fn are_types_compatible<'a, T>(variable_type: &Type<'a, T>, location_type: &Type<'a, T>) -> bool
 where
-    T: Eq,
+    T: ContextValue<'a> + Eq,
 {
     match (location_type, variable_type) {
         (Type::NonNull(location_type), Type::NonNull(variable_type)) => {
@@ -98,21 +97,25 @@ where
     }
 }
 
-pub struct VariableUsagesAreAllowedInOperation<'a, T>
+pub struct VariableUsagesAreAllowedInOperation<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    database: &'a Database<T>,
-    variable_definitions: &'a HashMap<&'a T, &'a VariableDefinition<T>>,
+    database: &'ast Database<'a, T>,
+    variable_definitions: &'ast HashMap<&'ast T, &'ast VariableDefinition<'a, T>>,
 }
 
-impl<'a, T> Visit<'a, T> for VariableUsagesAreAllowedInOperation<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariableUsagesAreAllowedInOperation<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_value(&self, node: &'a Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'ast Shared<'a, T, Value<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let variable = match node.as_ref() {
             Value::Variable(variable) => variable,
             _ => return,
@@ -147,7 +150,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(definition) = self
@@ -172,24 +175,28 @@ where
     }
 }
 
-pub struct VariableUsagesAreAllowedInFragment<'a, T>
+pub struct VariableUsagesAreAllowedInFragment<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    database: &'a Database<T>,
-    variable_definitions: &'a HashMap<&'a T, &'a VariableDefinition<T>>,
-    fragment_name: &'a T,
+    database: &'ast Database<'a, T>,
+    variable_definitions: &'ast HashMap<&'ast T, &'ast VariableDefinition<'a, T>>,
+    fragment_name: &'ast T,
     fragment_span: Span,
-    stack: HashSet<&'a T>,
+    stack: HashSet<&'ast T>,
 }
 
-impl<'a, T> Visit<'a, T> for VariableUsagesAreAllowedInFragment<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariableUsagesAreAllowedInFragment<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_value(&self, node: &'a Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'ast Shared<'a, T, Value<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let variable = match node.as_ref() {
             Value::Variable(variable) => variable,
             _ => return,
@@ -226,7 +233,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if self.stack.contains(node.fragment_name.as_ref()) {

@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::{Result, Write};
 
 use unindent::unindent;
@@ -14,7 +15,7 @@ macros::format_token!(FloatValue);
 
 impl<'a, T> Format for StringValue<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -28,7 +29,7 @@ where
     where
         W: Write,
     {
-        let source = self.as_raw_token().source.borrow();
+        let source: &str = self.as_raw_token().source.borrow();
         formatter.line()?;
         formatter.push(r#"""""#)?;
         for line in unindent(&source[3..source.len() - 3]).lines() {
@@ -41,6 +42,7 @@ where
     }
 
     fn expands(&self) -> bool {
-        self.as_raw_token().source.borrow().starts_with(r#"""""#)
+        let source: &str = self.as_raw_token().source.borrow();
+        source.starts_with(r#"""""#)
     }
 }

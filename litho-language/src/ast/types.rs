@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::{Display, Formatter, Result};
 
 use arbitrary::Arbitrary;
@@ -427,7 +428,7 @@ where
 
 impl<'a, T> Value<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     pub fn to_json(&self) -> Option<serde_json::Value> {
         match self {
@@ -795,12 +796,16 @@ impl<'a, T> Directive<'a, T>
 where
     T: ContextValue<'a>,
 {
-    pub fn argument(&self, name: &str) -> Option<&Shared<'a, T, Argument<'a, T>>> {
+    pub fn argument<Q>(&self, name: &Q) -> Option<&Shared<'a, T, Argument<'a, T>>>
+    where
+        T: Borrow<Q>,
+        Q: Eq + ?Sized,
+    {
         self.arguments.as_ref().and_then(move |arguments| {
             arguments
                 .items
                 .iter()
-                .find(|arg| arg.name.as_ref().borrow() == name)
+                .find(|arg| <T as Borrow<Q>>::borrow(arg.name.as_ref()) == name)
         })
     }
 }
@@ -923,7 +928,7 @@ where
 
 impl<'a, T> ToString for Description<'a, T>
 where
-    T: ContextValue<'a> + From<&'static str>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn to_string(&self) -> String {
         self.0.to_string()
@@ -1382,9 +1387,9 @@ where
             .chain(self.types.iter().flat_map(|(_, ty)| ty.ok()))
     }
 
-    // pub fn types(&self) -> impl Iterator<Item = &T> {
-    // self.named_types().map(|ty| ty.0.as_ref())
-    // }
+    pub fn types(&self) -> impl Iterator<Item = &T> + use<'_, 'a, T> {
+        self.named_types().map(|ty| ty.0.as_ref())
+    }
 }
 
 impl<'a, T> ImplementsInterfaces<'a, T>

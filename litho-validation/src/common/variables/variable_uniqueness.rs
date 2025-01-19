@@ -5,19 +5,19 @@ use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct VariableUniqueness<'a, T>(pub &'a Database<T>)
+pub struct VariableUniqueness<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for VariableUniqueness<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariableUniqueness<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_variable_definitions(
         &self,
-        node: &'a VariableDefinitions<T>,
+        node: &'ast VariableDefinitions<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let mut map = HashMap::<&T, &Variable<T>>::new();

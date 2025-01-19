@@ -1,28 +1,30 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
-use litho_language::ast::OperationDefinition;
+use litho_language::ast::{ContextValue, OperationDefinition, Shared};
 
 use super::Map;
 
 #[derive(Debug)]
-pub struct Operations<T>
+pub struct Operations<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub by_name: Map<T, OperationDefinition<T>>,
-    pub nameless: Vec<Arc<OperationDefinition<T>>>,
+    pub by_name: Map<'a, T, T, OperationDefinition<'a, T>>,
+    pub nameless: Vec<Shared<'a, T, OperationDefinition<'a, T>>>,
 }
 
-impl<T> Operations<T>
+impl<'a, T> Operations<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn by_name(&self, name: &T) -> impl Iterator<Item = &Arc<OperationDefinition<T>>> {
+    pub fn by_name(
+        &self,
+        name: &T,
+    ) -> impl Iterator<Item = &Shared<'a, T, OperationDefinition<'a, T>>> {
         self.by_name.get(name)
     }
 
-    pub fn nameless(&self) -> impl Iterator<Item = &Arc<OperationDefinition<T>>> {
+    pub fn nameless(&self) -> impl Iterator<Item = &Shared<'a, T, OperationDefinition<'a, T>>> {
         self.nameless.iter()
     }
 
@@ -31,9 +33,9 @@ where
     }
 }
 
-impl<T> Default for Operations<T>
+impl<'a, T> Default for Operations<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
     fn default() -> Self {
         Operations {

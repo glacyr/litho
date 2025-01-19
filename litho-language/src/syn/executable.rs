@@ -11,14 +11,9 @@ use super::combinators::{
 use super::{many_ext, Error, RecoverableParserExt, RecoveryPoint, RECURSION_LIMIT};
 
 #[wrom]
-pub fn executable_document<'a, T, I>(
-) -> impl RecoverableParser<I, ExecutableDocument<'a, T>, Error> + 'a
+pub fn executable_document<'a, T, I>() -> impl RecoverableParser<I, ExecutableDocument<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     many_ext(executable_definition()).map(|definitions| ExecutableDocument { definitions })
@@ -26,13 +21,9 @@ where
 
 #[wrom]
 pub fn executable_definition<'a, T, I>(
-) -> impl RecoverableParser<I, ExecutableDefinition<'a, T>, Error> + 'a
+) -> impl RecoverableParser<I, ExecutableDefinition<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -58,13 +49,9 @@ where
 
 #[wrom]
 pub fn operation_definition<'a, T, I>(
-) -> impl RecoverableParser<I, OperationDefinition<'a, T>, Error> + 'a
+) -> impl RecoverableParser<I, OperationDefinition<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (
@@ -90,13 +77,9 @@ where
 }
 
 #[wrom]
-pub fn operation_type<'a, T, I>() -> impl RecoverableParser<I, OperationType<'a, T>, Error> + 'a
+pub fn operation_type<'a, T, I>() -> impl RecoverableParser<I, OperationType<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -109,13 +92,9 @@ where
 #[wrom]
 pub fn selection_set<'a, T, I>(
     depth: usize,
-) -> impl RecoverableParser<I, SelectionSet<'a, T>, Error> + 'a
+) -> impl RecoverableParser<I, SelectionSet<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     delimited(
@@ -131,13 +110,9 @@ where
 }
 
 #[wrom]
-pub fn selection<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Selection<'a, T>, Error> + 'a
+pub fn selection<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Selection<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -150,13 +125,9 @@ where
 pub fn selection_fragment_with_dots<'a, T, I>(
     dots: Punctuator<'a, T>,
     depth: usize,
-) -> impl RecoverableParser<I, Selection<'a, T>, Error> + 'a
+) -> impl RecoverableParser<I, Selection<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -178,13 +149,9 @@ where
 }
 
 #[wrom]
-pub fn field<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Field<'a, T>, Error> + 'a
+pub fn field<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Field<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (
@@ -216,13 +183,9 @@ where
 }
 
 #[wrom]
-pub fn arguments<'a, T, I>() -> impl RecoverableParser<I, Arguments<'a, T>, Error> + 'a
+pub fn arguments<'a, T, I>() -> impl RecoverableParser<I, Arguments<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     delimited(
@@ -238,13 +201,9 @@ where
 }
 
 #[wrom]
-pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Shared<'a, T, Argument<'a, T>>, Error> + 'a
+pub fn argument<'a, T, I>() -> impl RecoverableParser<I, Shared<'a, T, Argument<'a, T>>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (
@@ -259,13 +218,9 @@ where
 #[wrom]
 pub fn fragment_spread<'a, T, I>(
     dots: Punctuator<'a, T>,
-) -> impl RecoverableParser<I, Shared<'a, T, FragmentSpread<'a, T>>, Error> + 'a
+) -> impl RecoverableParser<I, Shared<'a, T, FragmentSpread<'a, T>>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     name_unless_on()
@@ -282,13 +237,9 @@ where
 pub fn inline_fragment<'a, T, I>(
     dots: Punctuator<'a, T>,
     depth: usize,
-) -> impl RecoverableParser<I, InlineFragment<'a, T>, Error> + 'a
+) -> impl RecoverableParser<I, InlineFragment<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     opt(type_condition())
@@ -307,14 +258,9 @@ where
 }
 
 #[wrom]
-pub fn fragment_definition<'a, T, I>(
-) -> impl RecoverableParser<I, FragmentDefinition<'a, T>, Error> + 'a
+pub fn fragment_definition<'a, T, I>() -> impl RecoverableParser<I, FragmentDefinition<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (
@@ -340,13 +286,9 @@ where
 }
 
 #[wrom]
-pub fn type_condition<'a, T, I>() -> impl RecoverableParser<I, TypeCondition<'a, T>, Error> + 'a
+pub fn type_condition<'a, T, I>() -> impl RecoverableParser<I, TypeCondition<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     keyword(TokenKind::KeywordOn)
@@ -359,13 +301,9 @@ where
 #[wrom]
 pub fn value<'a, T, I>(
     depth: usize,
-) -> impl RecoverableParser<I, Shared<'a, T, Value<'a, T>>, Error> + 'a
+) -> impl RecoverableParser<I, Shared<'a, T, Value<'a, T>>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -383,13 +321,9 @@ where
 }
 
 #[wrom]
-pub fn boolean_value<'a, T, I>() -> impl RecoverableParser<I, BooleanValue<'a, T>, Error> + 'a
+pub fn boolean_value<'a, T, I>() -> impl RecoverableParser<I, BooleanValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -399,39 +333,27 @@ where
 }
 
 #[wrom]
-pub fn null_value<'a, T, I>() -> impl RecoverableParser<I, NullValue<'a, T>, Error> + 'a
+pub fn null_value<'a, T, I>() -> impl RecoverableParser<I, NullValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     keyword(TokenKind::KeywordNull).map(NullValue)
 }
 
 #[wrom]
-pub fn enum_value<'a, T, I>() -> impl RecoverableParser<I, EnumValue<'a, T>, Error> + 'a
+pub fn enum_value<'a, T, I>() -> impl RecoverableParser<I, EnumValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     name().map(EnumValue)
 }
 
 #[wrom]
-pub fn list_value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListValue<'a, T>, Error> + 'a
+pub fn list_value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     delimited(
@@ -447,15 +369,9 @@ where
 }
 
 #[wrom]
-pub fn object_value<'a, T, I>(
-    depth: usize,
-) -> impl RecoverableParser<I, ObjectValue<'a, T>, Error> + 'a
+pub fn object_value<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ObjectValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     delimited(
@@ -471,15 +387,9 @@ where
 }
 
 #[wrom]
-pub fn object_field<'a, T, I>(
-    depth: usize,
-) -> impl RecoverableParser<I, ObjectField<'a, T>, Error> + 'a
+pub fn object_field<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ObjectField<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (
@@ -495,13 +405,9 @@ where
 
 #[wrom]
 pub fn variable_definitions<'a, T, I>(
-) -> impl RecoverableParser<I, VariableDefinitions<'a, T>, Error> + 'a
+) -> impl RecoverableParser<I, VariableDefinitions<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     delimited(
@@ -518,13 +424,9 @@ where
 
 #[wrom]
 pub fn variable_definition<'a, T, I>(
-) -> impl RecoverableParser<I, Shared<'a, T, VariableDefinition<'a, T>>, Error> + 'a
+) -> impl RecoverableParser<I, Shared<'a, T, VariableDefinition<'a, T>>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (
@@ -549,13 +451,9 @@ where
 }
 
 #[wrom]
-pub fn variable<'a, T, I>() -> impl RecoverableParser<I, Variable<'a, T>, Error> + 'a
+pub fn variable<'a, T, I>() -> impl RecoverableParser<I, Variable<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     punctuator(TokenKind::Dollar)
@@ -564,13 +462,9 @@ where
 }
 
 #[wrom]
-pub fn default_value<'a, T, I>() -> impl RecoverableParser<I, DefaultValue<'a, T>, Error> + 'a
+pub fn default_value<'a, T, I>() -> impl RecoverableParser<I, DefaultValue<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     punctuator(TokenKind::Eq)
@@ -579,15 +473,9 @@ where
 }
 
 #[wrom]
-pub fn ty<'a, T, I>(
-    depth: usize,
-) -> impl RecoverableParser<I, Shared<'a, T, Type<'a, T>>, Error> + 'a
+pub fn ty<'a, T, I>(depth: usize) -> impl RecoverableParser<I, Shared<'a, T, Type<'a, T>>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -608,26 +496,18 @@ where
 }
 
 #[wrom]
-pub fn named_type<'a, T, I>() -> impl RecoverableParser<I, NamedType<'a, T>, Error> + 'a
+pub fn named_type<'a, T, I>() -> impl RecoverableParser<I, NamedType<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     name().map(NamedType)
 }
 
 #[wrom]
-pub fn list_type<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListType<'a, T>, Error> + 'a
+pub fn list_type<'a, T, I>(depth: usize) -> impl RecoverableParser<I, ListType<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     delimited(
@@ -643,27 +523,18 @@ where
 }
 
 #[wrom]
-pub fn directives<'a, T, I>() -> impl RecoverableParser<I, Directives<'a, T>, Error> + 'a
+pub fn directives<'a, T, I>() -> impl RecoverableParser<I, Directives<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     many_ext(directive()).map(|directives| Directives { directives })
 }
 
 #[wrom]
-pub fn directive<'a, T, I>(
-) -> impl RecoverableParser<I, Shared<'a, T, Directive<'a, T>>, Error> + 'a
+pub fn directive<'a, T, I>() -> impl RecoverableParser<I, Shared<'a, T, Directive<'a, T>>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     (

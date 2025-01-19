@@ -1,24 +1,23 @@
 use std::collections::HashSet;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct RequiredArguments<'a, T>(pub &'a Database<T>)
+pub struct RequiredArguments<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> RequiredArguments<'a, T>
+impl<'ast, 'a, T> RequiredArguments<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     fn check_arguments(
         &self,
-        name: &Name<T>,
-        arguments: Option<&Arc<Arguments<T>>>,
-        definition: &Arc<ArgumentsDefinition<T>>,
+        name: &Name<'a, T>,
+        arguments: Option<&Shared<'a, T, Arguments<'a, T>>>,
+        definition: &Shared<'a, T, ArgumentsDefinition<'a, T>>,
         accumulator: &mut Vec<Diagnostic<Span>>,
     ) {
         let names = arguments
@@ -32,7 +31,11 @@ where
                 if definition.is_required() {
                     accumulator.push(Diagnostic::missing_required_argument(
                         definition.name.as_ref().to_string(),
-                        definition.ty.to_string(),
+                        definition
+                            .ty
+                            .ok()
+                            .map(|ty| ty.to_string())
+                            .unwrap_or("(unknown)".to_owned()),
                         name.span(),
                     ))
                 }
@@ -41,13 +44,17 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for RequiredArguments<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for RequiredArguments<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_field(&self, node: &'a Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(
+        &self,
+        node: &'ast Shared<'a, T, Field<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let definition = self.0.inference.arguments_definition_for_field(node);
 
         if let Some((name, definition)) = node.name.ok().zip(definition) {

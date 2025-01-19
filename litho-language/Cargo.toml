@@ -8,15 +8,16 @@ edition = "2021"
 [dependencies]
 arbitrary = { version = "1.4.1", features = ["derive"] }
 ariadne = "0.1.5"
+bumpalo = { version = "3.16.0", features = ["boxed", "collections"] }
 enumset = "1.1.5"
 logos = "0.12.1"
 serde_json = "1.0.91"
+smol_str = "0.3.2"
 unindent = "0.1.10"
 
 litho-diagnostics = { path = "../litho-diagnostics" }
 wrom = { path = "../wrom" }
 wrom-derive = { path = "../wrom-derive" }
-bumpalo = "3.16.0"
 
 [dev-dependencies]
 async-graphql-parser = "7.0.11"

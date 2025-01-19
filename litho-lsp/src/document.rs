@@ -12,7 +12,7 @@ pub struct Document {
     version: Option<i32>,
     internal: bool,
     text: SmolStr,
-    pub(crate) ast: Option<Arc<Ast<SmolStr>>>,
+    pub(crate) ast: Option<Arc<Ast<'static, SmolStr>>>,
 }
 
 impl Document {
@@ -53,7 +53,7 @@ impl Document {
         &self.text
     }
 
-    pub fn ast(&self) -> &Ast<SmolStr> {
+    pub fn ast(&self) -> &Ast<'static, SmolStr> {
         self.ast.as_ref().unwrap()
     }
 }

@@ -1,5 +1,4 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_language::ast::*;
 
@@ -7,15 +6,16 @@ use super::Database;
 
 pub struct Indexer;
 
-impl<'ast, T> Visit<'ast, T> for Indexer
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for Indexer
 where
-    T: 'ast + Clone + Eq + Hash,
+    T: ContextValue<'a> + Clone + Eq + Hash + 'a,
+    'a: 'ast,
 {
-    type Accumulator = Database<T>;
+    type Accumulator = Database<'a, T>;
 
     fn visit_directive_definition(
         &self,
-        node: &'ast Arc<DirectiveDefinition<T>>,
+        node: &'ast Shared<'a, T, DirectiveDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = node.name.ok() {
@@ -27,7 +27,7 @@ where
 
     fn visit_schema_definition(
         &self,
-        node: &'ast SchemaDefinition<T>,
+        node: &'ast SchemaDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.definitions.schema_directives.extend(
@@ -40,7 +40,7 @@ where
 
     fn visit_schema_extension(
         &self,
-        node: &'ast SchemaExtension<T>,
+        node: &'ast SchemaExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.extensions.schema_directives.extend(
@@ -53,7 +53,7 @@ where
 
     fn visit_type_definition(
         &self,
-        node: &'ast Arc<TypeDefinition<T>>,
+        node: &'ast Shared<'a, T, TypeDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = node.name().ok() {
@@ -86,7 +86,7 @@ where
 
     fn visit_type_extension(
         &self,
-        node: &'ast Arc<TypeExtension<T>>,
+        node: &'ast Shared<'a, T, TypeExtension<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = node.name() {
@@ -119,7 +119,7 @@ where
 
     fn visit_object_type_definition(
         &self,
-        node: &'ast ObjectTypeDefinition<T>,
+        node: &'ast ObjectTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
@@ -135,7 +135,7 @@ where
 
     fn visit_object_type_extension(
         &self,
-        node: &'ast ObjectTypeExtension<T>,
+        node: &'ast ObjectTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
@@ -151,7 +151,7 @@ where
 
     fn visit_interface_type_definition(
         &self,
-        node: &'ast InterfaceTypeDefinition<T>,
+        node: &'ast InterfaceTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
@@ -167,7 +167,7 @@ where
 
     fn visit_interface_type_extension(
         &self,
-        node: &'ast InterfaceTypeExtension<T>,
+        node: &'ast InterfaceTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
@@ -183,7 +183,7 @@ where
 
     fn visit_input_object_type_definition(
         &self,
-        node: &'ast InputObjectTypeDefinition<T>,
+        node: &'ast InputObjectTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
@@ -199,7 +199,7 @@ where
 
     fn visit_input_object_type_extension(
         &self,
-        node: &'ast InputObjectTypeExtension<T>,
+        node: &'ast InputObjectTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, fields)) = node.name.ok().zip(node.fields_definition.as_ref()) {
@@ -215,7 +215,7 @@ where
 
     fn visit_enum_type_definition(
         &self,
-        node: &'ast EnumTypeDefinition<T>,
+        node: &'ast EnumTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
@@ -231,7 +231,7 @@ where
 
     fn visit_enum_type_extension(
         &self,
-        node: &'ast EnumTypeExtension<T>,
+        node: &'ast EnumTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, values)) = node.name.ok().zip(node.values_definition.as_ref()) {
@@ -247,7 +247,7 @@ where
 
     fn visit_union_type_definition(
         &self,
-        node: &'ast UnionTypeDefinition<T>,
+        node: &'ast UnionTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, types)) = node.name.ok().zip(node.member_types.as_ref()) {
@@ -262,7 +262,7 @@ where
 
     fn visit_union_type_extension(
         &self,
-        node: &'ast UnionTypeExtension<T>,
+        node: &'ast UnionTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some((name, types)) = node.name.ok().zip(node.member_types.as_ref()) {
@@ -278,7 +278,7 @@ where
 
     fn visit_operation_definition(
         &self,
-        node: &'ast Arc<OperationDefinition<T>>,
+        node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         match node.name.as_ref() {
@@ -289,7 +289,7 @@ where
 
     fn visit_fragment_definition(
         &self,
-        node: &'ast Arc<FragmentDefinition<T>>,
+        node: &'ast Shared<'a, T, FragmentDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = node.fragment_name.ok() {

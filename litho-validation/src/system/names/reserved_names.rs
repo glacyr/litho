@@ -1,27 +1,26 @@
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct ReservedNames<'a, T>(pub &'a Database<T>)
+pub struct ReservedNames<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for ReservedNames<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for ReservedNames<'ast, 'a, T>
 where
-    T: Eq + Hash + Borrow<str> + ToString,
+    T: ContextValue<'a> + Eq + Hash + Borrow<str> + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_value_definition(
         &self,
-        node: &'a Arc<InputValueDefinition<T>>,
+        node: &'ast Shared<'a, T, InputValueDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        if node.name.as_ref().borrow().starts_with("__") {
+        if <T as Borrow<str>>::borrow(node.name.as_ref()).starts_with("__") {
             accumulator.push(Diagnostic::reserved_input_value_name(
                 node.name.as_ref().to_string(),
                 node.name.span(),
@@ -31,10 +30,10 @@ where
 
     fn visit_field_definition(
         &self,
-        node: &'a Arc<FieldDefinition<T>>,
+        node: &'ast Shared<'a, T, FieldDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
-        if node.name.as_ref().borrow().starts_with("__") {
+        if <T as Borrow<str>>::borrow(node.name.as_ref()).starts_with("__") {
             accumulator.push(Diagnostic::reserved_field_name(
                 node.name.as_ref().to_string(),
                 node.name.span(),
@@ -44,13 +43,16 @@ where
 
     fn visit_directive_definition(
         &self,
-        node: &'a Arc<DirectiveDefinition<T>>,
+        node: &'ast Shared<'a, T, DirectiveDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         match node.name.ok() {
-            Some(name) if name.as_ref().borrow().starts_with("__") => accumulator.push(
-                Diagnostic::reserved_directive_name(name.as_ref().to_string(), node.name.span()),
-            ),
+            Some(name) if <T as Borrow<str>>::borrow(name.as_ref()).starts_with("__") => {
+                accumulator.push(Diagnostic::reserved_directive_name(
+                    name.as_ref().to_string(),
+                    node.name.span(),
+                ))
+            }
             _ => {}
         }
     }

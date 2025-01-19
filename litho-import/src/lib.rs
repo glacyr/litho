@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::future::Future;
 
+use litho_language::ast::MultiThreadedContext;
 use litho_language::fmt::Format;
-use litho_language::Document;
 
 mod introspection;
 
-use introspection::Response;
+use introspection::{Response, Retrospect};
 use reqwest::header::HeaderMap;
 
 pub trait Importer {
@@ -39,7 +39,8 @@ where
         .await
         .map_err(|err| err.to_string())?;
 
-    let node: Document<String> = json.data.schema.into();
+    let context = MultiThreadedContext::new();
+    let node = json.data.schema.retrospect(&context).unwrap();
 
     Ok(T::from(&node.format_to_string(80)))
 }

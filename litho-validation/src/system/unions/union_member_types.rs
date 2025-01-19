@@ -1,22 +1,21 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct UnionMemberTypes<'a, T>(pub &'a Database<T>)
+pub struct UnionMemberTypes<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> UnionMemberTypes<'a, T>
+impl<'ast, 'a, T> UnionMemberTypes<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     fn check_union_member_types(
         &self,
         name: &T,
-        member_types: &litho_language::ast::UnionMemberTypes<T>,
+        member_types: &litho_language::ast::UnionMemberTypes<'a, T>,
     ) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
 
@@ -26,7 +25,7 @@ where
                 .union_member_types_by_name(name, ty.0.as_ref())
                 .next()
             {
-                Some(first) if !Arc::ptr_eq(first, ty) => {
+                Some(first) if !Shared::ptr_eq(first, ty) => {
                     errors.push(Diagnostic::duplicate_union_member(
                         ty.0.as_ref().to_string(),
                         first.span(),
@@ -49,15 +48,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for UnionMemberTypes<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for UnionMemberTypes<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_union_type_definition(
         &self,
-        node: &'a UnionTypeDefinition<T>,
+        node: &'ast UnionTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };
@@ -76,7 +75,7 @@ where
 
     fn visit_union_type_extension(
         &self,
-        node: &'a UnionTypeExtension<T>,
+        node: &'ast UnionTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };

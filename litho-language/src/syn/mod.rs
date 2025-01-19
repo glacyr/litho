@@ -1,4 +1,4 @@
-use wrom::{alt, many, Input, RecoverableParser};
+use wrom::{alt, Input, RecoverableParser};
 use wrom_derive::wrom;
 
 use crate::ast::*;
@@ -52,26 +52,18 @@ impl Error {
 }
 
 #[wrom]
-pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<'a, T>, Error> + 'a
+pub fn document<'a, T, I>() -> impl RecoverableParser<I, Document<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     many_ext(definition().into_shared()).map(|definitions| Document { definitions })
 }
 
 #[wrom]
-pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<'a, T>, Error> + 'a
+pub fn definition<'a, T, I>() -> impl RecoverableParser<I, Definition<'a, T>, Error>
 where
-    I: Input<Recognizer = RecoveryPoint>
-        + Iterator<Item = Token<'a, T>>
-        + Context<'a, T>
-        + Spanned
-        + 'a,
+    I: Input<Recognizer = RecoveryPoint> + Iterator<Item = Token<'a, T>> + Context<'a, T> + Spanned,
     T: ContextValue<'a> + 'a,
 {
     alt((
@@ -82,32 +74,15 @@ where
 }
 
 macro_rules! parse {
-    (Arc<$name:ident>, $($fn:tt)*) => {
-        impl<'a, T> Parse<'a, T> for Arc<$name<'a, T>>
-        where
-            T: ContextValue<'a>,
-        {
-            fn parse(stream: Stream<'a, T>) -> Result<(Self, Vec<Token<'a, T>>), Err<Error>>
-            where
-                Stream<'a, T>: Context<'a, T>,
-                T: From<&'a str> + Clone + 'a,
-            {
-                $($fn)*
-                    .parse(stream, Default::default())
-                    .map(|(input, value)| (value, input.into_unexpected()))
-            }
-        }
-    };
-
     ($name:ident, $($fn:tt)*) => {
         impl<'a, T> Parse<'a, T> for $name<'a, T>
         where
             T: ContextValue<'a>,
         {
-            fn parse(mut stream: Stream<'a, T>) -> Result<(Self, Vec<Token<'a, T>>), Error>
+            fn parse<'b, C>(mut stream: Stream<'a, 'b, T, C>) -> Result<(Self, Vec<Token<'a, T>>), Error>
             where
-                Stream<'a, T>: Context<'a, T>,
-                T: ContextValue<'a> + From<&'a str> + 'a,
+                T: ContextValue<'a> + From<&'b str> + 'a,
+                C: Context<'a, T> + 'a,
             {
                 let value = $($fn)*
                     .parse(&mut stream, Default::default())?;

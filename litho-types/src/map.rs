@@ -1,29 +1,31 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
+use litho_language::ast::{ContextValue, Shared};
 use multimap::MultiMap;
 
 #[derive(Debug)]
-pub struct Map<K, V>(MultiMap<K, Arc<V>>)
+pub struct Map<'a, T, K, V>(MultiMap<K, Shared<'a, T, V>>)
 where
+    T: ContextValue<'a>,
     K: Eq + Hash;
 
-impl<K, V> Map<K, V>
+impl<'a, T, K, V> Map<'a, T, K, V>
 where
+    T: ContextValue<'a>,
     K: Eq + Hash,
 {
-    pub fn new() -> Map<K, V> {
+    pub fn new() -> Map<'a, T, K, V> {
         Default::default()
     }
 
-    pub fn insert(&mut self, key: &K, value: &Arc<V>)
+    pub fn insert(&mut self, key: &K, value: &Shared<'a, T, V>)
     where
         K: ToOwned<Owned = K>,
     {
         self.0.insert(key.to_owned(), value.clone());
     }
 
-    pub fn get(&self, key: &K) -> impl Iterator<Item = &Arc<V>> {
+    pub fn get(&self, key: &K) -> impl Iterator<Item = &Shared<'a, T, V>> {
         self.0.get_vec(key).map(Vec::as_slice).into_iter().flatten()
     }
 
@@ -32,8 +34,9 @@ where
     }
 }
 
-impl<K, V> Default for Map<K, V>
+impl<'a, T, K, V> Default for Map<'a, T, K, V>
 where
+    T: ContextValue<'a>,
     K: Eq + Hash,
 {
     fn default() -> Self {

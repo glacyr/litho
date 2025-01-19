@@ -2,6 +2,8 @@ use std::fs::{read_dir, read_to_string, write};
 use std::path::Path;
 
 use ariadne::{Cache, Report, Source};
+use bumpalo::Bump;
+use litho_language::ast::BumpaloContext;
 use litho_language::chk::collect_errors;
 use litho_language::lex::{SourceId, Span};
 use litho_language::{Document, Parse};
@@ -26,7 +28,8 @@ pub fn main() {
         eprintln!("Entry: {:?}", entry.path());
         let source = read_to_string(entry.path()).unwrap();
 
-        let builtins = Document::<String>::parse_from_str(
+        let bump = Bump::new();
+        let builtins = Document::<&str>::parse_from_str(
             Default::default(),
             r#"
         scalar Int
@@ -40,12 +43,18 @@ pub fn main() {
         
         scalar ID
         "#,
+            BumpaloContext::new(&bump),
         )
         .unwrap();
 
-        let ast = Document::<String>::parse_from_str(Default::default(), &source).unwrap();
+        let ast = Document::<&str>::parse_from_str(
+            Default::default(),
+            &source,
+            BumpaloContext::new(&bump),
+        )
+        .unwrap();
         let mut errors = collect_errors(&ast);
-        let database = Database::from_iter([&builtins.0, &ast.0]);
+        let database = Database::with_imports([&builtins.0, &ast.0], &Default::default());
         errors.extend(check(&ast.0, &database));
 
         let output = errors

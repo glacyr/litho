@@ -1,24 +1,23 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct ArgumentNameUniqueness<'a, T>(pub &'a Database<T>)
+pub struct ArgumentNameUniqueness<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for ArgumentNameUniqueness<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for ArgumentNameUniqueness<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_arguments_definition(
         &self,
-        node: &'a Arc<ArgumentsDefinition<T>>,
+        node: &'ast Shared<'a, T, ArgumentsDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let mut existing = HashMap::<&T, &InputValueDefinition<T>>::new();

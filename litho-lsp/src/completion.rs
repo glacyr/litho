@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 use lsp_types::*;
 use smol_str::SmolStr;
@@ -67,7 +65,7 @@ struct CompletionVisitor<'a> {
 impl<'a> CompletionVisitor<'a> {
     pub fn complete_field_definition(
         &self,
-        definition: &'a FieldDefinition<SmolStr>,
+        definition: &'a FieldDefinition<'static, SmolStr>,
     ) -> CompletionItem {
         CompletionItem {
             kind: Some(CompletionItemKind::FIELD),
@@ -106,7 +104,7 @@ impl<'a> CompletionVisitor<'a> {
 
     pub fn complete_input_value_definition(
         &self,
-        definition: &'a InputValueDefinition<SmolStr>,
+        definition: &'a InputValueDefinition<'static, SmolStr>,
     ) -> CompletionItem {
         CompletionItem {
             kind: Some(CompletionItemKind::VARIABLE),
@@ -117,6 +115,7 @@ impl<'a> CompletionVisitor<'a> {
                 definition
                     .ty
                     .ok()
+                    .map(AsRef::as_ref)
                     .map(ToString::to_string)
                     .unwrap_or_default()
             )),
@@ -160,7 +159,14 @@ impl<'a> CompletionVisitor<'a> {
             .map(|def| CompletionItem {
                 label: def.name.to_string(),
                 label_details: Some(CompletionItemLabelDetails {
-                    detail: Some(format!(": {}", def.ty.to_string())),
+                    detail: Some(format!(
+                        ": {}",
+                        def.ty
+                            .ok()
+                            .map(AsRef::as_ref)
+                            .map(ToString::to_string)
+                            .unwrap_or("(unknown)".to_owned())
+                    )),
                     ..Default::default()
                 }),
                 insert_text: Some(format!("{}: ", def.name.to_string())),
@@ -172,7 +178,10 @@ impl<'a> CompletionVisitor<'a> {
             })
     }
 
-    pub fn complete_value(&self, ty: &Type<SmolStr>) -> impl Iterator<Item = CompletionItem> + '_ {
+    pub fn complete_value(
+        &self,
+        ty: &Type<'static, SmolStr>,
+    ) -> impl Iterator<Item = CompletionItem> + '_ {
         let mut items = vec![];
 
         let ty = match ty {
@@ -247,10 +256,14 @@ impl<'a> CompletionVisitor<'a> {
     }
 }
 
-impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
+impl<'a> Visit<'a, 'static, SmolStr> for CompletionVisitor<'a> {
     type Accumulator = Vec<CompletionItem>;
 
-    fn visit_definition(&self, node: &'a Definition<SmolStr>, accumulator: &mut Self::Accumulator) {
+    fn visit_definition(
+        &self,
+        node: &'a Definition<'static, SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if node.span().contains(self.offset) {
             accumulator.truncate(0);
         }
@@ -258,7 +271,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_selection_set(
         &self,
-        node: &'a Arc<SelectionSet<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, SelectionSet<'static, SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if node.span().contains(self.offset) {
@@ -283,7 +296,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_arguments(
         &self,
-        node: &'a Arc<Arguments<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, Arguments<'static, SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if node.span().contains(self.offset) {
@@ -308,7 +321,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_fields_definition(
         &self,
-        node: &'a FieldsDefinition<SmolStr>,
+        node: &'a FieldsDefinition<'static, SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.span().contains(self.offset) {
@@ -328,7 +341,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_input_fields_definition(
         &self,
-        node: &'a InputFieldsDefinition<SmolStr>,
+        node: &'a InputFieldsDefinition<'static, SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.span().contains(self.offset) {
@@ -359,7 +372,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_arguments_definition(
         &self,
-        node: &'a Arc<ArgumentsDefinition<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, ArgumentsDefinition<'static, SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.span().contains(self.offset) {
@@ -377,7 +390,11 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
         }
     }
 
-    fn visit_value(&self, node: &'a Arc<Value<SmolStr>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'a Shared<'static, SmolStr, Value<'static, SmolStr>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         match node.as_ref() {
             Value::ListValue(list) if list.span().contains(self.offset) => {
                 accumulator.truncate(0);
@@ -451,7 +468,7 @@ impl<'a> Visit<'a, SmolStr> for CompletionVisitor<'a> {
 
     fn visit_variable_definitions(
         &self,
-        node: &'a VariableDefinitions<SmolStr>,
+        node: &'a VariableDefinitions<'static, SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.parens.span().contains(self.offset) {

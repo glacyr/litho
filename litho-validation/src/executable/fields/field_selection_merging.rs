@@ -1,23 +1,22 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct FieldSelectionMerging<'a, T>(pub &'a Database<T>)
+pub struct FieldSelectionMerging<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> FieldSelectionMerging<'a, T>
+impl<'ast, 'a, T> FieldSelectionMerging<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     fn fields_by_name(
         &self,
-        set: &'a Arc<SelectionSet<T>>,
-        fields: &mut HashMap<&'a T, Vec<(&'a T, &'a Arc<Field<T>>)>>,
+        set: &'ast Shared<'a, T, SelectionSet<'a, T>>,
+        fields: &mut HashMap<&'ast T, Vec<(&'ast T, &'ast Shared<'a, T, Field<'a, T>>)>>,
     ) {
         let Some(ty) = self.0.inference.type_by_selection_set.get(set) else {
             return;
@@ -60,7 +59,7 @@ where
 
     fn pairs<'b, U>(&self, fields: &'b [U]) -> impl Iterator<Item = (&'b U, &'b U)>
     where
-        U: 'a,
+        U: 'ast,
     {
         (0..fields.len())
             .flat_map(|i| (i + 1..fields.len()).map(move |j| (i, j)))
@@ -70,7 +69,7 @@ where
     fn fields_can_merge(
         &self,
         response_key: &T,
-        fields: &[(&'a T, &'a Arc<Field<T>>)],
+        fields: &[(&'ast T, &'ast Shared<'a, T, Field<'a, T>>)],
     ) -> Vec<Diagnostic<Span>> {
         let mut diagnostics = vec![];
 
@@ -84,8 +83,8 @@ where
     fn check_pair(
         &self,
         response_key: &T,
-        a: &(&T, &Arc<Field<T>>),
-        b: &(&T, &Arc<Field<T>>),
+        a: &(&'ast T, &'ast Shared<'a, T, Field<'a, T>>),
+        b: &(&'ast T, &'ast Shared<'a, T, Field<'a, T>>),
     ) -> Option<Diagnostic<Span>> {
         let span_a =
             a.1.alias
@@ -147,7 +146,11 @@ where
         None
     }
 
-    fn same_response_shape(&self, a: &Arc<Field<T>>, b: &Arc<Field<T>>) -> Option<bool> {
+    fn same_response_shape(
+        &self,
+        a: &'ast Shared<'a, T, Field<'a, T>>,
+        b: &'ast Shared<'a, T, Field<'a, T>>,
+    ) -> Option<bool> {
         let fields = &self.0.inference.field_definitions_by_field;
 
         let ty_a = fields.get(a)?.ty.ok()?;
@@ -180,7 +183,11 @@ where
         Some(true)
     }
 
-    fn same_response_shape_type(&self, ty_a: &Arc<Type<T>>, ty_b: &Arc<Type<T>>) -> Option<bool> {
+    fn same_response_shape_type(
+        &self,
+        ty_a: &'ast Shared<'a, T, Type<'a, T>>,
+        ty_b: &'ast Shared<'a, T, Type<'a, T>>,
+    ) -> Option<bool> {
         let (ty_a, ty_b) = match (ty_a.as_ref(), ty_b.as_ref()) {
             (Type::NonNull(ty_a), Type::NonNull(ty_b)) => (ty_a.ty.as_ref(), ty_b.ty.as_ref()),
             (Type::NonNull(_), _) | (_, Type::NonNull(_)) => return Some(false),
@@ -206,15 +213,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for FieldSelectionMerging<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for FieldSelectionMerging<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_selection_set(
         &self,
-        node: &'a Arc<SelectionSet<T>>,
+        node: &'ast Shared<'a, T, SelectionSet<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let mut fields_by_name = HashMap::new();

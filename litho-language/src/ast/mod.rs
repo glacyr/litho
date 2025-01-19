@@ -11,7 +11,10 @@ mod tokens;
 mod types;
 mod visit;
 
-pub use context::{BumpBox, Context, ContextValue, List, Shared};
+pub use context::{
+    AsPtr, BumpaloContext, Context, ContextValue, List, MultiThreadedContext, Shared,
+    SmolStrContext,
+};
 pub use node::Node;
 use node::{node, node_arc, node_enum, node_unit};
 pub use types::*;

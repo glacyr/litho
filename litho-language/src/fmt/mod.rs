@@ -17,7 +17,7 @@ mod tests {
 
     use super::Format;
 
-    use crate::ast::Document;
+    use crate::ast::{BumpaloContext, Document};
     use crate::syn::Parse;
 
     #[test]
@@ -43,7 +43,7 @@ mod tests {
 
         query example { id }
         ",
-            &bump,
+            BumpaloContext::new(&bump),
         )
         .unwrap()
         .0;

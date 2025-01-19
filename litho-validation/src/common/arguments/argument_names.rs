@@ -1,21 +1,24 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct ArgumentNames<'a, T>(pub &'a Database<T>)
+pub struct ArgumentNames<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for ArgumentNames<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for ArgumentNames<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_argument(&self, node: &'a Arc<Argument<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_argument(
+        &self,
+        node: &'ast Shared<'a, T, Argument<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if self
             .0
             .inference

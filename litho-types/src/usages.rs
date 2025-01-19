@@ -1,20 +1,20 @@
 use std::hash::Hash;
 
-use litho_language::ast::{FragmentDefinition, FragmentSpread};
+use litho_language::ast::{ContextValue, FragmentDefinition, FragmentSpread};
 
 use super::References;
 
 #[derive(Debug)]
-pub struct Usages<T>
+pub struct Usages<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fragments: References<FragmentDefinition<T>, FragmentSpread<T>>,
+    pub fragments: References<'a, T, FragmentDefinition<'a, T>, FragmentSpread<'a, T>>,
 }
 
-impl<T> Default for Usages<T>
+impl<'a, T> Default for Usages<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
     fn default() -> Self {
         Usages {

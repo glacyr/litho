@@ -19,7 +19,7 @@ pub use directives::{DirectiveLocationKind, DirectiveTarget};
 pub use fragments::Fragments;
 pub use import::Import;
 pub use inference::Inference;
-pub use inferred::{Inferred, InferredMany};
+pub use inferred::{Inferred, InferredMany, InferredSimple};
 pub use map::Map;
 pub use named::Named;
 pub use operations::Operations;

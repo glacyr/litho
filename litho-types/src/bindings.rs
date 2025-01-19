@@ -1,5 +1,4 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_language::ast::*;
 use multimap::MultiMap;
@@ -7,21 +6,21 @@ use multimap::MultiMap;
 use super::Named;
 
 #[derive(Debug)]
-pub struct Bindings<T>
+pub struct Bindings<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub field_definitions: Named<T, FieldDefinition<T>>,
-    pub input_value_definitions: Named<T, InputValueDefinition<T>>,
-    pub enum_value_definitions: Named<T, EnumValueDefinition<T>>,
-    pub union_member_types: Named<T, NamedType<T>>,
-    pub schema_directives: Vec<Arc<Directive<T>>>,
-    pub type_directives: MultiMap<T, Arc<Directive<T>>>,
+    pub field_definitions: Named<'a, T, FieldDefinition<'a, T>>,
+    pub input_value_definitions: Named<'a, T, InputValueDefinition<'a, T>>,
+    pub enum_value_definitions: Named<'a, T, EnumValueDefinition<'a, T>>,
+    pub union_member_types: Named<'a, T, NamedType<'a, T>>,
+    pub schema_directives: Vec<Shared<'a, T, Directive<'a, T>>>,
+    pub type_directives: MultiMap<T, Shared<'a, T, Directive<'a, T>>>,
 }
 
-impl<T> Default for Bindings<T>
+impl<'a, T> Default for Bindings<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
     fn default() -> Self {
         Bindings {

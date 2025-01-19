@@ -1,22 +1,21 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct EnumValues<'a, T>(pub &'a Database<T>)
+pub struct EnumValues<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> EnumValues<'a, T>
+impl<'ast, 'a, T> EnumValues<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     fn check_enum_values(
         &self,
         name: &T,
-        values_definition: &EnumValuesDefinition<T>,
+        values_definition: &EnumValuesDefinition<'a, T>,
     ) -> Vec<Diagnostic<Span>> {
         let mut errors = vec![];
 
@@ -26,7 +25,7 @@ where
                 .enum_value_definitions_by_name(name, value.enum_value.0.as_ref())
                 .next()
             {
-                Some(first) if !Arc::ptr_eq(first, value) => {
+                Some(first) if !Shared::ptr_eq(first, value) => {
                     errors.push(Diagnostic::duplicate_enum_value(
                         value.enum_value.0.as_ref().to_string(),
                         first.span(),
@@ -42,15 +41,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for EnumValues<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for EnumValues<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_enum_type_definition(
         &self,
-        node: &'a EnumTypeDefinition<T>,
+        node: &'ast EnumTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };
@@ -77,7 +76,7 @@ where
 
     fn visit_enum_type_extension(
         &self,
-        node: &'a EnumTypeExtension<T>,
+        node: &'ast EnumTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };

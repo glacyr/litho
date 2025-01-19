@@ -1,23 +1,22 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct SameTypeExtensions<'a, T>(pub &'a Database<T>)
+pub struct SameTypeExtensions<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for SameTypeExtensions<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for SameTypeExtensions<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_type_extension(
         &self,
-        node: &'a Arc<TypeExtension<T>>,
+        node: &'ast Shared<'a, T, TypeExtension<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name() else { return };

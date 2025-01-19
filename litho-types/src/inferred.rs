@@ -1,28 +1,38 @@
 use std::collections::HashMap;
 use std::marker::PhantomData;
-use std::sync::Arc;
+
+use litho_language::ast::{AsPtr, ContextValue, Shared};
 
 #[derive(Debug)]
-pub struct Inferred<K, V> {
-    map: HashMap<usize, Arc<V>>,
+pub struct Inferred<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    map: HashMap<usize, Shared<'a, T, V>>,
     phantom: PhantomData<K>,
 }
 
-impl<K, V> Inferred<K, V> {
-    fn key(&self, node: &Arc<K>) -> usize {
-        Arc::as_ptr(node) as usize
+impl<'a, T, K, V> Inferred<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    fn key(&self, node: &Shared<'a, T, K>) -> usize {
+        node.as_ptr()
     }
 
-    pub fn get(&self, node: &Arc<K>) -> Option<&Arc<V>> {
+    pub fn get(&self, node: &Shared<'a, T, K>) -> Option<&Shared<'a, T, V>> {
         self.map.get(&self.key(node))
     }
 
-    pub fn insert(&mut self, node: &Arc<K>, value: &Arc<V>) {
+    pub fn insert(&mut self, node: &Shared<'a, T, K>, value: &Shared<'a, T, V>) {
         self.map.insert(self.key(node), value.to_owned());
     }
 }
 
-impl<K, V> Default for Inferred<K, V> {
+impl<'a, T, K, V> Default for Inferred<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
     fn default() -> Self {
         Inferred {
             map: Default::default(),
@@ -32,21 +42,65 @@ impl<K, V> Default for Inferred<K, V> {
 }
 
 #[derive(Debug)]
-pub struct InferredMany<K, V> {
-    map: HashMap<usize, Vec<Arc<V>>>,
+pub struct InferredSimple<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    map: HashMap<usize, V>,
+    phantom: PhantomData<&'a (T, K)>,
+}
+
+impl<'a, T, K, V> InferredSimple<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    fn key(&self, node: &Shared<'a, T, K>) -> usize {
+        node.as_ptr()
+    }
+
+    pub fn get(&self, node: &Shared<'a, T, K>) -> Option<&V> {
+        self.map.get(&self.key(node))
+    }
+
+    pub fn insert(&mut self, node: &Shared<'a, T, K>, value: V) {
+        self.map.insert(self.key(node), value);
+    }
+}
+
+impl<'a, T, K, V> Default for InferredSimple<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    fn default() -> Self {
+        InferredSimple {
+            map: Default::default(),
+            phantom: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct InferredMany<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    map: HashMap<usize, Vec<Shared<'a, T, V>>>,
     phantom: PhantomData<K>,
 }
 
-impl<K, V> InferredMany<K, V> {
-    fn key(&self, node: &Arc<K>) -> usize {
-        Arc::as_ptr(node) as usize
+impl<'a, T, K, V> InferredMany<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    fn key(&self, node: &Shared<'a, T, K>) -> usize {
+        node.as_ptr()
     }
 
-    pub fn get(&self, node: &Arc<K>) -> impl Iterator<Item = &Arc<V>> {
+    pub fn get(&self, node: &Shared<'a, T, K>) -> impl Iterator<Item = &Shared<'a, T, V>> {
         self.map.get(&self.key(node)).into_iter().flatten()
     }
 
-    pub fn insert(&mut self, node: &Arc<K>, value: &Arc<V>) {
+    pub fn insert(&mut self, node: &Shared<'a, T, K>, value: &Shared<'a, T, V>) {
         self.map
             .entry(self.key(node))
             .or_default()
@@ -54,7 +108,10 @@ impl<K, V> InferredMany<K, V> {
     }
 }
 
-impl<K, V> Default for InferredMany<K, V> {
+impl<'a, T, K, V> Default for InferredMany<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
     fn default() -> Self {
         InferredMany {
             map: Default::default(),

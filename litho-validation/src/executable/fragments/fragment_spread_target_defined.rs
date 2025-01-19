@@ -1,23 +1,22 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct FragmentSpreadTargetDefined<'a, T>(pub &'a Database<T>)
+pub struct FragmentSpreadTargetDefined<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for FragmentSpreadTargetDefined<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for FragmentSpreadTargetDefined<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if self

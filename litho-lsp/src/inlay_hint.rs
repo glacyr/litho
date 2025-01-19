@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 use litho_types::Database;
 use lsp_types::*;
@@ -9,11 +7,14 @@ use super::{Document, Workspace};
 
 pub struct InlayHintProvider<'a> {
     document: &'a Document,
-    database: &'a Database<SmolStr>,
+    database: &'a Database<'static, SmolStr>,
 }
 
 impl<'a> InlayHintProvider<'a> {
-    pub fn new(document: &'a Document, database: &'a Database<SmolStr>) -> InlayHintProvider<'a> {
+    pub fn new(
+        document: &'a Document,
+        database: &'a Database<'static, SmolStr>,
+    ) -> InlayHintProvider<'a> {
         InlayHintProvider { document, database }
     }
 
@@ -34,15 +35,15 @@ impl<'a> InlayHintProvider<'a> {
 
 pub struct InlayHintVisitor<'a> {
     document: &'a Document,
-    database: &'a Database<SmolStr>,
+    database: &'a Database<'static, SmolStr>,
 }
 
-impl<'a> Visit<'a, SmolStr> for InlayHintVisitor<'a> {
+impl<'a> Visit<'a, 'static, SmolStr> for InlayHintVisitor<'a> {
     type Accumulator = Vec<InlayHint>;
 
     fn visit_selection_set(
         &self,
-        node: &'a Arc<SelectionSet<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, SelectionSet<SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = self.database.inference.type_by_selection_set.get(&node) {

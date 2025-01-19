@@ -1,25 +1,24 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::iter::once;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct VariablesAreDefined<'a, T>(pub &'a Database<T>)
+pub struct VariablesAreDefined<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for VariablesAreDefined<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariablesAreDefined<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_operation_definition(
         &self,
-        node: &'a Arc<OperationDefinition<T>>,
+        node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let variable_names = node
@@ -40,21 +39,21 @@ where
     }
 }
 
-pub struct VariablesAreDefinedInOperation<'a, T>
+pub struct VariablesAreDefinedInOperation<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    database: &'a Database<T>,
-    variable_names: HashSet<&'a T>,
+    database: &'ast Database<'a, T>,
+    variable_names: HashSet<&'ast T>,
 }
 
-impl<'a, T> Visit<'a, T> for VariablesAreDefinedInOperation<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariablesAreDefinedInOperation<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_variable(&self, node: &'a Variable<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_variable(&self, node: &'ast Variable<'a, T>, accumulator: &mut Self::Accumulator) {
         let Some(name) = node.name.ok() else { return };
 
         if self.variable_names.contains(name.as_ref()) {
@@ -69,7 +68,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(definition) = self
@@ -94,24 +93,24 @@ where
     }
 }
 
-pub struct VariablesAreDefinedInFragment<'a, T>
+pub struct VariablesAreDefinedInFragment<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    database: &'a Database<T>,
-    variable_names: &'a HashSet<&'a T>,
-    fragment_name: &'a T,
+    database: &'ast Database<'a, T>,
+    variable_names: &'ast HashSet<&'ast T>,
+    fragment_name: &'ast T,
     fragment_span: Span,
-    stack: HashSet<&'a T>,
+    stack: HashSet<&'ast T>,
 }
 
-impl<'a, T> Visit<'a, T> for VariablesAreDefinedInFragment<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariablesAreDefinedInFragment<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_variable(&self, node: &'a Variable<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_variable(&self, node: &'ast Variable<'a, T>, accumulator: &mut Self::Accumulator) {
         let Some(name) = node.name.ok() else { return };
 
         if self.variable_names.contains(name.as_ref()) {
@@ -128,7 +127,7 @@ where
 
     fn visit_fragment_spread(
         &self,
-        node: &'a Arc<FragmentSpread<T>>,
+        node: &'ast Shared<'a, T, FragmentSpread<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if self.stack.contains(node.fragment_name.as_ref()) {

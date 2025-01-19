@@ -1,45 +1,55 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 
-use super::{Inferred, InferredMany};
+use super::{Inferred, InferredMany, InferredSimple};
 
 #[derive(Debug)]
-pub struct Inference<T> {
-    pub definition_for_directives: Inferred<Directive<T>, DirectiveDefinition<T>>,
-    pub field_definitions_by_field: Inferred<Field<T>, FieldDefinition<T>>,
-    pub type_by_selection_set: Inferred<SelectionSet<T>, T>,
-    pub definition_for_arguments: Inferred<Arguments<T>, ArgumentsDefinition<T>>,
-    pub definitions_for_arguments: Inferred<Argument<T>, InputValueDefinition<T>>,
-    pub types_for_values: Inferred<Value<T>, Type<T>>,
-    pub default_value_for_values: Inferred<Value<T>, Value<T>>,
-    pub definitions_for_variable: InferredMany<Value<T>, VariableDefinition<T>>,
+pub struct Inference<'a, T>
+where
+    T: ContextValue<'a>,
+{
+    pub definition_for_directives: Inferred<'a, T, Directive<'a, T>, DirectiveDefinition<'a, T>>,
+    pub field_definitions_by_field: Inferred<'a, T, Field<'a, T>, FieldDefinition<'a, T>>,
+    pub type_by_selection_set: InferredSimple<'a, T, SelectionSet<'a, T>, T>,
+    pub definition_for_arguments: Inferred<'a, T, Arguments<'a, T>, ArgumentsDefinition<'a, T>>,
+    pub definitions_for_arguments: Inferred<'a, T, Argument<'a, T>, InputValueDefinition<'a, T>>,
+    pub types_for_values: Inferred<'a, T, Value<'a, T>, Type<'a, T>>,
+    pub default_value_for_values: Inferred<'a, T, Value<'a, T>, Value<'a, T>>,
+    pub definitions_for_variable: InferredMany<'a, T, Value<'a, T>, VariableDefinition<'a, T>>,
 }
 
-impl<T> Inference<T> {
+impl<'a, T> Inference<'a, T>
+where
+    T: ContextValue<'a>,
+{
     pub fn definition_for_directive(
         &self,
-        directive: &Arc<Directive<T>>,
-    ) -> Option<&Arc<DirectiveDefinition<T>>> {
+        directive: &Shared<'a, T, Directive<'a, T>>,
+    ) -> Option<&Shared<'a, T, DirectiveDefinition<'a, T>>> {
         self.definition_for_directives.get(directive)
     }
 
     pub fn arguments_definition_for_field(
         &self,
-        field: &Arc<Field<T>>,
-    ) -> Option<&Arc<ArgumentsDefinition<T>>> {
+        field: &Shared<'a, T, Field<'a, T>>,
+    ) -> Option<&Shared<'a, T, ArgumentsDefinition<'a, T>>> {
         self.field_definitions_by_field
             .get(field)?
             .arguments_definition
             .as_ref()
     }
 
-    pub fn type_for_field(&self, field: &Arc<Field<T>>) -> Option<&Arc<Type<T>>> {
+    pub fn type_for_field(
+        &self,
+        field: &Shared<'a, T, Field<'a, T>>,
+    ) -> Option<&Shared<'a, T, Type<'a, T>>> {
         self.field_definitions_by_field.get(field)?.ty.ok()
     }
 }
 
-impl<T> Default for Inference<T> {
+impl<'a, T> Default for Inference<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn default() -> Self {
         Inference {
             definition_for_directives: Default::default(),

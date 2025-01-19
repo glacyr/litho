@@ -1,22 +1,25 @@
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct EnumCoercion<'a, T>(pub &'a Database<T>)
+pub struct EnumCoercion<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for EnumCoercion<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for EnumCoercion<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString + Borrow<str>,
+    T: ContextValue<'a> + Eq + Hash + ToString + Borrow<str>,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_value(&self, node: &'a Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'ast Shared<'a, T, Value<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if node.is_variable() {
             return;
         }
@@ -30,7 +33,7 @@ where
         }
 
         match ty.name() {
-            Some(name) if name.borrow() == "Boolean" => return,
+            Some(name) if <T as Borrow<str>>::borrow(name) == "Boolean" => return,
             _ => {}
         }
 

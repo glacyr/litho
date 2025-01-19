@@ -50,8 +50,11 @@ impl ToString for DirectiveLocationKind {
     }
 }
 
-impl<T> From<&DirectiveLocation<T>> for DirectiveLocationKind {
-    fn from(location: &DirectiveLocation<T>) -> Self {
+impl<'a, T> From<&DirectiveLocation<'a, T>> for DirectiveLocationKind
+where
+    T: ContextValue<'a>,
+{
+    fn from(location: &DirectiveLocation<'a, T>) -> Self {
         match location {
             DirectiveLocation::ExecutableDirectiveLocation(location) => location.into(),
             DirectiveLocation::TypeSystemDirectiveLocation(location) => location.into(),
@@ -59,8 +62,11 @@ impl<T> From<&DirectiveLocation<T>> for DirectiveLocationKind {
     }
 }
 
-impl<T> From<&ExecutableDirectiveLocation<T>> for DirectiveLocationKind {
-    fn from(location: &ExecutableDirectiveLocation<T>) -> Self {
+impl<'a, T> From<&ExecutableDirectiveLocation<'a, T>> for DirectiveLocationKind
+where
+    T: ContextValue<'a>,
+{
+    fn from(location: &ExecutableDirectiveLocation<'a, T>) -> Self {
         match location {
             ExecutableDirectiveLocation::Query(_) => DirectiveLocationKind::Query,
             ExecutableDirectiveLocation::Mutation(_) => DirectiveLocationKind::Mutation,
@@ -78,8 +84,11 @@ impl<T> From<&ExecutableDirectiveLocation<T>> for DirectiveLocationKind {
     }
 }
 
-impl<T> From<&TypeSystemDirectiveLocation<T>> for DirectiveLocationKind {
-    fn from(location: &TypeSystemDirectiveLocation<T>) -> Self {
+impl<'a, T> From<&TypeSystemDirectiveLocation<'a, T>> for DirectiveLocationKind
+where
+    T: ContextValue<'a>,
+{
+    fn from(location: &TypeSystemDirectiveLocation<'a, T>) -> Self {
         match location {
             TypeSystemDirectiveLocation::Schema(_) => DirectiveLocationKind::Schema,
             TypeSystemDirectiveLocation::Scalar(_) => DirectiveLocationKind::Scalar,
@@ -102,13 +111,19 @@ impl<T> From<&TypeSystemDirectiveLocation<T>> for DirectiveLocationKind {
     }
 }
 
-pub trait DirectiveTarget<T> {
-    fn directives(&self) -> Option<&Directives<T>>;
+pub trait DirectiveTarget<'a, T>
+where
+    T: ContextValue<'a>,
+{
+    fn directives(&self) -> Option<&Directives<'a, T>>;
     fn valid_location(&self) -> DirectiveLocationKind;
 }
 
-impl<T> DirectiveTarget<T> for OperationDefinition<T> {
-    fn directives(&self) -> Option<&Directives<T>> {
+impl<'a, T> DirectiveTarget<'a, T> for OperationDefinition<'a, T>
+where
+    T: ContextValue<'a>,
+{
+    fn directives(&self) -> Option<&Directives<'a, T>> {
         self.directives.as_ref()
     }
 
@@ -121,8 +136,11 @@ impl<T> DirectiveTarget<T> for OperationDefinition<T> {
     }
 }
 
-impl<T> DirectiveTarget<T> for ScalarTypeExtension<T> {
-    fn directives(&self) -> Option<&Directives<T>> {
+impl<'a, T> DirectiveTarget<'a, T> for ScalarTypeExtension<'a, T>
+where
+    T: ContextValue<'a>,
+{
+    fn directives(&self) -> Option<&Directives<'a, T>> {
         self.directives.ok()
     }
 
@@ -136,8 +154,11 @@ macro_rules! target {
         target!($name, $name);
     };
     ($name:ident, $enum:ident) => {
-        impl<T> DirectiveTarget<T> for $name<T> {
-            fn directives(&self) -> Option<&Directives<T>> {
+        impl<'a, T> DirectiveTarget<'a, T> for $name<'a, T>
+        where
+            T: ContextValue<'a>,
+        {
+            fn directives(&self) -> Option<&Directives<'a, T>> {
                 self.directives.as_ref()
             }
 

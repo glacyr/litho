@@ -1,19 +1,18 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct SelfReferentialDirectives<'a, T>(pub &'a Database<T>)
+pub struct SelfReferentialDirectives<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> SelfReferentialDirectives<'a, T>
+impl<'ast, 'a, T> SelfReferentialDirectives<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn is_recursive(&self, visited: &mut Vec<&'a T>, needle: &T, ty: &'a T) -> bool {
+    pub fn is_recursive(&self, visited: &mut Vec<&'ast T>, needle: &T, ty: &'ast T) -> bool {
         if needle == ty {
             return true;
         }
@@ -51,15 +50,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for SelfReferentialDirectives<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for SelfReferentialDirectives<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_directive_definition(
         &self,
-        node: &'a Arc<DirectiveDefinition<T>>,
+        node: &'ast Shared<'a, T, DirectiveDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };

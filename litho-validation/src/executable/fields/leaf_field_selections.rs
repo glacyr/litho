@@ -1,21 +1,24 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct LeafFieldSelections<'a, T>(pub &'a Database<T>)
+pub struct LeafFieldSelections<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for LeafFieldSelections<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for LeafFieldSelections<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_field(&self, node: &'a Arc<Field<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(
+        &self,
+        node: &'ast Shared<'a, T, Field<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let Some(name) = self
             .0
             .inference

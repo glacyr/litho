@@ -1,27 +1,26 @@
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct FieldNameUniqueness<'a, T>(pub &'a Database<T>)
+pub struct FieldNameUniqueness<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for FieldNameUniqueness<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for FieldNameUniqueness<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_fields_definition(
         &self,
-        node: &'a InputFieldsDefinition<T>,
+        node: &'ast InputFieldsDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let mut existing = HashMap::<&T, &InputValueDefinition<T>>::new();
+        let mut existing = HashMap::<&T, &InputValueDefinition<'a, T>>::new();
 
         for field in node.definitions.iter() {
             match existing.get(&field.name.as_ref()) {
@@ -39,7 +38,7 @@ where
 
     fn visit_input_object_type_extension(
         &self,
-        node: &'a InputObjectTypeExtension<T>,
+        node: &'ast InputObjectTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };
@@ -54,7 +53,7 @@ where
                 .input_value_definitions_by_name(name.0.as_ref(), field.name.as_ref())
                 .next()
             {
-                Some(first) if !Arc::ptr_eq(first, field) => {
+                Some(first) if !Shared::ptr_eq(first, field) => {
                     accumulator.push(Diagnostic::duplicate_extended_field(
                         name.0.as_ref().to_string(),
                         field.name.as_ref().to_string(),
@@ -70,10 +69,10 @@ where
 
     fn visit_fields_definition(
         &self,
-        node: &'a FieldsDefinition<T>,
+        node: &'ast FieldsDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
-        let mut existing = HashMap::<&T, &Arc<FieldDefinition<T>>>::new();
+        let mut existing = HashMap::<&T, &Shared<'a, T, FieldDefinition<'a, T>>>::new();
 
         for field in node.definitions.iter() {
             match existing.get(&field.name.as_ref()) {
@@ -91,7 +90,7 @@ where
 
     fn visit_object_type_extension(
         &self,
-        node: &'a ObjectTypeExtension<T>,
+        node: &'ast ObjectTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };
@@ -106,7 +105,7 @@ where
                 .field_definitions_by_name(name.0.as_ref(), field.name.as_ref())
                 .next()
             {
-                Some(first) if !Arc::ptr_eq(first, field) => {
+                Some(first) if !Shared::ptr_eq(first, field) => {
                     accumulator.push(Diagnostic::duplicate_extended_field(
                         name.0.as_ref().to_string(),
                         field.name.as_ref().to_string(),
@@ -122,7 +121,7 @@ where
 
     fn visit_interface_type_extension(
         &self,
-        node: &'a InterfaceTypeExtension<T>,
+        node: &'ast InterfaceTypeExtension<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };
@@ -137,7 +136,7 @@ where
                 .field_definitions_by_name(name.0.as_ref(), field.name.as_ref())
                 .next()
             {
-                Some(first) if !Arc::ptr_eq(first, field) => {
+                Some(first) if !Shared::ptr_eq(first, field) => {
                     accumulator.push(Diagnostic::duplicate_extended_field(
                         name.0.as_ref().to_string(),
                         field.name.as_ref().to_string(),

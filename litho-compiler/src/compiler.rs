@@ -4,34 +4,33 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
-use litho_language::ast::{DefinitionId, Document};
+use litho_language::ast::{ContextValue, Definition, DefinitionId, Document};
 use litho_language::chk::collect_errors;
-use litho_language::lex::{SourceId, Span};
-use litho_language::Parse;
+use litho_language::lex::{SourceId, Span, Token};
 use litho_types::{Database, Import};
 use litho_validation::check;
 
 use super::{Consumer, DepGraph, Dependency, Producer};
 
 #[derive(Debug)]
-pub struct Compiler<T>
+pub struct Compiler<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
     definition_diagnostics: HashMap<DefinitionId, Vec<Diagnostic<Span>>>,
     definition_sources: HashMap<DefinitionId, SourceId>,
-    documents: HashMap<SourceId, (Arc<Document<T>>, bool)>,
+    documents: HashMap<SourceId, (Arc<Document<'a, T>>, bool)>,
     document_diagnostics: HashMap<SourceId, Vec<Diagnostic<Span>>>,
     graph: DepGraph<DefinitionId, Dependency<T>>,
-    database: Database<T>,
+    database: Database<'a, T>,
     imports: HashMap<String, Result<SourceId, String>>,
 }
 
-impl<T> Compiler<T>
+impl<'a, T> Compiler<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn new() -> Compiler<T> {
+    pub fn new() -> Compiler<'a, T> {
         Compiler {
             definition_diagnostics: Default::default(),
             definition_sources: Default::default(),
@@ -43,18 +42,18 @@ where
         }
     }
 
-    pub fn database(&self) -> &Database<T> {
+    pub fn database(&self) -> &Database<'a, T> {
         &self.database
     }
 
-    pub fn document(&self, source_id: SourceId) -> Option<&Arc<Document<T>>> {
+    pub fn document(&self, source_id: SourceId) -> Option<&Arc<Document<'a, T>>> {
         self.documents.get(&source_id).map(|(doc, _)| doc)
     }
 }
 
-impl<T> Compiler<T>
+impl<'a, T> Compiler<'a, T>
 where
-    T: Eq + Clone + Hash + Borrow<str> + ToString,
+    T: ContextValue<'a> + Eq + Hash + Borrow<str> + ToString,
 {
     pub fn imports(&self) -> &HashMap<String, Import> {
         self.database.imports()
@@ -62,12 +61,15 @@ where
 
     pub fn update_resolved_imports(&mut self, imports: HashMap<String, Result<SourceId, String>>)
     where
-        T: for<'a> From<&'a str> + for<'a> PartialEq<&'a str>,
+        T: for<'b> From<&'b str> + for<'b> PartialEq<&'b str>,
     {
         self.imports = imports;
     }
 
-    pub fn diagnostics(&self, source_id: SourceId) -> impl Iterator<Item = &Diagnostic<Span>> {
+    pub fn diagnostics(
+        &self,
+        source_id: SourceId,
+    ) -> impl Iterator<Item = &Diagnostic<Span>> + use<'_, 'a, T> {
         let document_diagnostics = self
             .document_diagnostics
             .get(&source_id)
@@ -82,7 +84,7 @@ where
             .flat_map(|document| document.0.definitions.iter())
             .flat_map(|definition| {
                 self.definition_diagnostics
-                    .get(&definition.id())
+                    .get(&Definition::id(definition))
                     .into_iter()
                     .flatten()
             });
@@ -93,14 +95,14 @@ where
     pub fn replace_document(
         &mut self,
         source_id: SourceId,
-        text: &str,
+        document: (Document<'a, T>, Vec<Token<'a, T>>),
         is_import: bool,
     ) -> HashSet<SourceId>
     where
-        T: for<'a> From<&'a str> + for<'b> PartialEq<&'b str>,
+        T: for<'b> From<&'b str> + for<'b> PartialEq<&'b str>,
     {
         let mut source_ids = self.remove_document(source_id);
-        source_ids.extend(self.add_document(source_id, text, is_import));
+        source_ids.extend(self.add_document(source_id, document, is_import));
 
         source_ids
     }
@@ -108,33 +110,34 @@ where
     pub fn add_document(
         &mut self,
         source_id: SourceId,
-        text: &str,
+        document: (Document<'a, T>, Vec<Token<'a, T>>),
         is_import: bool,
     ) -> HashSet<SourceId>
     where
-        T: for<'a> From<&'a str> + for<'b> PartialEq<&'b str>,
+        T: for<'b> From<&'b str> + for<'b> PartialEq<&'b str>,
     {
-        let result = Document::parse_from_str(source_id, text).unwrap_or_default();
-        let diagnostics = collect_errors(&result);
+        let diagnostics = collect_errors(&document);
 
         let mut definition_ids = HashSet::new();
 
-        for definition in result.0.definitions.iter() {
-            self.definition_sources.insert(definition.id(), source_id);
+        for definition in document.0.definitions.iter() {
+            let definition_id = Definition::id(definition);
 
-            definition_ids.insert(definition.id());
+            self.definition_sources.insert(definition_id, source_id);
+
+            definition_ids.insert(definition_id);
 
             if let Some(product) = definition.product() {
-                definition_ids.extend(self.graph.produce(definition.id(), product));
+                definition_ids.extend(self.graph.produce(definition_id, product));
             }
 
             for dependency in definition.consumes() {
-                self.graph.consume(definition.id(), dependency);
+                self.graph.consume(definition_id, dependency);
             }
         }
 
         self.documents
-            .insert(source_id, (Arc::new(result.0), is_import));
+            .insert(source_id, (Arc::new(document.0), is_import));
         self.document_diagnostics.insert(source_id, diagnostics);
 
         let mut set = self.invalidate(definition_ids);
@@ -153,8 +156,9 @@ where
             .into_iter()
             .flatten()
         {
-            self.graph.invalidate(definition.id(), &mut definition_ids);
-            self.graph.remove(definition.id());
+            self.graph
+                .invalidate(Definition::id(definition), &mut definition_ids);
+            self.graph.remove(Definition::id(definition));
         }
 
         let source_ids = self.invalidate(definition_ids);
@@ -165,7 +169,7 @@ where
             .into_iter()
             .flatten()
         {
-            self.definition_sources.remove(&definition.id());
+            self.definition_sources.remove(&Definition::id(definition));
         }
 
         source_ids
@@ -188,7 +192,7 @@ where
 
     pub fn rebuild(&mut self)
     where
-        T: From<&'static str>,
+        T: From<&'a str>,
     {
         self.database = Database::with_imports(
             self.documents.values().map(|(doc, _)| doc.as_ref()),
@@ -198,7 +202,7 @@ where
         for document in self.documents.values() {
             for definition in document.0.definitions.iter() {
                 self.definition_diagnostics
-                    .entry(definition.id())
+                    .entry(Definition::id(definition))
                     .or_insert_with(|| check(definition, &self.database));
             }
         }

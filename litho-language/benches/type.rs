@@ -3,7 +3,7 @@
 extern crate test;
 
 use bumpalo::Bump;
-use litho_language::ast::{ExecutableDocument, TypeSystemDocument};
+use litho_language::ast::{BumpaloContext, ExecutableDocument, TypeSystemDocument};
 use litho_language::Parse;
 use test::Bencher;
 
@@ -14,12 +14,14 @@ fn test_github_litho(b: &mut Bencher) {
     b.iter(|| {
         let bump = Bump::with_capacity(1024 * 128);
 
-        assert!(
-            TypeSystemDocument::<&str>::parse_from_str(Default::default(), &string, &bump)
-                .unwrap()
-                .1
-                .is_empty()
-        );
+        assert!(TypeSystemDocument::<&str>::parse_from_str(
+            Default::default(),
+            &string,
+            BumpaloContext::new(&bump)
+        )
+        .unwrap()
+        .1
+        .is_empty());
     });
 }
 
@@ -50,12 +52,14 @@ fn test_gitlab_litho(b: &mut Bencher) {
     b.iter(|| {
         let bump = Bump::with_capacity(1024 * 4);
 
-        assert!(
-            TypeSystemDocument::<&str>::parse_from_str(Default::default(), &string, &bump)
-                .unwrap()
-                .1
-                .is_empty()
-        );
+        assert!(TypeSystemDocument::<&str>::parse_from_str(
+            Default::default(),
+            &string,
+            BumpaloContext::new(&bump)
+        )
+        .unwrap()
+        .1
+        .is_empty());
     });
 }
 
@@ -91,12 +95,14 @@ fn test_kitchen_sink_litho(b: &mut Bencher) {
         let bump = Bump::with_capacity(1024 * 4);
 
         for _ in 0..1000 {
-            assert!(
-                ExecutableDocument::<&str>::parse_from_str(Default::default(), &string, &bump)
-                    .unwrap()
-                    .1
-                    .is_empty()
-            );
+            assert!(ExecutableDocument::<&str>::parse_from_str(
+                Default::default(),
+                &string,
+                BumpaloContext::new(&bump)
+            )
+            .unwrap()
+            .1
+            .is_empty());
         }
     });
 }

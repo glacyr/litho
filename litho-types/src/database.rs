@@ -2,7 +2,6 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::sync::Arc;
 use std::time::Duration;
 
 use litho_language::ast::*;
@@ -13,26 +12,27 @@ use super::inferencer::{InferenceState, Inferencer};
 use super::{Bindings, Fragments, Import, Inference, Operations, Usages};
 
 #[derive(Debug)]
-pub struct Database<T>
+pub struct Database<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub definitions: Bindings<T>,
-    pub extensions: Bindings<T>,
-    pub inference: Inference<T>,
-    pub operations: Operations<T>,
-    pub fragments: Fragments<T>,
-    pub usages: Usages<T>,
+    pub definitions: Bindings<'a, T>,
+    pub extensions: Bindings<'a, T>,
+    pub inference: Inference<'a, T>,
+    pub operations: Operations<'a, T>,
+    pub fragments: Fragments<'a, T>,
+    pub usages: Usages<'a, T>,
     pub interface_implementations: MultiMap<T, T>,
     pub imports: HashMap<String, Import>,
-    pub(crate) directive_definitions_by_name: MultiMap<T, Arc<DirectiveDefinition<T>>>,
-    pub(crate) type_definitions_by_name: MultiMap<T, Arc<TypeDefinition<T>>>,
-    pub(crate) type_extensions_by_name: MultiMap<T, Arc<TypeExtension<T>>>,
+    pub(crate) directive_definitions_by_name:
+        MultiMap<T, Shared<'a, T, DirectiveDefinition<'a, T>>>,
+    pub(crate) type_definitions_by_name: MultiMap<T, Shared<'a, T, TypeDefinition<'a, T>>>,
+    pub(crate) type_extensions_by_name: MultiMap<T, Shared<'a, T, TypeExtension<'a, T>>>,
 }
 
-impl<T> Default for Database<T>
+impl<'a, T> Default for Database<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
     fn default() -> Self {
         Database {
@@ -51,11 +51,11 @@ where
     }
 }
 
-impl<T> Database<T>
+impl<'a, T> Database<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn new() -> Database<T> {
+    pub fn new() -> Database<'a, T> {
         Default::default()
     }
 
@@ -63,13 +63,13 @@ where
         &self.imports
     }
 
-    pub fn with_imports<'a, I>(
+    pub fn with_imports<'b, I>(
         iter: I,
-        imports: &HashMap<String, Result<&'a Document<T>, String>>,
+        imports: &HashMap<String, Result<&'b Document<'a, T>, String>>,
     ) -> Self
     where
-        I: IntoIterator<Item = &'a Document<T>>,
-        T: Borrow<str> + Clone + Eq + From<&'static str> + Hash + ToString + 'a,
+        I: IntoIterator<Item = &'b Document<'a, T>>,
+        T: Borrow<str> + From<&'a str> + ToString,
     {
         let mut database = Database::new();
         let docs = iter.into_iter().collect::<Vec<_>>();
@@ -85,7 +85,7 @@ where
                     return None;
                 };
 
-                if name.as_ref().borrow() != "litho" {
+                if <T as Borrow<str>>::borrow(name.as_ref()) != "litho" {
                     return None;
                 }
 
@@ -93,7 +93,7 @@ where
                     .arguments
                     .iter()
                     .flat_map(|args| args.items.iter())
-                    .find(|arg| arg.name.as_ref().borrow() == "url")
+                    .find(|arg| <T as Borrow<str>>::borrow(arg.name.as_ref()) == "url")
                     .and_then(|arg| arg.value.ok())
                 else {
                     return None;
@@ -107,7 +107,7 @@ where
                     .arguments
                     .iter()
                     .flat_map(|args| args.items.iter())
-                    .find(|arg| arg.name.as_ref().borrow() == "headers")
+                    .find(|arg| <T as Borrow<str>>::borrow(arg.name.as_ref()) == "headers")
                     .and_then(|arg| arg.value.ok())
                 {
                     Some(value) => value
@@ -144,23 +144,23 @@ where
     }
 }
 
-impl<'a, T> FromIterator<&'a Document<T>> for Database<T>
+impl<'a, 'b, T> FromIterator<&'b Document<'a, T>> for Database<'a, T>
 where
-    T: Borrow<str> + Clone + Eq + From<&'static str> + Hash + ToString + 'a,
+    T: ContextValue<'a> + Borrow<str> + Eq + From<&'a str> + Hash + ToString,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = &'a Document<T>>,
+        I: IntoIterator<Item = &'b Document<'a, T>>,
     {
         Database::with_imports(iter, &Default::default())
     }
 }
 
-impl<T> Database<T>
+impl<'a, T> Database<'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn type_definitions(&self) -> impl Iterator<Item = &TypeDefinition<T>> {
+    pub fn type_definitions(&self) -> impl Iterator<Item = &TypeDefinition<'a, T>> {
         self.type_definitions_by_name
             .iter_all()
             .flat_map(|(_, defs)| defs)
@@ -170,7 +170,7 @@ where
     pub fn type_definitions_by_name(
         &self,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<TypeDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, TypeDefinition<'a, T>>> {
         self.type_definitions_by_name
             .get_vec(name)
             .map(Vec::as_slice)
@@ -181,7 +181,7 @@ where
     pub fn type_extensions_by_name(
         &self,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<TypeExtension<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, TypeExtension<'a, T>>> {
         self.type_extensions_by_name
             .get_vec(name)
             .map(Vec::as_slice)
@@ -192,7 +192,7 @@ where
     pub fn directive_definitions_by_name(
         &self,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<DirectiveDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, DirectiveDefinition<'a, T>>> {
         self.directive_definitions_by_name
             .get_vec(name)
             .map(Vec::as_slice)
@@ -249,7 +249,7 @@ where
     pub fn input_value_definitions(
         &self,
         ty: &T,
-    ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, InputValueDefinition<'a, T>>> {
         self.definitions
             .input_value_definitions
             .by_type(ty)
@@ -260,14 +260,17 @@ where
         &self,
         ty: &T,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<InputValueDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, InputValueDefinition<'a, T>>> {
         self.definitions
             .input_value_definitions
             .by_name(ty, name)
             .chain(self.extensions.input_value_definitions.by_name(ty, name))
     }
 
-    pub fn field_definitions(&self, ty: &T) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
+    pub fn field_definitions(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &Shared<'a, T, FieldDefinition<'a, T>>> {
         self.definitions
             .field_definitions
             .by_type(ty)
@@ -278,14 +281,17 @@ where
         &self,
         ty: &T,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<FieldDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, FieldDefinition<'a, T>>> {
         self.definitions
             .field_definitions
             .by_name(ty, name)
             .chain(self.extensions.field_definitions.by_name(ty, name))
     }
 
-    pub fn implemented_interfaces(&self, ty: &T) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+    pub fn implemented_interfaces(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &Shared<'a, T, NamedType<'a, T>>> {
         let definitions = self
             .type_definitions_by_name(ty)
             .flat_map(|def| def.implements_interfaces());
@@ -298,11 +304,11 @@ where
             .flat_map(|def| def.named_types())
     }
 
-    pub fn implemented_interfaces_by_name<'a>(
-        &'a self,
+    pub fn implemented_interfaces_by_name<'b>(
+        &'b self,
         ty: &T,
-        name: &'a T,
-    ) -> impl Iterator<Item = &Arc<NamedType<T>>> + 'a {
+        name: &'b T,
+    ) -> impl Iterator<Item = &Shared<'a, T, NamedType<'a, T>>> + 'b {
         self.implemented_interfaces(ty)
             .filter(move |interface| interface.0.as_ref() == name)
     }
@@ -310,7 +316,7 @@ where
     pub fn enum_value_definitions(
         &self,
         ty: &T,
-    ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, EnumValueDefinition<'a, T>>> {
         self.definitions
             .enum_value_definitions
             .by_type(ty)
@@ -321,14 +327,17 @@ where
         &self,
         ty: &T,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<EnumValueDefinition<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, EnumValueDefinition<'a, T>>> {
         self.definitions
             .enum_value_definitions
             .by_name(ty, name)
             .chain(self.extensions.enum_value_definitions.by_name(ty, name))
     }
 
-    pub fn union_member_types(&self, ty: &T) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+    pub fn union_member_types(
+        &self,
+        ty: &T,
+    ) -> impl Iterator<Item = &Shared<'a, T, NamedType<'a, T>>> {
         self.definitions
             .union_member_types
             .by_type(ty)
@@ -339,7 +348,7 @@ where
         &self,
         ty: &T,
         name: &T,
-    ) -> impl Iterator<Item = &Arc<NamedType<T>>> {
+    ) -> impl Iterator<Item = &Shared<'a, T, NamedType<'a, T>>> {
         self.definitions
             .union_member_types
             .by_name(ty, name)
@@ -350,28 +359,31 @@ where
         self.type_definitions_by_name(ty).next().is_some()
     }
 
-    pub fn possible_types<'a>(&'a self, ty: &'a T) -> impl Iterator<Item = &T> {
+    pub fn possible_types<'b>(&'b self, ty: &'b T) -> impl Iterator<Item = &T> + use<'a, 'b, T> {
         std::iter::once(ty)
             .chain(self.union_member_types(ty).map(|ty| ty.0.as_ref()))
             .chain(self.interface_implementations(ty))
     }
 
-    pub fn schema_directives(&self) -> impl Iterator<Item = &Arc<Directive<T>>> {
+    pub fn schema_directives(&self) -> impl Iterator<Item = &Shared<'a, T, Directive<'a, T>>> {
         self.definitions
             .schema_directives
             .iter()
             .chain(self.extensions.schema_directives.iter())
     }
 
-    fn both<'a, F, O>(&'a self, apply: F) -> impl Iterator<Item = O::Item> + 'a
+    fn both<'b, F, O>(&'b self, apply: F) -> impl Iterator<Item = O::Item> + 'b
     where
-        F: Fn(&'a Bindings<T>) -> O,
-        O: Iterator + 'a,
+        F: Fn(&'b Bindings<'a, T>) -> O,
+        O: Iterator + 'b,
     {
         apply(&self.definitions).chain(apply(&self.extensions))
     }
 
-    pub fn type_directives<'a>(&'a self, ty: &'a T) -> impl Iterator<Item = &Arc<Directive<T>>> {
+    pub fn type_directives<'b>(
+        &'b self,
+        ty: &'b T,
+    ) -> impl Iterator<Item = &Shared<'a, T, Directive<'a, T>>> {
         self.both(move |bindings| bindings.type_directives.get_vec(ty).into_iter().flatten())
     }
 }

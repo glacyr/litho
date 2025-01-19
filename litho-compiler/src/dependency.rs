@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -18,10 +16,10 @@ pub trait Consumer<T> {
     fn consumes(&self) -> Vec<Dependency<T>>;
 }
 
-impl<T, N> Consumer<T> for N
+impl<'a, T, N> Consumer<T> for N
 where
-    N: Producer<T> + Node<T>,
-    T: ToOwned<Owned = T>,
+    N: Producer<T> + Node<'a, T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn consumes(&self) -> Vec<Dependency<T>> {
         let mut consumes = self.product().into_iter().collect();
@@ -32,28 +30,28 @@ where
 
 pub struct Tracker;
 
-impl<'a, T> Visit<'a, T> for Tracker
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for Tracker
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     type Accumulator = Vec<Dependency<T>>;
 
     fn visit_operation_definition(
         &self,
-        _node: &'a Arc<OperationDefinition<T>>,
+        _node: &'ast Shared<'a, T, OperationDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         accumulator.push(Dependency::Schema)
     }
 
-    fn visit_named_type(&self, node: &'a NamedType<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_named_type(&self, node: &'ast NamedType<'a, T>, accumulator: &mut Self::Accumulator) {
         accumulator.push(Dependency::Type(node.0.as_ref().to_owned()))
     }
 }
 
-impl<T> Producer<T> for Definition<T>
+impl<'a, T> Producer<T> for Definition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         match self {
@@ -63,9 +61,9 @@ where
     }
 }
 
-impl<T> Producer<T> for ExecutableDefinition<T>
+impl<'a, T> Producer<T> for ExecutableDefinition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         match self {
@@ -75,9 +73,9 @@ where
     }
 }
 
-impl<T> Producer<T> for FragmentDefinition<T>
+impl<'a, T> Producer<T> for FragmentDefinition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         self.fragment_name
@@ -86,9 +84,9 @@ where
     }
 }
 
-impl<T> Producer<T> for OperationDefinition<T>
+impl<'a, T> Producer<T> for OperationDefinition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         self.name
@@ -97,9 +95,9 @@ where
     }
 }
 
-impl<T> Producer<T> for TypeSystemDefinitionOrExtension<T>
+impl<'a, T> Producer<T> for TypeSystemDefinitionOrExtension<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         match self {
@@ -113,9 +111,9 @@ where
     }
 }
 
-impl<T> Producer<T> for TypeSystemDefinition<T>
+impl<'a, T> Producer<T> for TypeSystemDefinition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         match self {
@@ -127,9 +125,9 @@ where
     }
 }
 
-impl<T> Producer<T> for DirectiveDefinition<T>
+impl<'a, T> Producer<T> for DirectiveDefinition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         self.name
@@ -138,15 +136,18 @@ where
     }
 }
 
-impl<T> Producer<T> for SchemaDefinition<T> {
+impl<'a, T> Producer<T> for SchemaDefinition<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn product(&self) -> Option<Dependency<T>> {
         Some(Dependency::Schema)
     }
 }
 
-impl<T> Producer<T> for TypeDefinition<T>
+impl<'a, T> Producer<T> for TypeDefinition<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         self.name()
@@ -155,9 +156,9 @@ where
     }
 }
 
-impl<T> Producer<T> for TypeSystemExtension<T>
+impl<'a, T> Producer<T> for TypeSystemExtension<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         match self {
@@ -168,15 +169,18 @@ where
     }
 }
 
-impl<T> Producer<T> for SchemaExtension<T> {
+impl<'a, T> Producer<T> for SchemaExtension<'a, T>
+where
+    T: ContextValue<'a>,
+{
     fn product(&self) -> Option<Dependency<T>> {
         Some(Dependency::Schema)
     }
 }
 
-impl<T> Producer<T> for TypeExtension<T>
+impl<'a, T> Producer<T> for TypeExtension<'a, T>
 where
-    T: ToOwned<Owned = T>,
+    T: ContextValue<'a> + ToOwned<Owned = T>,
 {
     fn product(&self) -> Option<Dependency<T>> {
         self.name().map(|name| Dependency::Type(name.to_owned()))

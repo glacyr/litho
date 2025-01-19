@@ -1,40 +1,20 @@
 use std::borrow::Borrow;
 use std::fmt::Debug;
-use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
 use arbitrary::Arbitrary;
+use bumpalo::Bump;
+use smol_str::SmolStr;
 
-pub trait ContextValue<'a>: Borrow<str> + Clone {
+pub trait ContextValue<'a>: Borrow<Self> + Clone {
     type Shared<T>: Deref<Target = T> + AsPtr + Clone
     where
         T: 'a;
     type List<T>: Deref<Target = [T]> + Extend<T>
     where
         T: 'a;
-}
-
-pub trait Lives<T> {}
-
-impl<A, B> Lives<A> for B {}
-
-pub trait Iter<T> {
-    type Iter<'a>: Iterator<Item = &'a T>
-    where
-        Self: 'a,
-        T: 'a;
-
-    fn iter(&self) -> Self::Iter<'_>;
-}
-
-impl<T> Iter<T> for Vec<T> {
-    type Iter<'a> = std::slice::Iter<'a, T> where Self: 'a, T: 'a;
-
-    fn iter(&self) -> Self::Iter<'_> {
-        self.as_slice().iter()
-    }
 }
 
 pub trait Context<'a, T>
@@ -48,6 +28,11 @@ where
     fn list<U>(&self) -> List<'a, T, U>
     where
         U: Clone + 'a;
+
+    fn list_from_iter<'b, I>(&self, iter: I) -> List<'a, T, I::Item>
+    where
+        I: Iterator + 'b,
+        I::Item: Clone + 'a;
 }
 
 pub struct List<'a, T, U>(T::List<U>)
@@ -142,6 +127,10 @@ where
     pub fn new(value: T::Shared<U>) -> Shared<'a, T, U> {
         Shared(value)
     }
+
+    pub fn ptr_eq(this: &Self, other: &Self) -> bool {
+        this.as_ptr() == other.as_ptr()
+    }
 }
 
 impl<'a, T, U> AsRef<U> for Shared<'a, T, U>
@@ -204,36 +193,34 @@ where
     }
 }
 
+impl ContextValue<'static> for SmolStr {
+    type Shared<T> = std::sync::Arc<T>
+    where
+        T: 'static;
+
+    type List<T> = Vec<T>
+    where
+        T: 'static;
+}
+
+impl ContextValue<'static> for String {
+    type Shared<T> = std::sync::Arc<T>
+    where
+        T: 'static;
+
+    type List<T> = Vec<T>
+    where
+        T: 'static;
+}
+
 impl<'a> ContextValue<'a> for &'a str {
-    type Shared<T> = BumpBox<'a, T>
+    type Shared<T> = &'a T
     where
         T: 'a;
 
     type List<T> = bumpalo::collections::Vec<'a, T>
     where
         T: 'a;
-}
-
-pub struct BumpBox<'a, T>(pub *const T, pub PhantomData<&'a ()>);
-
-impl<'a, T> Clone for BumpBox<'a, T> {
-    fn clone(&self) -> Self {
-        BumpBox(self.0, self.1)
-    }
-}
-
-impl<'a, T> AsPtr for BumpBox<'a, T> {
-    fn as_ptr(&self) -> usize {
-        self.0 as usize
-    }
-}
-
-impl<'a, T> Deref for BumpBox<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.0 }
-    }
 }
 
 pub trait AsPtr {
@@ -264,5 +251,101 @@ where
 {
     fn as_ptr(&self) -> usize {
         self.0.as_ptr()
+    }
+}
+
+pub struct BumpaloContext<'a>(&'a Bump);
+
+impl<'a> BumpaloContext<'a> {
+    pub fn new(bump: &'a Bump) -> BumpaloContext<'a> {
+        BumpaloContext(bump)
+    }
+}
+
+impl<'a> Context<'a, &'a str> for BumpaloContext<'a> {
+    fn shared<U>(&self, value: U) -> Shared<'a, &'a str, U>
+    where
+        U: 'a,
+    {
+        Shared::new(self.0.alloc(value) as &_)
+    }
+
+    fn list<U>(&self) -> List<'a, &'a str, U>
+    where
+        U: Clone + 'a,
+    {
+        List::new(bumpalo::collections::Vec::new_in(&self.0))
+    }
+
+    fn list_from_iter<'b, I>(&self, iter: I) -> List<'a, &'a str, I::Item>
+    where
+        I: Iterator + 'b,
+        I::Item: Clone + 'a,
+    {
+        List::new(bumpalo::collections::Vec::from_iter_in(iter, &self.0))
+    }
+}
+
+pub struct MultiThreadedContext;
+
+impl MultiThreadedContext {
+    pub fn new() -> MultiThreadedContext {
+        Self
+    }
+}
+
+impl Context<'static, String> for MultiThreadedContext {
+    fn shared<U>(&self, value: U) -> Shared<'static, String, U>
+    where
+        U: 'static,
+    {
+        Shared(Arc::new(value))
+    }
+
+    fn list<U>(&self) -> List<'static, String, U>
+    where
+        U: Clone + 'static,
+    {
+        List(Vec::new())
+    }
+
+    fn list_from_iter<'b, I>(&self, iter: I) -> List<'static, String, I::Item>
+    where
+        I: Iterator + 'b,
+        I::Item: Clone + 'static,
+    {
+        List(iter.collect())
+    }
+}
+
+pub struct SmolStrContext;
+
+impl SmolStrContext {
+    pub fn new() -> SmolStrContext {
+        Self
+    }
+}
+
+impl Context<'static, SmolStr> for SmolStrContext {
+    fn shared<U>(&self, value: U) -> Shared<'static, SmolStr, U>
+    where
+        U: 'static,
+    {
+        Shared(Arc::new(value))
+    }
+
+    fn list<U>(&self) -> List<'static, SmolStr, U>
+    where
+        U: Clone + 'static,
+    {
+        List(Vec::new())
+    }
+
+    fn list_from_iter<'b, I>(&self, iter: I) -> List<'static, SmolStr, I::Item>
+    where
+        I: Iterator + 'b,
+        I::Item: Clone + 'static,
+    {
+        List(iter.collect())
     }
 }

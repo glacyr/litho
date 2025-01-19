@@ -1,23 +1,22 @@
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct FieldsAreOutputTypes<'a, T>(pub &'a Database<T>)
+pub struct FieldsAreOutputTypes<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for FieldsAreOutputTypes<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for FieldsAreOutputTypes<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_field_definition(
         &self,
-        node: &'a Arc<FieldDefinition<T>>,
+        node: &'ast Shared<'a, T, FieldDefinition<'a, T>>,
         accumulator: &mut Self::Accumulator,
     ) {
         match node.ty.ok().and_then(|ty| ty.named_type()) {

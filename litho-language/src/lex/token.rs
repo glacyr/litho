@@ -68,9 +68,9 @@ impl<'a, T> Error<'a, T> {
 pub struct Name<'a, T>(RawToken<'a, T>);
 
 impl<'a, T> Name<'a, T> {
-    pub fn new(source: &'a str) -> Name<'a, T>
+    pub fn new<'b>(source: &'b str) -> Name<'a, T>
     where
-        T: From<&'a str>,
+        T: From<&'b str>,
     {
         let kind = match source {
             "query" => TokenKind::KeywordQuery,
@@ -356,17 +356,17 @@ impl<'a, T> From<Name<'a, T>> for Token<'a, T> {
     }
 }
 
-pub struct Lexer<'a, T>
+pub struct Lexer<'a, 'b, T>
 where
-    T: From<&'a str>,
+    T: From<&'b str>,
 {
-    lexer: Peekable<TokenIter<RawLexer<'a, T>>>,
+    lexer: Peekable<TokenIter<RawLexer<'a, 'b, T>>>,
     last_span: Option<Span>,
 }
 
-impl<'a, T> Lexer<'a, T>
+impl<'a, 'b, T> Lexer<'a, 'b, T>
 where
-    T: From<&'a str>,
+    T: From<&'b str>,
 {
     #[inline(always)]
     pub fn peek(&mut self) -> Option<&Token<'a, T>> {
@@ -384,9 +384,9 @@ where
     }
 }
 
-impl<'a, T> Iterator for Lexer<'a, T>
+impl<'a, 'b, T> Iterator for Lexer<'a, 'b, T>
 where
-    T: From<&'a str>,
+    T: From<&'b str>,
 {
     type Item = Token<'a, T>;
 
@@ -413,9 +413,9 @@ where
     }
 }
 
-pub fn lexer<'a, T>(source_id: SourceId, source: &'a str) -> Lexer<'a, T>
+pub fn lexer<'a, 'b, T>(source_id: SourceId, source: &'b str) -> Lexer<'a, 'b, T>
 where
-    T: From<&'a str>,
+    T: From<&'b str>,
 {
     let _: <TokenKind as Logos>::Source;
 

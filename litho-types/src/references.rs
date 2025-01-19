@@ -1,25 +1,30 @@
 use std::marker::PhantomData;
-use std::sync::Arc;
 
+use litho_language::ast::{AsPtr, ContextValue, Shared};
 use multimap::MultiMap;
 
 #[derive(Debug)]
-pub struct References<K, V>(MultiMap<usize, Arc<V>>, PhantomData<K>);
+pub struct References<'a, T, K, V>(MultiMap<usize, Shared<'a, T, V>>, PhantomData<K>)
+where
+    T: ContextValue<'a>;
 
-impl<K, V> References<K, V> {
-    pub fn new() -> References<K, V> {
+impl<'a, T, K, V> References<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
+    pub fn new() -> References<'a, T, K, V> {
         Default::default()
     }
 
-    fn key(node: &Arc<K>) -> usize {
-        Arc::as_ptr(node) as usize
+    fn key(node: &Shared<'a, T, K>) -> usize {
+        node.as_ptr()
     }
 
-    pub fn track(&mut self, node: &Arc<K>, usage: &Arc<V>) {
+    pub fn track(&mut self, node: &Shared<'a, T, K>, usage: &Shared<'a, T, V>) {
         self.0.insert(Self::key(node), usage.to_owned());
     }
 
-    pub fn usages(&self, node: &Arc<K>) -> impl Iterator<Item = &Arc<V>> {
+    pub fn usages(&self, node: &Shared<'a, T, K>) -> impl Iterator<Item = &Shared<'a, T, V>> {
         self.0
             .get_vec(&Self::key(node))
             .into_iter()
@@ -27,7 +32,10 @@ impl<K, V> References<K, V> {
     }
 }
 
-impl<K, V> Default for References<K, V> {
+impl<'a, T, K, V> Default for References<'a, T, K, V>
+where
+    T: ContextValue<'a>,
+{
     fn default() -> Self {
         References(Default::default(), Default::default())
     }

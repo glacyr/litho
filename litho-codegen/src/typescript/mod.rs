@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::path::Path;
 
+use litho_language::ast::ContextValue;
 use litho_language::lex::SourceId;
 use litho_types::Database;
 use sourcemap::Error;
@@ -26,13 +27,13 @@ impl From<Error> for TypescriptError {
     }
 }
 
-pub fn codegen_typescript<T>(
-    database: &Database<T>,
+pub fn codegen_typescript<'a, T>(
+    database: &Database<'a, T>,
     source_map: HashMap<SourceId, (&str, &str)>,
     path: &Path,
 ) -> Result<(), TypescriptError>
 where
-    T: Eq + Hash + Borrow<str>,
+    T: ContextValue<'a> + Eq + Hash + Borrow<str>,
 {
     let source_map = source_map
         .into_iter()

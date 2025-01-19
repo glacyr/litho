@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::{Result, Write};
 
 use crate::ast::*;
@@ -16,7 +17,7 @@ macros::format_enum!(OperationType, Query, Mutation, Subscription);
 
 impl<'a, T> Format for Arguments<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -49,7 +50,7 @@ where
 
 impl<'a, T> Format for Argument<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -86,7 +87,7 @@ macros::format_unit!(EnumValue);
 
 impl<'a, T> Format for ListValue<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -127,7 +128,7 @@ where
 
 impl<'a, T> Format for ObjectValue<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -158,7 +159,7 @@ where
 
 impl<'a, T> Format for ObjectField<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -178,7 +179,7 @@ where
 
 impl<'a, T> Format for Variable<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -195,7 +196,7 @@ macros::format_unit!(NamedType);
 
 impl<'a, T> Format for Directives<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -222,7 +223,7 @@ where
 
 impl<'a, T> Format for Directive<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where

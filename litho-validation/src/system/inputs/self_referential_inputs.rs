@@ -4,15 +4,15 @@ use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct SelfReferentialInputs<'a, T>(pub &'a Database<T>)
+pub struct SelfReferentialInputs<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> SelfReferentialInputs<'a, T>
+impl<'ast, 'a, T> SelfReferentialInputs<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    pub fn is_recursive(&self, visited: &mut Vec<&'a T>, needle: &T, ty: &'a T) -> bool {
+    pub fn is_recursive(&self, visited: &mut Vec<&'ast T>, needle: &T, ty: &'ast T) -> bool {
         if needle == ty {
             return true;
         }
@@ -41,15 +41,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for SelfReferentialInputs<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for SelfReferentialInputs<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_input_object_type_definition(
         &self,
-        node: &'a InputObjectTypeDefinition<T>,
+        node: &'ast InputObjectTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(name) = node.name.ok() else { return };

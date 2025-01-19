@@ -33,15 +33,15 @@ where
 }
 
 #[derive(Clone)]
-pub struct RawLexer<'a, T> {
+pub struct RawLexer<'a, 'b, T> {
     source_id: SourceId,
-    lexer: Lexer<'a, TokenKind>,
-    ty: PhantomData<T>,
+    lexer: Lexer<'b, TokenKind>,
+    ty: PhantomData<&'a T>,
 }
 
-impl<'a, T> Iterator for RawLexer<'a, T>
+impl<'a, 'b, T> Iterator for RawLexer<'a, 'b, T>
 where
-    T: From<&'a str>,
+    T: From<&'b str>,
 {
     type Item = RawToken<'a, T>;
 
@@ -60,7 +60,10 @@ where
     }
 }
 
-pub fn raw_lexer<'a, T>(source_id: SourceId, lexer: Lexer<'a, TokenKind>) -> RawLexer<'a, T> {
+pub fn raw_lexer<'a, 'b, T>(
+    source_id: SourceId,
+    lexer: Lexer<'b, TokenKind>,
+) -> RawLexer<'a, 'b, T> {
     RawLexer {
         source_id,
         lexer,

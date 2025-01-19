@@ -4,19 +4,19 @@ use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct VariablesAreInputTypes<'a, T>(pub &'a Database<T>)
+pub struct VariablesAreInputTypes<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for VariablesAreInputTypes<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for VariablesAreInputTypes<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_variable_definition(
         &self,
-        node: &'a VariableDefinition<T>,
+        node: &'ast VariableDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         let Some(ty) = node.ty.ok() else { return };

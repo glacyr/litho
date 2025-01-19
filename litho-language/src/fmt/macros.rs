@@ -2,7 +2,7 @@ macro_rules! format_token {
     ($ident:ident) => {
         impl<'a, T> Format for $ident<'a, T>
         where
-            T: ContextValue<'a>,
+            T: ContextValue<'a> + Borrow<str>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
@@ -20,7 +20,7 @@ macro_rules! format_enum {
     ($ident:ident, $($variant:ident),*) => {
         impl<'a, T> Format for $ident<'a, T>
         where
-            T: ContextValue<'a>,
+            T: ContextValue<'a> + Borrow<str>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
@@ -69,7 +69,7 @@ macro_rules! format_definitions {
     ($ident:ident) => {
         impl<'a, T> Format for $ident<'a, T>
         where
-            T: ContextValue<'a>,
+            T: ContextValue<'a> + Borrow<str>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where
@@ -87,7 +87,7 @@ macro_rules! format_unit {
     ($ident:ident) => {
         impl<'a, T> Format for $ident<'a, T>
         where
-            T: ContextValue<'a>,
+            T: ContextValue<'a> + Borrow<str>,
         {
             fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
             where

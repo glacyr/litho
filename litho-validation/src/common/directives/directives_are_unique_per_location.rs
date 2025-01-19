@@ -5,17 +5,17 @@ use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct DirectivesAreUniquePerLocation<'a, T>(pub &'a Database<T>)
+pub struct DirectivesAreUniquePerLocation<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> Visit<'a, T> for DirectivesAreUniquePerLocation<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for DirectivesAreUniquePerLocation<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_directives(&self, node: &'a Directives<T>, accumulator: &mut Self::Accumulator) {
+    fn visit_directives(&self, node: &'ast Directives<'a, T>, accumulator: &mut Self::Accumulator) {
         let mut seen = HashMap::<&T, &Directive<T>>::new();
 
         for directive in node.directives.iter() {

@@ -9,8 +9,9 @@ use std::time::SystemTime;
 use ariadne::{Cache, Source};
 use glob::glob;
 use litho_compiler::{builtins, Compiler};
-use litho_language::ast::Document;
+use litho_language::ast::{Document, SmolStrContext};
 use litho_language::lex::{SourceId, SourceMap};
+use litho_language::syn::Parse;
 use smol_str::SmolStr;
 
 #[derive(Default)]
@@ -55,7 +56,7 @@ pub fn find(path: &str, results: &mut impl Extend<String>) {
 }
 
 pub struct Workspace {
-    compiler: Compiler<SmolStr>,
+    compiler: Compiler<'static, SmolStr>,
     texts: HashMap<SourceId, String>,
     source_map: SourceMap<String>,
     files: HashMap<SourceId, (String, std::io::Result<SystemTime>)>,
@@ -65,7 +66,7 @@ pub struct File<'a> {
     pub source_id: SourceId,
     pub path: &'a String,
     pub text: &'a String,
-    pub document: &'a Arc<Document<SmolStr>>,
+    pub document: &'a Arc<Document<'static, SmolStr>>,
     pub modified: &'a std::io::Result<SystemTime>,
 }
 
@@ -81,7 +82,9 @@ impl Workspace {
 
         for (path, text) in builtins().into_iter().copied() {
             let source_id = source_map.get_or_insert(path.to_owned());
-            compiler.add_document(source_id, &text, true);
+            let document =
+                Document::parse_from_str(source_id, &text, SmolStrContext::new()).unwrap();
+            compiler.add_document(source_id, document, true);
             texts.insert(source_id, text.to_owned());
         }
 
@@ -98,7 +101,9 @@ impl Workspace {
             let metadata = metadata(&path);
             let modified = metadata.and_then(|metadata| metadata.modified());
             let text = read_to_string(path.clone()).unwrap();
-            compiler.add_document(source_id, &text, true);
+            let document =
+                Document::parse_from_str(source_id, &text, SmolStrContext::new()).unwrap();
+            compiler.add_document(source_id, document, true);
             files.insert(source_id, (text.clone(), modified));
             texts.insert(source_id, text);
         }
@@ -113,7 +118,7 @@ impl Workspace {
         }
     }
 
-    pub fn compiler(&self) -> &Compiler<SmolStr> {
+    pub fn compiler(&self) -> &Compiler<'static, SmolStr> {
         &self.compiler
     }
 

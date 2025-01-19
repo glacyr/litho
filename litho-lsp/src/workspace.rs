@@ -5,7 +5,9 @@ use futures::channel::mpsc::Sender;
 use futures::lock::Mutex;
 use futures::SinkExt;
 use litho_compiler::{builtins, Compiler};
+use litho_language::ast::{Document as Ast, SmolStrContext};
 use litho_language::lex::{SourceId, SourceMap, Span};
+use litho_language::syn::Parse;
 use litho_types::Database;
 use lsp_types::*;
 use smol_str::SmolStr;
@@ -27,7 +29,7 @@ pub struct Workspace {
     sink: Sender<WorkspaceUpdate>,
     store: Store,
     pub source_map: SourceMap<Url>,
-    compiler: Compiler<SmolStr>,
+    compiler: Compiler<'static, SmolStr>,
     invalid: HashSet<SourceId>,
     last_imports: ResolvedImports,
     imports: HashMap<Url, SmolStr>,
@@ -112,7 +114,7 @@ impl Workspace {
             .map(|diagnostic| serialize_diagnostic(diagnostic, self))
     }
 
-    pub fn database(&self) -> &Database<SmolStr> {
+    pub fn database(&self) -> &Database<'static, SmolStr> {
         self.compiler.database()
     }
 
@@ -140,8 +142,9 @@ impl Workspace {
     ) {
         let id = self.source_map.get_or_insert(url.to_owned());
 
+        let document = Ast::parse_from_str(id, &text, SmolStrContext::new()).unwrap();
         self.invalid
-            .extend(self.compiler.replace_document(id, &text, internal));
+            .extend(self.compiler.replace_document(id, document, internal));
 
         self.store.insert(id, url, version, internal, text);
         self.store
@@ -158,8 +161,9 @@ impl Workspace {
 
         let text = self.store.update(id, url, version, update);
 
+        let document = Ast::parse_from_str(id, &text, SmolStrContext::new()).unwrap();
         self.invalid
-            .extend(self.compiler.replace_document(id, &text, false));
+            .extend(self.compiler.replace_document(id, document, false));
 
         self.store
             .get_mut(&id)

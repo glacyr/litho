@@ -54,7 +54,7 @@ pub fn wrom(_attr: TokenStream, input: TokenStream) -> TokenStream {
             pub struct Parser < #generics >
             #where_clause {
                 marker: ::std::marker::PhantomData<(
-                    #(&#lifetimes)*
+                    #(&#lifetimes)* (),
                     #(#named_generics,)*
                 )>,
                 #params

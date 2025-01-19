@@ -4,18 +4,18 @@ use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct HasFields<'a, T>(pub &'a Database<T>)
+pub struct HasFields<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> HasFields<'a, T>
+impl<'ast, 'a, T> HasFields<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     pub fn check_fields_definition(
         &self,
-        name: &'a Name<T>,
-        definition: Option<&FieldsDefinition<T>>,
+        name: &'ast Name<'a, T>,
+        definition: Option<&FieldsDefinition<'a, T>>,
     ) -> Option<Diagnostic<Span>> {
         match self.0.field_definitions(name.as_ref()).next() {
             Some(_) => None,
@@ -30,15 +30,15 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for HasFields<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for HasFields<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString,
+    T: ContextValue<'a> + Eq + Hash + ToString,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
     fn visit_interface_type_definition(
         &self,
-        node: &'a InterfaceTypeDefinition<T>,
+        node: &'ast InterfaceTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = node.name.ok() {
@@ -51,7 +51,7 @@ where
 
     fn visit_object_type_definition(
         &self,
-        node: &'a ObjectTypeDefinition<T>,
+        node: &'ast ObjectTypeDefinition<'a, T>,
         accumulator: &mut Self::Accumulator,
     ) {
         if let Some(name) = node.name.ok() {

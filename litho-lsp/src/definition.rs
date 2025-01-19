@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 use lsp_types::*;
 use smol_str::SmolStr;
@@ -40,10 +38,14 @@ struct DefinitionVisitor<'a> {
     offset: usize,
 }
 
-impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
+impl<'a> Visit<'a, 'static, SmolStr> for DefinitionVisitor<'a> {
     type Accumulator = Option<GotoDefinitionResponse>;
 
-    fn visit_field(&self, node: &'a Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(
+        &self,
+        node: &'a Shared<'static, SmolStr, Field<'static, SmolStr>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if let Some(name) = node.name.ok() {
             if name.span().contains(self.offset) {
                 if let Some(definition) = self
@@ -64,7 +66,7 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
 
     fn visit_arguments(
         &self,
-        node: &'a Arc<Arguments<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, Arguments<'static, SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.span().contains(self.offset) {
@@ -100,7 +102,11 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
         }
     }
 
-    fn visit_named_type(&self, node: &'a NamedType<SmolStr>, accumulator: &mut Self::Accumulator) {
+    fn visit_named_type(
+        &self,
+        node: &'a NamedType<'static, SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if node.span().contains(self.offset) {
             if let Some(definition) = self
                 .workspace
@@ -115,7 +121,11 @@ impl<'a> Visit<'a, SmolStr> for DefinitionVisitor<'a> {
         }
     }
 
-    fn visit_value(&self, node: &'a Arc<Value<SmolStr>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'a Shared<'static, SmolStr, Value<SmolStr>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if !node.span().contains(self.offset) {
             return;
         }

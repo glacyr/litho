@@ -10,10 +10,10 @@ mod fields;
 mod fragments;
 mod operations;
 
-pub fn check<N, T>(document: &N, database: &Database<T>) -> Vec<Diagnostic<Span>>
+pub fn check<'a, N, T>(document: &N, database: &Database<'a, T>) -> Vec<Diagnostic<Span>>
 where
-    N: Node<T>,
-    T: Eq + Hash + Borrow<str> + ToString,
+    N: Node<'a, T>,
+    T: ContextValue<'a> + Eq + Hash + Borrow<str> + ToString,
 {
     let mut errors = vec![];
     document.traverse(&fields::FieldSelectionMerging(database), &mut errors);

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use litho_language::ast::*;
 use litho_types::Database;
 use lsp_types::{Hover, HoverContents, MarkedString, Position};
@@ -9,11 +7,14 @@ use super::{Document, Printer, Workspace};
 
 pub struct HoverProvider<'a> {
     document: &'a Document,
-    database: &'a Database<SmolStr>,
+    database: &'a Database<'static, SmolStr>,
 }
 
 impl HoverProvider<'_> {
-    pub fn new<'a>(document: &'a Document, database: &'a Database<SmolStr>) -> HoverProvider<'a> {
+    pub fn new<'a>(
+        document: &'a Document,
+        database: &'a Database<'static, SmolStr>,
+    ) -> HoverProvider<'a> {
         HoverProvider { document, database }
     }
 
@@ -34,16 +35,16 @@ impl HoverProvider<'_> {
 }
 
 struct HoverVisitor<'a> {
-    database: &'a Database<SmolStr>,
+    database: &'a Database<'static, SmolStr>,
     offset: usize,
 }
 
-impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
+impl<'a> Visit<'a, 'static, SmolStr> for HoverVisitor<'a> {
     type Accumulator = Option<Hover>;
 
     fn visit_arguments_definition(
         &self,
-        node: &'a Arc<ArgumentsDefinition<SmolStr>>,
+        node: &'a Shared<'static, SmolStr, ArgumentsDefinition<'static, SmolStr>>,
         accumulator: &mut Self::Accumulator,
     ) {
         for argument in node.definitions.iter() {
@@ -58,6 +59,7 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
                     argument
                         .ty
                         .ok()
+                        .map(AsRef::as_ref)
                         .map(ToString::to_string)
                         .unwrap_or("...".to_owned()),
                     argument
@@ -73,7 +75,7 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
 
     fn visit_enum_type_definition(
         &self,
-        node: &'a EnumTypeDefinition<SmolStr>,
+        node: &'a EnumTypeDefinition<'static, SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
         if !node.span().contains(self.offset) {
@@ -127,7 +129,11 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
         }
     }
 
-    fn visit_field(&self, node: &'a Arc<Field<SmolStr>>, accumulator: &mut Self::Accumulator) {
+    fn visit_field(
+        &self,
+        node: &'a Shared<'static, SmolStr, Field<'static, SmolStr>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if let Some(name) = node.name.ok() {
             if name.span().contains(self.offset) {
                 if let Some(definition) = self
@@ -153,7 +159,11 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
         }
     }
 
-    fn visit_named_type(&self, node: &'a NamedType<SmolStr>, accumulator: &mut Self::Accumulator) {
+    fn visit_named_type(
+        &self,
+        node: &'a NamedType<'static, SmolStr>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         if !node.span().contains(self.offset) {
             return;
         }
@@ -180,7 +190,7 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
 
     fn visit_object_type_definition(
         &self,
-        node: &'a ObjectTypeDefinition<SmolStr>,
+        node: &'a ObjectTypeDefinition<'static, SmolStr>,
         accumulator: &mut Self::Accumulator,
     ) {
         if node
@@ -218,6 +228,7 @@ impl<'a> Visit<'a, SmolStr> for HoverVisitor<'a> {
                             field
                                 .ty
                                 .ok()
+                                .map(AsRef::as_ref)
                                 .map(ToString::to_string)
                                 .unwrap_or("...".to_owned()),
                             field

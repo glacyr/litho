@@ -13,3 +13,4 @@ litho-diagnostics = { path = "../litho-diagnostics" }
 litho-language = { path = "../litho-language" }
 litho-types = { path = "../litho-types" }
 litho-validation = { path = "../litho-validation" }
+bumpalo = "3.16.0"

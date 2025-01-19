@@ -6,9 +6,9 @@ use litho_language::ast::*;
 pub struct Printer;
 
 impl Printer {
-    pub fn short_print_type_definition<T>(definition: &TypeDefinition<T>) -> String
+    pub fn short_print_type_definition<'a, T>(definition: &TypeDefinition<'a, T>) -> String
     where
-        T: Borrow<str> + Display,
+        T: ContextValue<'a> + Borrow<str> + Display,
     {
         format!(
             "{} {}",
@@ -24,9 +24,9 @@ impl Printer {
         )
     }
 
-    pub fn pretty_print_field<T>(definition: &FieldDefinition<T>) -> String
+    pub fn pretty_print_field<'a, T>(definition: &FieldDefinition<'a, T>) -> String
     where
-        T: Borrow<str> + Display,
+        T: ContextValue<'a> + Borrow<str> + Display,
     {
         format!(
             "{}{}: {}",
@@ -35,14 +35,15 @@ impl Printer {
             definition
                 .ty
                 .ok()
+                .map(AsRef::as_ref)
                 .map(ToString::to_string)
                 .unwrap_or("...".to_owned())
         )
     }
 
-    pub fn print_arguments_definition<T>(definition: &ArgumentsDefinition<T>) -> String
+    pub fn print_arguments_definition<'a, T>(definition: &ArgumentsDefinition<'a, T>) -> String
     where
-        T: Borrow<str> + Display,
+        T: ContextValue<'a> + Borrow<str> + Display,
     {
         format!(
             "({})",
@@ -62,11 +63,11 @@ impl Printer {
         )
     }
 
-    pub fn pretty_print_arguments_definition<T>(
-        arguments_definition: Option<&ArgumentsDefinition<T>>,
+    pub fn pretty_print_arguments_definition<'a, T>(
+        arguments_definition: Option<&ArgumentsDefinition<'a, T>>,
     ) -> String
     where
-        T: Borrow<str> + Display,
+        T: ContextValue<'a> + Borrow<str> + Display,
     {
         match arguments_definition {
             Some(arguments_definition) => format!(
@@ -80,6 +81,7 @@ impl Printer {
                             arg.name,
                             arg.ty
                                 .ok()
+                                .map(AsRef::as_ref)
                                 .map(ToString::to_string)
                                 .unwrap_or("...".to_owned())
                         )
@@ -91,11 +93,11 @@ impl Printer {
         }
     }
 
-    pub fn snippy_print_arguments_definition<T>(
-        arguments_definition: Option<&ArgumentsDefinition<T>>,
+    pub fn snippy_print_arguments_definition<'a, T>(
+        arguments_definition: Option<&ArgumentsDefinition<'a, T>>,
     ) -> String
     where
-        T: Borrow<str> + Display,
+        T: ContextValue<'a> + Borrow<str> + Display,
     {
         match arguments_definition {
             Some(arguments_definition) => format!(
@@ -111,6 +113,7 @@ impl Printer {
                             i + 1,
                             arg.ty
                                 .ok()
+                                .map(AsRef::as_ref)
                                 .map(ToString::to_string)
                                 .unwrap_or("...".to_owned())
                         )

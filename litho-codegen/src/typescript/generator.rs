@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use litho_language::ast::{Type, TypeDefinition};
+use litho_language::ast::{ContextValue, Type, TypeDefinition};
 use litho_language::lex::{Name, SourceId};
 use litho_types::Database;
 use serde::Deserialize;
@@ -17,23 +17,23 @@ pub struct LithoExportTypescript {
     pub rewrite: Option<String>,
 }
 
-pub struct Generator<'a, T>
+pub struct Generator<'ast, 'a, T>
 where
-    T: Eq + Hash,
+    T: ContextValue<'a> + Eq + Hash,
 {
-    database: &'a Database<T>,
-    pub js: SourceMapped<'a>,
-    pub dts: SourceMapped<'a>,
+    database: &'ast Database<'a, T>,
+    pub js: SourceMapped<'ast>,
+    pub dts: SourceMapped<'ast>,
 }
 
-impl<'a, T> Generator<'a, T>
+impl<'ast, 'a, T> Generator<'ast, 'a, T>
 where
-    T: Eq + Hash + Borrow<str>,
+    T: ContextValue<'a> + Eq + Hash + Borrow<str>,
 {
     pub fn new(
-        database: &'a Database<T>,
-        source_map: &'a HashMap<SourceId, (&'a str, LineIndex)>,
-    ) -> Generator<'a, T> {
+        database: &'ast Database<'a, T>,
+        source_map: &'ast HashMap<SourceId, (&'ast str, LineIndex)>,
+    ) -> Generator<'ast, 'a, T> {
         let js = SourceMapped::new(&source_map);
         let dts = SourceMapped::new(&source_map);
 
@@ -48,7 +48,7 @@ where
                 directive
                     .name
                     .ok()
-                    .map(|name| name.as_ref().borrow() == "litho_export")
+                    .map(|name| <T as Borrow<str>>::borrow(name.as_ref()) == "litho_export")
                     .unwrap_or_default()
             })
             .collect::<Vec<_>>();
@@ -72,7 +72,7 @@ where
         }
     }
 
-    fn write_type(&mut self, ty: &Type<T>) {
+    fn write_type(&mut self, ty: &Type<'a, T>) {
         match ty {
             Type::List(ty) => {
                 match ty.ty.ok() {
@@ -98,7 +98,7 @@ where
         }
     }
 
-    fn process_type_definition(&mut self, ty: &TypeDefinition<T>) {
+    fn process_type_definition(&mut self, ty: &TypeDefinition<'a, T>) {
         let Some(name) = ty.name().ok() else { return };
 
         let directives = self
@@ -108,7 +108,7 @@ where
                 directive
                     .name
                     .ok()
-                    .map(|name| name.as_ref().borrow() == "litho_export")
+                    .map(|name| <T as Borrow<str>>::borrow(name.as_ref()) == "litho_export")
                     .unwrap_or_default()
             });
 
@@ -315,7 +315,7 @@ where
         tys.sort_by_key(|ty| {
             ty.name()
                 .ok()
-                .map(|name| name.as_raw_token().source.borrow())
+                .map(|name| <T as Borrow<str>>::borrow(&name.as_raw_token().source))
                 .unwrap_or_default()
         });
 

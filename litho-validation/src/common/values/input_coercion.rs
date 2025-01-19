@@ -1,20 +1,19 @@
 use std::borrow::Borrow;
 use std::hash::Hash;
-use std::sync::Arc;
 
 use litho_diagnostics::Diagnostic;
 use litho_language::ast::*;
 use litho_types::Database;
 
-pub struct InputCoercion<'a, T>(pub &'a Database<T>)
+pub struct InputCoercion<'ast, 'a, T>(pub &'ast Database<'a, T>)
 where
-    T: Eq + Hash;
+    T: ContextValue<'a> + Eq + Hash;
 
-impl<'a, T> InputCoercion<'a, T>
+impl<'ast, 'a, T> InputCoercion<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString + Borrow<str>,
+    T: ContextValue<'a> + Eq + Hash + ToString + Borrow<str>,
 {
-    fn check_ty(&self, ty: &Type<T>, node: &Value<T>) -> Option<Diagnostic<Span>> {
+    fn check_ty(&self, ty: &Type<'a, T>, node: &Value<'a, T>) -> Option<Diagnostic<Span>> {
         if node.is_variable() {
             return None;
         }
@@ -65,13 +64,17 @@ where
     }
 }
 
-impl<'a, T> Visit<'a, T> for InputCoercion<'a, T>
+impl<'ast, 'a, T> Visit<'ast, 'a, T> for InputCoercion<'ast, 'a, T>
 where
-    T: Eq + Hash + ToString + Borrow<str>,
+    T: ContextValue<'a> + Eq + Hash + ToString + Borrow<str>,
 {
     type Accumulator = Vec<Diagnostic<Span>>;
 
-    fn visit_value(&self, node: &'a Arc<Value<T>>, accumulator: &mut Self::Accumulator) {
+    fn visit_value(
+        &self,
+        node: &'ast Shared<'a, T, Value<'a, T>>,
+        accumulator: &mut Self::Accumulator,
+    ) {
         let Some(ty) = self.0.inference.types_for_values.get(&node) else {
             return;
         };

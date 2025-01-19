@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::fmt::{Result, Write};
 
 use crate::ast::*;
@@ -14,7 +15,7 @@ macros::format_enum!(
 
 impl<'a, T> Format for OperationDefinition<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -31,7 +32,7 @@ where
 
 impl<'a, T> Format for SelectionSet<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -68,7 +69,7 @@ macros::format_enum!(Selection, Field, FragmentSpread, InlineFragment);
 
 impl<'a, T> Format for Field<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -89,7 +90,7 @@ where
 
 impl<'a, T> Format for Alias<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -103,7 +104,7 @@ where
 
 impl<'a, T> Format for FragmentSpread<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -122,7 +123,7 @@ where
 
 impl<'a, T> Format for FragmentDefinition<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -143,7 +144,7 @@ where
 
 impl<'a, T> Format for TypeCondition<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -157,7 +158,7 @@ where
 
 impl<'a, T> Format for InlineFragment<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -177,7 +178,7 @@ where
 
 impl<'a, T> Format for VariableDefinitions<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -205,7 +206,7 @@ where
 
 impl<'a, T> Format for VariableDefinition<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -226,7 +227,7 @@ where
 
 impl<'a, T> Format for DefaultValue<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -246,7 +247,7 @@ macros::format_enum!(Type, Named, List, NonNull);
 
 impl<'a, T> Format for ListType<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
@@ -261,7 +262,7 @@ where
 
 impl<'a, T> Format for NonNullType<'a, T>
 where
-    T: ContextValue<'a>,
+    T: ContextValue<'a> + Borrow<str>,
 {
     fn format_collapsed<W>(&self, formatter: &mut Formatter<W>) -> Result
     where
